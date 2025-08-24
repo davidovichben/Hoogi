@@ -1,0 +1,10 @@
+.public-form .hero{
+  background: linear-gradient(135deg, hsl(var(--primary)), hsl(186 74% 50%));
+  color:#fff; padding:24px; border-radius:16px; box-shadow:0 10px 30px -10px hsl(var(--primary)/.2); margin-bottom:16px;
+}
+.public-form .brand{ display:flex; align-items:center; gap:12px; }
+.public-form .brand img{ height:36px; width:auto; }
+.public-form .title{ font-size:22px; font-weight:800; margin:0; }
+.public-form .subtitle{ opacity:.9; margin:.25rem 0 0 0; }
+.public-form .actions{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.public-form input[type="radio"], .public-form input[type="checkbox"]{ accent-color:hsl(var(--primary)); }

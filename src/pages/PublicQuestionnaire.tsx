@@ -1,0 +1,428 @@
+import React, { useState, useEffect } from "react";
+import { useParams, useSearchParams, useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { supabase } from "@/integrations/supabase/client";
+
+interface Question {
+  id: string;
+  text: string;
+  type: string;
+  options?: string[];
+  required?: boolean;
+  order: number;
+}
+
+interface Questionnaire {
+  id: string;
+  title: string;
+  description?: string;
+  default_lang: "he" | "en";
+  meta: {
+    brand_logo_url?: string;
+    brand_primary_color?: string;
+    brand_secondary_color?: string;
+  };
+}
+
+interface LeadSubmission {
+  questionnaire_id: string;
+  lang: "he" | "en";
+  details: {
+    ref?: string;
+    contact?: {
+      name?: string;
+      email?: string;
+      phone?: string;
+    };
+    answers: Record<string, any>;
+    meta: {
+      user_agent: string;
+    };
+  };
+}
+
+export default function PublicQuestionnaire() {
+  const { token } = useParams<{ token: string }>();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  
+  const [questionnaire, setQuestionnaire] = useState<Questionnaire | null>(null);
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [submitted, setSubmitted] = useState(false);
+  const [answers, setAnswers] = useState<Record<string, any>>({});
+  const [contact, setContact] = useState({ name: "", email: "", phone: "" });
+  
+  const lang = (searchParams.get("lang") as "he" | "en") || "he";
+  const ref = searchParams.get("ref") || "";
+  
+  const isRTL = lang === "he";
+  const dir = isRTL ? "rtl" : "ltr";
+
+  useEffect(() => {
+    if (!token) return;
+    
+    const fetchQuestionnaire = async () => {
+      try {
+        setLoading(true);
+        
+        // Fetch questionnaire by public_token
+        const { data: questionnaireData, error: questionnaireError } = await supabase
+          .from("questionnaires")
+          .select("*")
+          .eq("public_token", token)
+          .single();
+        
+        if (questionnaireError) throw questionnaireError;
+        if (!questionnaireData) throw new Error("Questionnaire not found");
+        
+        setQuestionnaire(questionnaireData);
+        
+        // Try to fetch questions if table exists
+        try {
+          const { data: questionsData, error: questionsError } = await supabase
+            .from("questions")
+            .select("*")
+            .eq("questionnaire_id", questionnaireData.id)
+            .order("order");
+          
+          if (!questionsError && questionsData) {
+            setQuestions(questionsData);
+          }
+        } catch (e) {
+          // Questions table might not exist, continue without questions
+          console.log("No questions table found");
+        }
+        
+      } catch (err: any) {
+        setError(err.message || "Failed to load questionnaire");
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchQuestionnaire();
+  }, [token]);
+
+  const handleAnswerChange = (questionId: string, value: any) => {
+    setAnswers(prev => ({ ...prev, [questionId]: value }));
+  };
+
+  const handleContactChange = (field: string, value: string) => {
+    setContact(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!questionnaire) return;
+    
+    try {
+      const leadData: LeadSubmission = {
+        questionnaire_id: questionnaire.id,
+        lang,
+        details: {
+          ref,
+          contact: Object.values(contact).some(v => v.trim()) ? contact : undefined,
+          answers,
+          meta: {
+            user_agent: navigator.userAgent
+          }
+        }
+      };
+      
+      const { error: submitError } = await supabase
+        .from("leads")
+        .insert([leadData]);
+      
+      if (submitError) throw submitError;
+      
+      setSubmitted(true);
+    } catch (err: any) {
+      setError(err.message || "Failed to submit");
+    }
+  };
+
+  const switchLanguage = (newLang: "he" | "en") => {
+    const params = new URLSearchParams(searchParams);
+    params.set("lang", newLang);
+    navigate(`?${params.toString()}`, { replace: true });
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" dir={dir}>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900 mx-auto"></div>
+          <p className="mt-4 text-lg">{lang === "he" ? "טוען..." : "Loading..."}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" dir={dir}>
+        <div className="text-center text-red-600">
+          <h1 className="text-2xl font-bold mb-4">
+            {lang === "he" ? "שגיאה" : "Error"}
+          </h1>
+          <p>{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (submitted) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50" dir={dir}>
+        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
+          {questionnaire?.meta.brand_logo_url && (
+            <img 
+              src={questionnaire.meta.brand_logo_url} 
+              alt="Logo" 
+              className="h-16 mx-auto mb-6"
+            />
+          )}
+          <h1 className="text-3xl font-bold text-green-600 mb-4">
+            {lang === "he" ? "תודה רבה!" : "Thank You!"}
+          </h1>
+          <p className="text-gray-600 mb-6">
+            {lang === "he" 
+              ? "התשובה שלך נשלחה בהצלחה. נציג יצור איתך קשר בקרוב." 
+              : "Your response has been submitted successfully. A representative will contact you soon."
+            }
+          </p>
+          <Button 
+            onClick={() => window.close()}
+            className="w-full"
+          >
+            {lang === "he" ? "סגור" : "Close"}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!questionnaire) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" dir={dir}>
+        <div className="text-center text-red-600">
+          <h1 className="text-2xl font-bold mb-4">
+            {lang === "he" ? "שאלון לא נמצא" : "Questionnaire not found"}
+          </h1>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50" dir={dir}>
+      {/* Header */}
+      <div className="bg-white shadow-sm border-b">
+        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            {questionnaire.meta.brand_logo_url && (
+              <img 
+                src={questionnaire.meta.brand_logo_url} 
+                alt="Logo" 
+                className="h-12"
+              />
+            )}
+            <div>
+              <h1 className="text-xl font-semibold">{questionnaire.title}</h1>
+              {questionnaire.description && (
+                <p className="text-gray-600 text-sm">{questionnaire.description}</p>
+              )}
+            </div>
+          </div>
+          
+          {/* Language Switcher */}
+          <div className="flex space-x-2">
+            <Button
+              variant={lang === "he" ? "default" : "outline"}
+              size="sm"
+              onClick={() => switchLanguage("he")}
+            >
+              עברית
+            </Button>
+            <Button
+              variant={lang === "en" ? "default" : "outline"}
+              size="sm"
+              onClick={() => switchLanguage("en")}
+            >
+              English
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Form */}
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Contact Information */}
+          <div className="bg-white rounded-lg shadow-sm border p-6">
+            <h2 className="text-lg font-semibold mb-4">
+              {lang === "he" ? "פרטי קשר" : "Contact Information"}
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {lang === "he" ? "שם מלא" : "Full Name"}
+                </label>
+                <Input
+                  type="text"
+                  value={contact.name}
+                  onChange={(e) => handleContactChange("name", e.target.value)}
+                  placeholder={lang === "he" ? "הכנס את שמך" : "Enter your name"}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {lang === "he" ? "אימייל" : "Email"}
+                </label>
+                <Input
+                  type="email"
+                  value={contact.email}
+                  onChange={(e) => handleContactChange("email", e.target.value)}
+                  placeholder={lang === "he" ? "הכנס את האימייל שלך" : "Enter your email"}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {lang === "he" ? "טלפון" : "Phone"}
+                </label>
+                <Input
+                  type="tel"
+                  value={contact.phone}
+                  onChange={(e) => handleContactChange("phone", e.target.value)}
+                  placeholder={lang === "he" ? "הכנס את הטלפון שלך" : "Enter your phone"}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Questions */}
+          {questions.length > 0 && (
+            <div className="bg-white rounded-lg shadow-sm border p-6">
+              <h2 className="text-lg font-semibold mb-4">
+                {lang === "he" ? "שאלות" : "Questions"}
+              </h2>
+              <div className="space-y-6">
+                {questions.map((question) => (
+                  <div key={question.id} className="space-y-3">
+                    <label className="block text-sm font-medium text-gray-700">
+                      {question.text}
+                      {question.required && (
+                        <span className="text-red-500 ml-1">*</span>
+                      )}
+                    </label>
+                    
+                    {question.type === "text" && (
+                      <Input
+                        type="text"
+                        value={answers[question.id] || ""}
+                        onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+                        required={question.required}
+                        placeholder={lang === "he" ? "הכנס תשובה" : "Enter your answer"}
+                      />
+                    )}
+                    
+                    {question.type === "textarea" && (
+                      <Textarea
+                        value={answers[question.id] || ""}
+                        onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+                        required={question.required}
+                        placeholder={lang === "he" ? "הכנס תשובה מפורטת" : "Enter detailed answer"}
+                        rows={4}
+                      />
+                    )}
+                    
+                    {question.type === "select" && question.options && (
+                      <select
+                        value={answers[question.id] || ""}
+                        onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+                        required={question.required}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="">
+                          {lang === "he" ? "בחר אפשרות" : "Select an option"}
+                        </option>
+                        {question.options.map((option, index) => (
+                          <option key={index} value={option}>
+                            {option}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                    
+                    {question.type === "radio" && question.options && (
+                      <div className="space-y-2">
+                        {question.options.map((option, index) => (
+                          <label key={index} className="flex items-center space-x-3">
+                            <input
+                              type="radio"
+                              name={question.id}
+                              value={option}
+                              checked={answers[question.id] === option}
+                              onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+                              required={question.required}
+                              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                            />
+                            <span className="text-sm text-gray-700">{option}</span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {question.type === "checkbox" && question.options && (
+                      <div className="space-y-2">
+                        {question.options.map((option, index) => (
+                          <label key={index} className="flex items-center space-x-3">
+                            <input
+                              type="checkbox"
+                              value={option}
+                              checked={Array.isArray(answers[question.id]) && answers[question.id].includes(option)}
+                              onChange={(e) => {
+                                const currentAnswers = Array.isArray(answers[question.id]) ? answers[question.id] : [];
+                                if (e.target.checked) {
+                                  handleAnswerChange(question.id, [...currentAnswers, option]);
+                                } else {
+                                  handleAnswerChange(question.id, currentAnswers.filter(a => a !== option));
+                                }
+                              }}
+                              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                            />
+                            <span className="text-sm text-gray-700">{option}</span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Submit Button */}
+          <div className="flex justify-center">
+            <Button
+              type="submit"
+              size="lg"
+              className="px-8 py-3"
+              style={{
+                backgroundColor: questionnaire.meta.brand_primary_color || undefined
+              }}
+            >
+              {lang === "he" ? "שלח תשובה" : "Submit Response"}
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+

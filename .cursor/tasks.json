@@ -1,0 +1,29 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Open Clean Git Bash",
+      "type": "shell",
+      "command": "\"C:\\\\Program Files\\\\Git\\\\bin\\\\bash.exe\" -l",
+      "options": {
+        "env": { "LANG": "en_US.UTF-8", "LC_ALL": "en_US.UTF-8" }
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Dev + Health Check",
+      "type": "shell",
+      "command": "npm run dev",
+      "problemMatcher": []
+    },
+    {
+      "label": "Health Check Only",
+      "type": "shell",
+      "command": "node scripts/health-check.js",
+      "problemMatcher": []
+    }
+  ]
+}
+
+
+
