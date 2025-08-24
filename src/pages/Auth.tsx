@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -12,7 +12,7 @@ import { TooltipWrapper } from '../components/TooltipWrapper';
 import { supabase } from "@/integrations/supabase/client";
 import { upsertProfile, fetchProfile } from "../lib/profile";
 import { useLanguage } from "../contexts/LanguageContext";
-import { ArrowRightIcon, MailIcon, KeyIcon, ArrowLeftIcon } from 'lucide-react';
+import { ArrowRightIcon, MailIcon, KeyIcon, ArrowLeftIcon, EyeIcon, EyeOffIcon } from 'lucide-react';
 
 export const Auth = () => {
   const navigate = useNavigate();
@@ -26,6 +26,9 @@ export const Auth = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [canLoginNow, setCanLoginNow] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,6 +78,25 @@ export const Auth = () => {
       navigate('/dashboard');
     } catch (e: any) {
       toast({ title: e?.message || String(e), variant: 'destructive' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!formData.email) {
+      toast({ title: language==='he' ? 'הזן אימייל תחילה' : 'Enter email first', variant: 'destructive' });
+      return;
+    }
+    
+    setIsLoading(true);
+    try {
+      const redirectTo = `${window.location.origin}/auth/update-password`;
+      const { error } = await supabase.auth.resetPasswordForEmail(formData.email, { redirectTo });
+      if (error) throw error;
+      toast({ title: language==='he' ? 'קישור לאיפוס נשלח לאימייל' : 'Reset link sent to email' });
+    } catch (err: any) {
+      toast({ title: err?.message || 'Failed to send reset link', variant: 'destructive' });
     } finally {
       setIsLoading(false);
     }
@@ -264,15 +286,42 @@ export const Auth = () => {
                           <KeyIcon className="w-4 h-4 text-primary" />
                           {language === 'he' ? 'סיסמה' : 'Password'}
                         </Label>
-                        <Input
-                          id="password"
-                          type="password"
-                          placeholder={language === 'he' ? 'הכניסו את הסיסמה שלכם' : 'Enter your password'}
-                          value={formData.password}
-                          onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                          required
-                          className="border-primary/30 focus:border-primary h-12"
-                        />
+                        <div className="relative">
+                          <Input
+                            id="password"
+                            type={showPassword ? 'text' : 'password'}
+                            placeholder={language === 'he' ? 'הכניסו את הסיסמה שלכם' : 'Enter your password'}
+                            value={formData.password}
+                            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                            required
+                            className="border-primary/30 focus:border-primary h-12 pr-12"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                          >
+                            {showPassword ? <EyeOffIcon className="w-4 h-4" /> : <EyeIcon className="w-4 h-4" />}
+                          </button>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={rememberMe}
+                            onChange={(e) => setRememberMe(e.target.checked)}
+                            className="rounded border-primary/30"
+                          />
+                          {language === 'he' ? 'זכור אותי' : 'Remember me'}
+                        </label>
+                        <button
+                          type="button"
+                          onClick={handleForgotPassword}
+                          className="text-primary hover:underline"
+                        >
+                          {language === 'he' ? 'שכחתי סיסמה?' : 'Forgot password?'}
+                        </button>
                       </div>
                       <Button type="submit" className="w-full h-12" variant="hoogi" disabled={isLoading}>
                         {isLoading 
@@ -309,30 +358,48 @@ export const Auth = () => {
                           <KeyIcon className="w-4 h-4 text-primary" />
                           {language === 'he' ? 'סיסמה' : 'Password'}
                         </Label>
-                        <Input
-                          id="register-password"
-                          type="password"
-                          placeholder={language === 'he' ? 'בחרו סיסמה חזקה' : 'Choose a strong password'}
-                          value={formData.password}
-                          onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                          required
-                          className="border-primary/30 focus:border-primary h-12"
-                        />
+                        <div className="relative">
+                          <Input
+                            id="register-password"
+                            type={showPassword ? 'text' : 'password'}
+                            placeholder={language === 'he' ? 'בחרו סיסמה חזקה' : 'Choose a strong password'}
+                            value={formData.password}
+                            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                            required
+                            className="border-primary/30 focus:border-primary h-12 pr-12"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                          >
+                            {showPassword ? <EyeOffIcon className="w-4 h-4" /> : <EyeIcon className="w-4 h-4" />}
+                          </button>
+                        </div>
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="confirm-password" className="flex items-center gap-2">
                           <KeyIcon className="w-4 h-4 text-primary" />
                           {language === 'he' ? 'אימות סיסמה' : 'Confirm Password'}
                         </Label>
-                        <Input
-                          id="confirm-password"
-                          type="password"
-                          placeholder={language === 'he' ? 'הכניסו את הסיסמה שוב' : 'Enter password again'}
-                          value={formData.confirmPassword}
-                          onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                          required
-                          className="border-primary/30 focus:border-primary h-12"
-                        />
+                        <div className="relative">
+                          <Input
+                            id="confirm-password"
+                            type={showConfirmPassword ? 'text' : 'password'}
+                            placeholder={language === 'he' ? 'הכניסו את הסיסמה שוב' : 'Enter password again'}
+                            value={formData.confirmPassword}
+                            onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                            required
+                            className="border-primary/30 focus:border-primary h-12 pr-12"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                          >
+                            {showConfirmPassword ? <EyeOffIcon className="w-4 h-4" /> : <EyeIcon className="w-4 h-4" />}
+                          </button>
+                        </div>
                       </div>
                       <div className="mb-2">
                         <label className="block text-sm mb-1">{language==='he'?'שפה ברישום':'Registration language'}</label>

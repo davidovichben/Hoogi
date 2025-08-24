@@ -31,6 +31,7 @@ import QuestionnaireReviewPage from "./pages/QuestionnaireReview";
 import QuestionnairePreviewPage from "./pages/QuestionnairePreview";
 import DistributionChannels from "./pages/DistributionChannels";
 import Partners from "./pages/Partners";
+import { UpdatePassword } from "./pages/auth/UpdatePassword";
 
 const queryClient = new QueryClient();
 
@@ -44,8 +45,10 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <Routes>
-              <Route path="/" element={<Index />} />
+              <Route path="/" element={<Auth />} />
+              <Route path="/landing" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/auth/update-password" element={<UpdatePassword />} />
               <Route path="/onboarding" element={<Onboarding />} />
               <Route path="/onboarding/step2" element={<OnboardingStep2 />} />
               <Route element={<Layout />}>

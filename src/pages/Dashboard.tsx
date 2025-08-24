@@ -28,6 +28,15 @@ export const Dashboard: React.FC = () => {
   const { isDemoMode } = useDemo();
   const [showProfileAlert, setShowProfileAlert] = useState(false);
   const [profileDebug, setProfileDebug] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const [userStats, setUserStats] = useState({
+    conversionRate: 0,
+    responseRate: 0,
+    activeQuestionnaires: 0,
+    totalLeads: 0,
+    recentQuestionnaires: []
+  });
+  const [isLoadingStats, setIsLoadingStats] = useState(false);
 
   useEffect(() => {
     // בדיקה אם הפרופיל מלא - רק פעם אחת בטעינה
@@ -88,13 +97,71 @@ export const Dashboard: React.FC = () => {
         const shouldShowAlert = !isProfileComplete;
         setShowProfileAlert(shouldShowAlert);
 
+        // שמירת פרופיל המשתמש
+        if (profile && !error) {
+          setUserProfile(profile);
+        }
+
       } catch (error) {
         setShowProfileAlert(true);
       }
     };
     
     checkProfile();
+    loadRealStats();
   }, []);
+
+  // טעינת נתונים אמיתיים מהדאטהבייס
+  const loadRealStats = async () => {
+    if (isDemoMode) return;
+    
+    setIsLoadingStats(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // טעינת שאלונים פעילים
+      const { data: questionnaires } = await supabase
+        .from('questionnaires')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('status', 'active');
+
+      // טעינת לידים
+      const { data: leads } = await supabase
+        .from('leads')
+        .select('*')
+        .eq('user_id', user.id);
+
+      // טעינת תגובות
+      const { data: responses } = await supabase
+        .from('responses')
+        .select('*')
+        .eq('user_id', user.id);
+
+      // חישוב סטטיסטיקות
+      const activeCount = questionnaires?.length || 0;
+      const leadsCount = leads?.length || 0;
+      const responsesCount = responses?.length || 0;
+
+      // חישוב אחוזי המרה ותגובה (אם יש נתונים)
+      const conversionRate = leadsCount > 0 ? Math.round((responsesCount / leadsCount) * 100) : 0;
+      const responseRate = responsesCount > 0 ? Math.round((responsesCount / (responsesCount + leadsCount)) * 100) : 0;
+
+      setUserStats({
+        conversionRate,
+        responseRate,
+        activeQuestionnaires: activeCount,
+        totalLeads: leadsCount,
+        recentQuestionnaires: questionnaires?.slice(0, 3) || []
+      });
+
+    } catch (error) {
+      console.log('Error loading stats:', error);
+    } finally {
+      setIsLoadingStats(false);
+    }
+  };
 
   const handleGoToProfile = () => {
     navigate('/profile?block=1');
@@ -125,7 +192,8 @@ export const Dashboard: React.FC = () => {
     }
   };
 
-  const stats = isDemoMode ? [
+  // שימוש בנתונים אמיתיים או דמו
+  const displayStats = isDemoMode ? [
     {
       title: language === 'he' ? 'סה״כ לידים' : 'Total Leads',
       value: '1,247',
@@ -154,9 +222,38 @@ export const Dashboard: React.FC = () => {
       color: 'text-orange',
       bgColor: 'bg-orange/10'
     }
-  ] : [];
+  ] : [
+    {
+      title: language === 'he' ? 'סה״כ לידים' : 'Total Leads',
+      value: userStats.totalLeads.toString(),
+      icon: UsersIcon,
+      color: 'text-primary',
+      bgColor: 'bg-primary/10'
+    },
+    {
+      title: language === 'he' ? 'שאלונים פעילים' : 'Active Questionnaires',
+      value: userStats.activeQuestionnaires.toString(),
+      icon: MessageSquareIcon,
+      color: 'text-secondary',
+      bgColor: 'bg-secondary/10'
+    },
+    {
+      title: language === 'he' ? 'שיעור תגובה' : 'Response Rate',
+      value: `${userStats.responseRate}%`,
+      icon: TrendingUpIcon,
+      color: 'text-accent',
+      bgColor: 'bg-accent/10'
+    },
+    {
+      title: language === 'he' ? 'שיעור המרה' : 'Conversion Rate',
+      value: `${userStats.conversionRate}%`,
+      icon: TargetIcon,
+      color: 'text-orange',
+      bgColor: 'bg-orange/10'
+    }
+  ];
 
-  const recentQuestionnaires = isDemoMode ? demoData.questionnaires : [];
+  const displayQuestionnaires = isDemoMode ? demoData.questionnaires : userStats.recentQuestionnaires;
 
   return (
     <div className="space-y-6">
@@ -203,57 +300,88 @@ export const Dashboard: React.FC = () => {
         <div>
           <h1 className="text-3xl font-bold text-primary">{t('dashboard.title')}</h1>
           <p className="text-muted-foreground">
-            {isDemoMode ? t('dashboard.welcomeBack') : t('dashboard.getStarted')}
+            {userProfile ? 
+              (language === 'he' 
+                ? `ברוכים השבים, ${userProfile.full_name || userProfile.email || 'משתמש יקר'}! הנה סקירת העסק שלכם.`
+                : `Welcome back, ${userProfile.full_name || userProfile.email || 'dear user'}! Here's your business overview.`
+              ) : 
+              (language === 'he' 
+                ? 'ברוכים השבים! הנה סקירת העסק שלכם.'
+                : 'Welcome back! Here\'s your business overview.'
+              )
+            }
           </p>
         </div>
-        <TooltipWrapper content={t('tooltip.createQuestionnaire')}>
-          <Button 
-            variant="hoogi" 
-            onClick={() => navigate('/onboarding')}
-            className="flex items-center gap-2"
-          >
-            <PlusIcon className="h-5 w-5" />
-            {language === 'he' ? 'שאלון חדש' : 'New Survey'}
-          </Button>
-        </TooltipWrapper>
+        <div className="flex gap-2">
+          <TooltipWrapper content={t('tooltip.refresh')}>
+            <Button 
+              variant="outline" 
+              onClick={loadRealStats}
+              disabled={isLoadingStats}
+              className="flex items-center gap-2"
+            >
+              <RefreshCwIcon className={`h-4 w-4 ${isLoadingStats ? 'animate-spin' : ''}`} />
+              {language === 'he' ? 'רענן' : 'Refresh'}
+            </Button>
+          </TooltipWrapper>
+          <TooltipWrapper content={t('tooltip.createQuestionnaire')}>
+            <Button 
+              variant="hoogi" 
+              onClick={() => navigate('/onboarding')}
+              className="flex items-center gap-2"
+            >
+              <PlusIcon className="h-5 w-5" />
+              {language === 'he' ? 'שאלון חדש' : 'New Survey'}
+            </Button>
+          </TooltipWrapper>
+        </div>
       </div>
 
       {/* Welcome Message */}
       <HoogiMessage 
         message={language === 'he' 
-          ? "ברוכים השבים! הנה תמונת מצב של הפעילות שלכם. האם תרצו שאעזור לכם ליצור שאלון חדש?"
-          : "Welcome back! Here's an overview of your activity. Would you like me to help you create a new questionnaire?"
+          ? `שלום ${userProfile?.full_name ? userProfile.full_name.split(' ')[0] : 'חבר'}! הנה תמונת מצב של הפעילות שלכם. האם תרצו שאעזור לכם ליצור שאלון חדש?`
+          : `Hello ${userProfile?.full_name ? userProfile.full_name.split(' ')[0] : 'friend'}! Here's an overview of your activity. Would you like me to help you create a new questionnaire?`
         }
       />
 
       {/* Stats Grid */}
-      {isDemoMode && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {stats.map((stat, index) => {
-            const Icon = stat.icon;
-            return (
-              <TooltipWrapper key={index} content={`${t('tooltip.viewAnalytics')} ${stat.title}`}>
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-                  <CardContent className="p-6">
-                    <div className="flex items-center gap-4">
-                      <div className={`p-3 rounded-lg ${stat.bgColor}`}>
-                        <Icon className={`h-6 w-6 ${stat.color}`} />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground">{stat.title}</p>
-                        <p className="text-2xl font-bold">{stat.value}</p>
-                      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {displayStats.map((stat, index) => {
+          const Icon = stat.icon;
+          return (
+            <TooltipWrapper key={index} content={`${t('tooltip.viewAnalytics')} ${stat.title}`}>
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-4">
+                    <div className={`p-3 rounded-lg ${stat.bgColor}`}>
+                      <Icon className={`h-6 w-6 ${stat.color}`} />
                     </div>
-                  </CardContent>
-                </Card>
-              </TooltipWrapper>
-            );
-          })}
-        </div>
-      )}
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-muted-foreground">{stat.title}</p>
+                      <p className="text-2xl font-bold">
+                        {isLoadingStats && !isDemoMode ? (
+                          <div className="flex items-center gap-2">
+                            <RefreshCwIcon className="h-4 w-4 animate-spin" />
+                            <span className="text-sm text-muted-foreground">
+                              {language === 'he' ? 'טוען...' : 'Loading...'}
+                            </span>
+                          </div>
+                        ) : (
+                          stat.value
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TooltipWrapper>
+          );
+        })}
+      </div>
 
       {/* Recent Questionnaires */}
-      {isDemoMode && (
+      {displayQuestionnaires.length > 0 ? (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -266,7 +394,7 @@ export const Dashboard: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {recentQuestionnaires.map((questionnaire) => (
+              {displayQuestionnaires.map((questionnaire) => (
                 <TooltipWrapper key={questionnaire.id} content={t('tooltip.viewQuestionnaire')}>
                   <div 
                     className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
@@ -274,15 +402,15 @@ export const Dashboard: React.FC = () => {
                   >
                     <div className="flex-1">
                       <h3 className="font-medium">{questionnaire.title}</h3>
-                      <p className="text-sm text-muted-foreground capitalize">{questionnaire.category}</p>
+                      <p className="text-sm text-muted-foreground capitalize">{questionnaire.category || questionnaire.business_category || 'כללי'}</p>
                     </div>
                     <div className="flex items-center gap-6 text-sm text-muted-foreground">
                       <div className="text-center">
-                        <p className="font-semibold text-foreground">{questionnaire.responses}</p>
+                        <p className="font-semibold text-foreground">{questionnaire.responses_count || 0}</p>
                         <p>{t('questionnaires.responses')}</p>
                       </div>
                       <div className="text-center">
-                        <p className="font-semibold text-foreground">{questionnaire.leads}</p>
+                        <p className="font-semibold text-foreground">{questionnaire.leads_count || 0}</p>
                         <p>{t('questionnaires.leads')}</p>
                       </div>
                       <div className="flex flex-col items-center gap-1">
@@ -294,7 +422,9 @@ export const Dashboard: React.FC = () => {
                           {t(`questionnaires.${questionnaire.status}`)}
                         </span>
                         <Progress 
-                          value={(questionnaire.leads / questionnaire.responses) * 100} 
+                          value={questionnaire.leads_count && questionnaire.responses_count ? 
+                            (questionnaire.leads_count / questionnaire.responses_count) * 100 : 0
+                          } 
                           className="w-16 h-2"
                         />
                       </div>
@@ -305,18 +435,19 @@ export const Dashboard: React.FC = () => {
             </div>
           </CardContent>
         </Card>
-      )}
-
-      {/* Empty State */}
-      {!isDemoMode && (
+      ) : (
+        /* Empty State */
         <Card className="text-center py-12">
           <CardContent>
             <Clipboard className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold mb-2">
-              {t('dashboard.noQuestionnaires')}
+              {language === 'he' ? 'אין שאלונים עדיין' : 'No questionnaires yet'}
             </h3>
             <p className="text-muted-foreground mb-6">
-              {t('dashboard.noQuestionnairesDesc')}
+              {language === 'he' 
+                ? 'התחילו ליצור שאלונים כדי לקבל לידים ותגובות מלקוחות'
+                : 'Start creating questionnaires to get leads and responses from customers'
+              }
             </p>
             <Button variant="hoogi" onClick={() => navigate('/onboarding')}>
               {language === 'he' ? 'שאלון חדש' : 'New Survey'}
