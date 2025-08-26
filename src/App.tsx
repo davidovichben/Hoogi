@@ -12,7 +12,7 @@ import { Onboarding } from "./pages/Onboarding";
 import OnboardingStep2 from "./pages/OnboardingStep2";
 // import { Questionnaires } from "./pages/Questionnaires";
 import QuestionnairesList from "./pages/QuestionnairesList";
-import { Responses } from "./pages/Responses";
+import Responses from "./pages/Responses";
 import { Leads } from "./pages/Leads";
 import { Affiliate } from "./pages/Affiliate";
 import { Settings } from "./pages/Settings";
