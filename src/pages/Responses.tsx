@@ -178,16 +178,9 @@ const Responses: React.FC = () => {
   const exportToExcelXls = (rows: ResponseFlat[]) => {
     // headers (English)
     const headers = [
-      'submitted_at',
-      'questionnaire',
-      'lang',
-      'channel',
-      'lead_name',
-      'lead_email',
-      'lead_phone',
-      'lead_ref',
-      'response_id',
-      'summary'
+      'submitted_at','questionnaire','lang','channel',
+      'lead_name','lead_email','lead_phone','lead_ref',
+      'response_id','summary','status','rating'
     ];
 
     const fmtDate = (iso?: string | null) => {
@@ -216,7 +209,9 @@ const Responses: React.FC = () => {
         asPhoneText(r.lead_phone ?? ''),
         r.lead_ref ?? '',
         r.response_id ?? '',
-        summarizeAnswers(r.answers)
+        summarizeAnswers(r.answers),
+        r.status ?? '',
+        (r.rating ?? '').toString()
       ]);
     }
 
