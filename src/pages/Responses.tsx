@@ -369,6 +369,18 @@ const Responses: React.FC = () => {
     );
   };
 
+  const getChannelBadge = (channel: string | null) => {
+    if (!channel) return <span className="text-muted-foreground">—</span>;
+    const map: Record<string, string> = {
+      landing: 'bg-purple-100 text-purple-800',
+      whatsapp: 'bg-emerald-100 text-emerald-800',
+      mail: 'bg-sky-100 text-sky-800',
+      qr: 'bg-amber-100 text-amber-800',
+      other: 'bg-zinc-200 text-zinc-800'
+    };
+    return <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${map[channel] ?? 'bg-zinc-200 text-zinc-800'}`}>{channel}</span>;
+  };
+
   return (
     <TooltipProvider>
       <div className="min-h-screen bg-background" dir="rtl">
@@ -586,8 +598,8 @@ const Responses: React.FC = () => {
                           <td className="p-4">
                             {getLanguageBadge(response.lang)}
                           </td>
-                          <td className="p-4 text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
-                            {formatField(response.channel)}
+                          <td className="p-4">
+                            {getChannelBadge(response.channel)}
                           </td>
                           <td className="p-4 text-xs sm:text-sm break-words max-w-[200px]">
                             <div>
