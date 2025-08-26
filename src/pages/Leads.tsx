@@ -16,6 +16,7 @@ type LeadFlat = {
   questionnaire_id: string | null;
   questionnaire_title: string | null;
   score: number | null;
+  status: string | null;
 };
 
 type Questionnaire = {
@@ -71,6 +72,26 @@ const getScoreBadge = (score: number | null) => {
   );
 };
 
+const getLeadStatusBadge = (status: string | null) => {
+  if (!status) return <span className="text-muted-foreground">—</span>;
+  
+  const statusMap: Record<string, { color: string; label: string }> = {
+    new: { color: 'bg-slate-100 text-slate-800', label: 'חדש' },
+    in_progress: { color: 'bg-amber-100 text-amber-800', label: 'בטיפול' },
+    won: { color: 'bg-emerald-100 text-emerald-800', label: 'נסגר/המיר' },
+    lost: { color: 'bg-zinc-100 text-zinc-800', label: 'לא רלוונטי' },
+    spam: { color: 'bg-rose-100 text-rose-800', label: 'ספאם' }
+  };
+  
+  const statusInfo = statusMap[status] || { color: 'bg-zinc-100 text-zinc-800', label: status };
+  
+  return (
+    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${statusInfo.color}`}>
+      {statusInfo.label}
+    </span>
+  );
+};
+
 // WhatsApp functions
 const normalizeILPhone = (raw?: string | null) => {
   if (!raw) return '';
@@ -94,7 +115,7 @@ const buildWhatsAppLink = (phone?: string | null, questionnaire?: string | null)
 const exportToExcelTsv = (rows: LeadFlat[]) => {
   // headers (English)
   const headers = [
-    'Date', 'Name', 'Email', 'Phone', 'Channel', 'Ref', 'Questionnaire', 'Score'
+    'Date', 'Name', 'Email', 'Phone', 'Channel', 'Ref', 'Questionnaire', 'Score', 'Status'
   ];
 
   const fmtDate = (iso?: string | null) => {
@@ -121,7 +142,8 @@ const exportToExcelTsv = (rows: LeadFlat[]) => {
       r.channel ?? '',
       r.lead_ref ?? '',
       r.questionnaire_title ?? '',
-      (r.score ?? '').toString()
+      (r.score ?? '').toString(),
+      r.status ?? ''
     ]);
   }
 
@@ -164,6 +186,7 @@ const Leads: React.FC = () => {
   const to = searchParams.get('to') || '';
   const channel = searchParams.get('channel') || '';
   const questionnaireId = searchParams.get('questionnaireId') || '';
+  const statusParam = searchParams.get('status') || '';
   const q = searchParams.get('q') || '';
   const offset = parseInt(searchParams.get('offset') || '0');
 
@@ -176,8 +199,7 @@ const Leads: React.FC = () => {
       let query = supabase
         .from('leads_flat_v2')
         .select('*')
-        .order('created_at', { ascending: false })
-        .range(offset, offset + 19);
+        .order('created_at', { ascending: false });
 
       // Apply filters
       if (channel) {
@@ -186,6 +208,10 @@ const Leads: React.FC = () => {
 
       if (questionnaireId) {
         query = query.eq('questionnaire_id', questionnaireId);
+      }
+
+      if (statusParam) {
+        query = query.eq('status', statusParam);
       }
 
       if (from) {
@@ -200,6 +226,9 @@ const Leads: React.FC = () => {
         query = query.lte('created_at', toEndOfDay.toISOString());
       }
 
+      // Apply range after all filters
+      query = query.range(offset, offset + 19);
+
       const { data: responseData, error: responseError } = await query;
 
       if (responseError) {
@@ -212,7 +241,7 @@ const Leads: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [from, to, channel, questionnaireId, offset]);
+  }, [from, to, channel, questionnaireId, statusParam, offset]);
 
   // Client-side search filtering
   useEffect(() => {
@@ -306,7 +335,7 @@ const Leads: React.FC = () => {
         <div className="bg-card border border-border rounded-lg p-3 sm:p-4 mb-4">
           <div className="text-sm font-medium text-muted-foreground mb-3">סינון לידים</div>
           
-          <div className="grid grid-cols-2 sm:grid-cols-6 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-7 gap-2">
             {/* From Date */}
             <div>
               <label className="block text-xs text-muted-foreground mb-1 text-right">מתאריך</label>
@@ -343,6 +372,23 @@ const Leads: React.FC = () => {
                 <option value="mail">Mail</option>
                 <option value="qr">QR</option>
                 <option value="other">Other</option>
+              </select>
+            </div>
+
+            {/* Status */}
+            <div>
+              <label className="block text-xs text-muted-foreground mb-1 text-right">סטטוס</label>
+              <select
+                value={statusParam}
+                onChange={(e) => updateFilter('status', e.target.value)}
+                className="w-full px-2 py-1 text-xs bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20"
+              >
+                <option value="">—</option>
+                <option value="new">חדש</option>
+                <option value="in_progress">בטיפול</option>
+                <option value="won">נסגר/המיר</option>
+                <option value="lost">לא רלוונטי</option>
+                <option value="spam">ספאם</option>
               </select>
             </div>
 
@@ -454,6 +500,9 @@ const Leads: React.FC = () => {
                       ציון
                     </th>
                     <th className="text-right p-4 text-xs sm:text-sm font-medium text-muted-foreground whitespace-nowrap">
+                      סטטוס
+                    </th>
+                    <th className="text-right p-4 text-xs sm:text-sm font-medium text-muted-foreground whitespace-nowrap">
                       פעולות מהירות
                     </th>
                   </tr>
@@ -484,6 +533,9 @@ const Leads: React.FC = () => {
                       </td>
                       <td className="p-4 text-xs sm:text-sm whitespace-nowrap">
                         {getScoreBadge(lead.score)}
+                      </td>
+                      <td className="p-4 text-xs sm:text-sm whitespace-nowrap">
+                        {getLeadStatusBadge(lead.status)}
                       </td>
                       <td className="p-4">
                         <div className="flex items-center gap-1 justify-center">
