@@ -770,6 +770,8 @@ const Responses: React.FC = () => {
           onClose={handleCloseDrawer}
           row={selectedRow}
           onExportOne={(row) => exportToExcelXls([row])}
+          onSaveMeta={saveMeta}
+          saving={saving}
         />
       </div>
     </TooltipProvider>

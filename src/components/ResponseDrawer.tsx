@@ -14,6 +14,8 @@ type ResponseFlat = {
   lead_ref: string | null;
   questionnaire_id: string | null;
   questionnaire_title: string | null;
+  status?: string | null;
+  rating?: number | null;
 };
 
 type Props = {
@@ -21,6 +23,8 @@ type Props = {
   onClose: () => void;
   row: ResponseFlat | null;
   onExportOne?: (row: ResponseFlat) => void;
+  onSaveMeta?: (status: string, rating: number | undefined) => Promise<void>;
+  saving?: boolean;
 };
 
 const badge = (text: string, cls: string) => (
@@ -54,7 +58,18 @@ const formatDate = (iso?: string | null) => {
   }
 };
 
-const ResponseDrawer: React.FC<Props> = ({ open, onClose, row, onExportOne }) => {
+const ResponseDrawer: React.FC<Props> = ({ open, onClose, row, onExportOne, onSaveMeta, saving = false }) => {
+  const [localStatus, setLocalStatus] = React.useState<string>(row?.status ?? 'new');
+  const [localRating, setLocalRating] = React.useState<number | undefined>(row?.rating ?? undefined);
+  
+  // עדכון state כאשר row משתנה
+  React.useEffect(() => {
+    if (row) {
+      setLocalStatus(row.status ?? 'new');
+      setLocalRating(row.rating ?? undefined);
+    }
+  }, [row]);
+  
   if (!open || !row) return null;
 
   const copyJson = () => {
@@ -62,6 +77,12 @@ const ResponseDrawer: React.FC<Props> = ({ open, onClose, row, onExportOne }) =>
       const pretty = JSON.stringify(row.answers ?? {}, null, 2);
       navigator.clipboard.writeText(pretty);
     } catch {}
+  };
+
+  const handleSave = async () => {
+    if (onSaveMeta) {
+      await onSaveMeta(localStatus, localRating);
+    }
   };
 
   const entries = Object.entries((row.answers ?? {})).slice(0, 100); // הגבלה בטוחה
@@ -103,6 +124,49 @@ const ResponseDrawer: React.FC<Props> = ({ open, onClose, row, onExportOne }) =>
             <div><span className="text-muted-foreground">Ref: </span>{row.lead_ref || '—'}</div>
           </div>
         </div>
+
+        {/* Status and Rating Controls */}
+        {onSaveMeta && (
+          <div className="p-4 border-t border-border">
+            <div className="mb-3 text-sm font-medium text-muted-foreground">ניהול תגובה</div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs text-muted-foreground mb-1">סטטוס</label>
+                <select
+                  value={localStatus}
+                  onChange={(e) => setLocalStatus(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  disabled={saving}
+                >
+                  <option value="new">חדש</option>
+                  <option value="in-progress">בטיפול</option>
+                  <option value="done">הושלם</option>
+                  <option value="cancelled">בוטל</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-muted-foreground mb-1">דירוג (1-5)</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="5"
+                  value={localRating || ''}
+                  onChange={(e) => setLocalRating(e.target.value ? Number(e.target.value) : undefined)}
+                  className="w-full px-3 py-2 text-sm border border-border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  placeholder="דירוג"
+                  disabled={saving}
+                />
+              </div>
+            </div>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="w-full mt-3 px-4 py-2 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {saving ? 'שומר...' : 'שמור שינויים'}
+            </button>
+          </div>
+        )}
 
         {/* answers */}
         <div className="px-4 pb-4 flex-1 overflow-auto">
