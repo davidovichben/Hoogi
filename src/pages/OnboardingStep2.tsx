@@ -73,7 +73,8 @@ export default function OnboardingStep2() {
   // 4) תצוגה מקדימה
   function handlePreview() {
     if (!qid) return;
-    navigate(`/questionnaires/${qid}/preview`);
+    // Redirect to new distribute route instead of old preview route
+    navigate(`/distribute?qid=${qid}`);
   }
 
   return (

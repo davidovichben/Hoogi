@@ -210,8 +210,8 @@ export default function ReviewAndPublishPage() {
 
   // חדש: פונקציה לתצוגה מקדימה פרטית (לא ציבורית)
   const handlePreview = () => {
-    // ניווט לדף התצוגה המקדימה הפרטי
-    navigate(`/questionnaires/${id}/preview`);
+    // Redirect to new distribute route instead of old preview route
+    navigate(`/distribute?qid=${id}`);
   };
 
   // חדש: פונקציה לתצוגה מקדימה ציבורית
@@ -354,31 +354,18 @@ export default function ReviewAndPublishPage() {
   };
 
   const handleContinue = () => {
-    // Priority 1: Navigate to distribute route if questionnaire has public_token
+    // Priority 1: Navigate to new distribute route if questionnaire has public_token
     if (id && data?.questionnaire?.public_token) {
-      console.log('Navigating to distribute route with public_token:', data.questionnaire.public_token);
-      navigate(`/questionnaires/${id}/distribute`);
+      console.log('Navigating to new distribute route with public_token:', data.questionnaire.public_token);
+      navigate(`/distribute?qid=${id}`);
       return;
     }
     
-    // Fallback: Open public preview in new tab if public_token exists
-    if (id && data?.questionnaire?.public_token) {
-      const defaultLang = data.questionnaire.language || 'he';
-      const publicUrl = buildPublicUrl(data.questionnaire.public_token, defaultLang);
-      console.log('Opening public preview in new tab:', publicUrl);
-      window.open(publicUrl, "_blank", "noopener");
-      return;
-    }
-    
-    // Fallback: Go to design & preview step (step 4) if no public_token
+    // Fallback: Navigate to distribute route without public_token (will handle creation)
     if (id) {
-      const onboardingUrl = `/onboarding?step=4&id=${id}`;
-      console.log('Navigating to onboarding step 4:', onboardingUrl);
-      console.log('Current location before navigate:', window.location.href);
-      navigate(onboardingUrl);
-      setTimeout(() => {
-        console.log('Current location after navigate:', window.location.href);
-      }, 100);
+      console.log('Navigating to distribute route for questionnaire setup:', id);
+      navigate(`/distribute?qid=${id}`);
+      return;
     } else {
       // Final fallback to home if no ID
       console.warn('No questionnaire ID, navigating to home');
@@ -757,6 +744,7 @@ export default function ReviewAndPublishPage() {
 
                 {/* Action Buttons */}
                 <div className="flex flex-wrap gap-3">
+                  {/* Hidden: Old create public link button - replaced by /distribute route
                   <Button 
                     onClick={() => onCreatePublicLink(data.questionnaire.id)}
                     variant="outline"
@@ -765,7 +753,9 @@ export default function ReviewAndPublishPage() {
                     <Globe className="h-4 w-4 mr-2" />
                     {language === 'he' ? 'צור קישור ציבורי' : 'Create Public Link'}
                   </Button>
+                  */}
                   
+                  {/* Hidden: Old preview button - replaced by /distribute route
                   <Button 
                     onClick={handlePreview}
                     variant="outline"
@@ -774,6 +764,7 @@ export default function ReviewAndPublishPage() {
                     <Eye className="h-4 w-4 mr-2" />
                     {language === 'he' ? 'תצוגה מקדימה' : 'Preview'}
                   </Button>
+                  */}
                   
                   {isPublished && (
                     <Button 

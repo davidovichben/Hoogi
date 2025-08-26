@@ -191,13 +191,15 @@ export default function QuestionnaireReviewPage() {
 
   const handlePreview = () => {
     if (selectedQuestionnaireId) {
-      navigate(`/questionnaires/${selectedQuestionnaireId}/preview`);
+      // Redirect to new distribute route instead of old preview route
+      navigate(`/distribute?qid=${selectedQuestionnaireId}`);
     }
   };
 
   const handleShare = () => {
     if (selectedQuestionnaireId) {
-      navigate(`/questionnaires/${selectedQuestionnaireId}/share`);
+      // Redirect to new distribute route instead of old share route
+      navigate(`/distribute?qid=${selectedQuestionnaireId}`);
     }
   };
 
@@ -451,15 +453,19 @@ export default function QuestionnaireReviewPage() {
                           {language === 'he' ? 'ערוך' : 'Edit'}
                         </Button>
                         
+                        {/* Hidden: Old preview button - replaced by /distribute route
                         <Button onClick={handlePreview} variant="outline" className="gap-2">
                           <Eye className="h-4 w-4" />
                           {language === 'he' ? 'תצוגה מקדימה' : 'Preview'}
                         </Button>
+                        */}
                         
+                        {/* Hidden: Old share button - replaced by /distribute route
                         <Button onClick={handleShare} variant="outline" className="gap-2">
                           <Share2 className="h-4 w-4" />
                           {language === 'he' ? 'שתף' : 'Share'}
                         </Button>
+                        */}
                         
                         <Button onClick={handleResponses} variant="outline" className="gap-2">
                           <BarChart3 className="h-4 w-4" />
