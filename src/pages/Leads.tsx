@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../integrations/supabase/client';
 import { Eye, Phone, Mail, MessageSquare, Download } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../components/ui/tooltip';
+import LeadDrawer from '../components/LeadDrawer';
 
 // Types
 type LeadFlat = {
@@ -180,6 +181,10 @@ const Leads: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [questionnaires, setQuestionnaires] = useState<Questionnaire[]>([]);
+  
+  // Drawer state
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [selectedLead, setSelectedLead] = useState<LeadFlat | null>(null);
 
   // URL Search Params
   const [searchParams, setSearchParams] = useSearchParams();
@@ -321,6 +326,17 @@ const Leads: React.FC = () => {
       newParams.set('offset', (offset + 20).toString());
       setSearchParams(newParams);
     }
+  };
+
+  // Drawer handlers
+  const handleOpenDrawer = (lead: LeadFlat) => {
+    setSelectedLead(lead);
+    setDrawerOpen(true);
+  };
+
+  const handleCloseDrawer = () => {
+    setDrawerOpen(false);
+    setSelectedLead(null);
   };
 
   return (
@@ -506,15 +522,26 @@ const Leads: React.FC = () => {
                     <th className="text-right p-4 text-xs sm:text-sm font-medium text-muted-foreground whitespace-nowrap">
                       יצירת קשר
                     </th>
+                    <th className="text-right p-4 text-xs sm:text-sm font-medium text-muted-foreground whitespace-nowrap">
+                      פרטים
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
                   {filteredData.map((lead) => (
                     <tr key={lead.lead_id} className="hover:bg-muted/50 transition-colors">
-                      <td className="p-4 text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
+                      <td 
+                        className="p-4 text-xs sm:text-sm text-muted-foreground whitespace-nowrap cursor-pointer hover:text-foreground"
+                        onClick={() => handleOpenDrawer(lead)}
+                        title="לחץ לפתיחת פרטי הליד"
+                      >
                         {formatDate(lead.created_at)}
                       </td>
-                      <td className="p-4 text-xs sm:text-sm break-words max-w-[150px]">
+                      <td 
+                        className="p-4 text-xs sm:text-sm break-words max-w-[150px] cursor-pointer hover:text-foreground"
+                        onClick={() => handleOpenDrawer(lead)}
+                        title="לחץ לפתיחת פרטי הליד"
+                      >
                         {formatField(lead.name)}
                       </td>
                       <td className="p-4 text-xs sm:text-sm break-words max-w-[200px]">
@@ -597,6 +624,15 @@ const Leads: React.FC = () => {
                           )}
                         </div>
                       </td>
+                      <td className="p-4">
+                        <button
+                          onClick={() => handleOpenDrawer(lead)}
+                          className="inline-flex items-center justify-center p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
+                          title="פתח פרטי ליד"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -636,6 +672,13 @@ const Leads: React.FC = () => {
           </>
         )}
       </div>
+      
+      {/* Lead Drawer */}
+      <LeadDrawer 
+        open={drawerOpen} 
+        onClose={handleCloseDrawer} 
+        lead={selectedLead} 
+      />
     </div>
   );
 };
