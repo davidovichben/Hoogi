@@ -3,6 +3,10 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../integrations/supabase/client';
 import { Copy, Download, QrCode, MessageSquare, Mail, Link as LinkIcon } from 'lucide-react';
 
+// UUID validation function
+const isUuid = (s: string) =>
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(s);
+
 // Types
 type Questionnaire = {
   id: string;
@@ -38,12 +42,13 @@ const DistributionHub: React.FC = () => {
   
   // Fetch questionnaire data
   useEffect(() => {
-    const fetchQuestionnaire = async () => {
-      if (!qid) {
+    const doFetch = async () => {
+      if (!qid || !isUuid(qid)) { 
+        setQuestionnaire(null); 
         setLoading(false);
-        return;
+        return; 
       }
-      
+
       try {
         setLoading(true);
         setError(null);
@@ -52,13 +57,13 @@ const DistributionHub: React.FC = () => {
           .from('questionnaires')
           .select('id, title, lang')
           .eq('id', qid)
-          .single();
+          .maybeSingle(); // נמנע מ-406
         
         if (fetchError) throw fetchError;
         
         setQuestionnaire(data);
         // Set language from questionnaire if available
-        if (data.lang) {
+        if (data?.lang) {
           setLang(data.lang);
         }
       } catch (err) {
@@ -69,7 +74,7 @@ const DistributionHub: React.FC = () => {
       }
     };
     
-    fetchQuestionnaire();
+    doFetch();
   }, [qid]);
   
   // Fetch user's questionnaires list
