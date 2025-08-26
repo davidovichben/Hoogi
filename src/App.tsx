@@ -61,10 +61,12 @@ const App = () => (
                 <Route path="/affiliate" element={<RequireAuth><Affiliate /></RequireAuth>} />
                 <Route path="/settings" element={<RequireAuth><Settings /></RequireAuth>} />
                 <Route path="/profile" element={<RequireAuth><ProfilePage /></RequireAuth>} />
+                {/* Hidden: Old distribution routes - replaced by /distribute
                 <Route path="/questionnaires/:id/share" element={<RequireAuth><ShareDistribute /></RequireAuth>} />
                 <Route path="/questionnaires/:id/review" element={<RequireAuth><ReviewAndPublishPage /></RequireAuth>} />
                 <Route path="/questionnaires/:id/preview" element={<RequireAuth><QuestionnairePreviewPage /></RequireAuth>} />
                 <Route path="/questionnaires/:id/distribute" element={<RequireAuth><DistributionChannels /></RequireAuth>} />
+                */}
                 <Route path="/distribute" element={<RequireAuth><DistributionHub /></RequireAuth>} />
                 <Route path="/questionnaire-review" element={<RequireAuth><QuestionnaireReviewPage /></RequireAuth>} />
                 <Route path="/partners" element={<RequireAuth><Partners /></RequireAuth>} />
