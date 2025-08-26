@@ -149,7 +149,7 @@ const DistributionHub: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background" dir="rtl">
-        <div className="container mx-auto p-4 md:p-6 lg:p-8">
+        <div className="container mx-auto p-4 md:p-6">
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
             <p className="mt-4 text-muted-foreground">טוען...</p>
@@ -162,7 +162,7 @@ const DistributionHub: React.FC = () => {
   if (error) {
     return (
       <div className="min-h-screen bg-background" dir="rtl">
-        <div className="container mx-auto p-4 md:p-6 lg:p-8">
+        <div className="container mx-auto p-4 md:p-6">
           <div className="text-center py-12">
             <div className="text-red-500 text-6xl mb-4">⚠️</div>
             <h1 className="text-2xl font-bold text-foreground mb-2">שגיאה בטעינה</h1>
@@ -176,29 +176,43 @@ const DistributionHub: React.FC = () => {
   if (!qid) {
     return (
       <div className="min-h-screen bg-background" dir="rtl">
-        <div className="container mx-auto p-4 md:p-6 lg:p-8">
+        <div className="container mx-auto p-4 md:p-6">
           <div className="text-center py-12">
             <div className="text-muted-foreground text-6xl mb-4">🔗</div>
             <h1 className="text-2xl font-bold text-foreground mb-2">הפצה</h1>
             <p className="text-muted-foreground mb-6">יש לבחור שאלון להפצה</p>
             
             {questionnairesList.length > 0 && (
-              <div className="max-w-md mx-auto">
-                <label className="block text-sm font-medium text-muted-foreground mb-2 text-right">
-                  בחר שאלון
-                </label>
-                <select
-                  onChange={(e) => handleQuestionnaireSelect(e.target.value)}
-                  className="w-full h-10 px-3 bg-background border border-border rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 text-right"
-                  defaultValue=""
+              <div className="max-w-md mx-auto space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-muted-foreground mb-2 text-right">
+                    בחר שאלון
+                  </label>
+                  <select
+                    onChange={(e) => handleQuestionnaireSelect(e.target.value)}
+                    className="w-full h-10 px-3 bg-background border border-border rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 text-right"
+                    defaultValue=""
+                  >
+                    <option value="" disabled>בחר שאלון...</option>
+                    {questionnairesList.map((q) => (
+                      <option key={q.id} value={q.id}>
+                        {q.title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                
+                <button
+                  onClick={() => {
+                    const firstQ = questionnairesList[0];
+                    if (firstQ) {
+                      handleQuestionnaireSelect(firstQ.id);
+                    }
+                  }}
+                  className="h-10 px-6 bg-primary text-primary-foreground rounded-2xl hover:bg-primary/90 transition-colors text-sm font-medium focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:ring-offset-2"
                 >
-                  <option value="" disabled>בחר שאלון...</option>
-                  {questionnairesList.map((q) => (
-                    <option key={q.id} value={q.id}>
-                      {q.title}
-                    </option>
-                  ))}
-                </select>
+                  עבור להפצה
+                </button>
               </div>
             )}
           </div>
@@ -209,7 +223,7 @@ const DistributionHub: React.FC = () => {
   
   return (
     <div className="min-h-screen bg-background" dir="rtl">
-      <div className="container mx-auto p-4 md:p-6 lg:p-8">
+      <div className="container mx-auto p-4 md:p-6">
         {/* Header */}
         <div className="mb-8 text-center">
           <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-2">הפצה</h1>
@@ -267,21 +281,31 @@ const DistributionHub: React.FC = () => {
               </label>
               <div className="flex gap-2">
                 <div className="flex-1 relative">
-                  <code className="block w-full h-10 px-3 py-2 bg-muted border border-border rounded-xl text-sm text-left font-mono overflow-x-auto whitespace-nowrap leading-6">
+                  <code 
+                    className="block w-full h-10 px-3 py-2 bg-muted border border-border rounded-xl text-sm font-mono overflow-x-auto whitespace-nowrap leading-6"
+                    style={{ direction: 'ltr' }}
+                  >
                     {shareUrl}
                   </code>
                 </div>
-                <button
-                  onClick={() => {
-                    copyToClipboard(shareUrl, 'link');
-                    logShare(ref as any, shareUrl);
-                  }}
-                  className="h-10 px-4 bg-primary text-primary-foreground rounded-2xl hover:bg-primary/90 transition-colors flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:ring-offset-2"
-                  aria-label="העתק קישור"
-                >
-                  <Copy className="h-4 w-4" />
-                  {copied === 'link' ? 'הועתק!' : 'העתק'}
-                </button>
+                <div className="relative">
+                  <button
+                    onClick={() => {
+                      copyToClipboard(shareUrl, 'link');
+                      logShare(ref as any, shareUrl);
+                    }}
+                    className="h-10 px-4 bg-primary text-primary-foreground rounded-2xl hover:bg-primary/90 transition-colors flex items-center gap-2 text-sm font-medium focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:ring-offset-2"
+                    aria-label="העתק קישור"
+                  >
+                    <Copy className="h-4 w-4" />
+                    העתק
+                  </button>
+                  {copied === 'link' && (
+                    <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-green-600 text-white text-xs px-2 py-1 rounded-md whitespace-nowrap">
+                      הועתק!
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -316,21 +340,31 @@ const DistributionHub: React.FC = () => {
                 <h3 className="text-xl font-semibold">קישור ישיר</h3>
                 <p className="text-muted-foreground">הקישור מוכן לשיתוף</p>
                 <div className="bg-muted p-4 rounded-lg text-left">
-                  <code className="block text-sm font-mono overflow-x-auto whitespace-nowrap">
+                  <code 
+                    className="block text-sm font-mono overflow-x-auto whitespace-nowrap"
+                    style={{ direction: 'ltr' }}
+                  >
                     {shareUrl}
                   </code>
                 </div>
-                <button
-                  onClick={() => {
-                    copyToClipboard(shareUrl, 'link');
-                    logShare(ref as any, shareUrl);
-                  }}
-                  className="h-10 px-6 bg-primary text-primary-foreground rounded-2xl hover:bg-primary/90 transition-colors flex items-center gap-2 mx-auto text-sm focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:ring-offset-2"
-                  aria-label="העתק קישור"
-                >
-                  <Copy className="h-4 w-4" />
-                  {copied === 'link' ? 'הועתק!' : 'העתק קישור'}
-                </button>
+                <div className="relative">
+                  <button
+                    onClick={() => {
+                      copyToClipboard(shareUrl, 'link');
+                      logShare(ref as any, shareUrl);
+                    }}
+                    className="h-10 px-6 bg-primary text-primary-foreground rounded-2xl hover:bg-primary/90 transition-colors flex items-center gap-2 mx-auto text-sm font-medium focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:ring-offset-2"
+                    aria-label="העתק קישור"
+                  >
+                    <Copy className="h-4 w-4" />
+                    העתק קישור
+                  </button>
+                  {copied === 'link' && (
+                    <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-green-600 text-white text-xs px-2 py-1 rounded-md whitespace-nowrap">
+                      הועתק!
+                    </div>
+                  )}
+                </div>
               </div>
             )}
             
@@ -355,7 +389,7 @@ const DistributionHub: React.FC = () => {
                   <a
                     href={`https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(shareUrl)}`}
                     download="qr-code.png"
-                    className="h-10 px-6 bg-primary text-primary-foreground rounded-2xl hover:bg-primary/90 transition-colors flex items-center gap-2 text-sm focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:ring-offset-2"
+                    className="h-10 px-6 bg-primary text-primary-foreground rounded-2xl hover:bg-primary/90 transition-colors flex items-center gap-2 text-sm font-medium focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:ring-offset-2"
                     aria-label="הורדת PNG"
                     onClick={() => logShare('qr', shareUrl)}
                   >
@@ -387,7 +421,7 @@ const DistributionHub: React.FC = () => {
                     )}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="h-10 px-6 bg-green-600 text-white rounded-2xl hover:bg-green-700 transition-colors flex items-center gap-2 text-sm focus-visible:ring-2 focus-visible:ring-green-600/20 focus-visible:ring-offset-2"
+                    className="h-10 px-6 bg-green-600 text-white rounded-2xl hover:bg-green-700 transition-colors flex items-center gap-2 text-sm font-medium focus-visible:ring-2 focus-visible:ring-green-600/20 focus-visible:ring-offset-2"
                     aria-label="פתח WhatsApp"
                     onClick={() => logShare('whatsapp', shareUrl)}
                   >
@@ -395,20 +429,27 @@ const DistributionHub: React.FC = () => {
                     פתח WhatsApp
                   </a>
                   
-                  <button
-                    onClick={() => {
-                      copyToClipboard(
-                        `שלום! נשמח לשמוע ממך, הנה שאלון קצר: ${shareUrl}`,
-                        'whatsapp'
-                      );
-                      logShare('whatsapp', shareUrl);
-                    }}
-                    className="h-10 px-6 bg-primary text-primary-foreground rounded-2xl hover:bg-primary/90 transition-colors flex items-center gap-2 text-sm focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:ring-offset-2"
-                    aria-label="העתק הודעה"
-                  >
-                    <Copy className="h-4 w-4" />
-                    {copied === 'whatsapp' ? 'הועתק!' : 'העתק הודעה'}
-                  </button>
+                  <div className="relative">
+                    <button
+                      onClick={() => {
+                        copyToClipboard(
+                          `שלום! נשמח לשמוע ממך, הנה שאלון קצר: ${shareUrl}`,
+                          'whatsapp'
+                        );
+                        logShare('whatsapp', shareUrl);
+                      }}
+                      className="h-10 px-6 bg-primary text-primary-foreground rounded-2xl hover:bg-primary/90 transition-colors flex items-center gap-2 text-sm font-medium focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:ring-offset-2"
+                      aria-label="העתק הודעה"
+                    >
+                      <Copy className="h-4 w-4" />
+                      העתק הודעה
+                    </button>
+                    {copied === 'whatsapp' && (
+                      <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-green-600 text-white text-xs px-2 py-1 rounded-md whitespace-nowrap">
+                        הועתק!
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
@@ -443,7 +484,7 @@ const DistributionHub: React.FC = () => {
                     )}&body=${encodeURIComponent(
                       `שלום, אשמח שתמלא/י את השאלון: ${shareUrl}`
                     )}`}
-                    className="h-10 px-6 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 transition-colors flex items-center gap-2 text-sm focus-visible:ring-2 focus-visible:ring-blue-600/20 focus-visible:ring-offset-2"
+                    className="h-10 px-6 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 transition-colors flex items-center gap-2 text-sm font-medium focus-visible:ring-2 focus-visible:ring-blue-600/20 focus-visible:ring-offset-2"
                     aria-label="פתח מייל"
                     onClick={() => logShare('mail', shareUrl)}
                   >
@@ -451,35 +492,49 @@ const DistributionHub: React.FC = () => {
                     פתח מייל
                   </a>
                   
-                  <button
-                    onClick={() => {
-                      copyToClipboard(
-                        `${questionnaire?.title || ''} – Questionnaire`,
-                        'subject'
-                      );
-                      logShare('mail', shareUrl);
-                    }}
-                    className="h-10 px-6 bg-primary text-primary-foreground rounded-2xl hover:bg-primary/90 transition-colors flex items-center gap-2 text-sm focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:ring-offset-2"
-                    aria-label="העתק נושא"
-                  >
-                    <Copy className="h-4 w-4" />
-                    {copied === 'subject' ? 'הועתק!' : 'העתק נושא'}
-                  </button>
+                  <div className="relative">
+                    <button
+                      onClick={() => {
+                        copyToClipboard(
+                          `${questionnaire?.title || ''} – Questionnaire`,
+                          'subject'
+                        );
+                        logShare('mail', shareUrl);
+                      }}
+                      className="h-10 px-6 bg-primary text-primary-foreground rounded-2xl hover:bg-primary/90 transition-colors flex items-center gap-2 text-sm font-medium focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:ring-offset-2"
+                      aria-label="העתק נושא"
+                    >
+                      <Copy className="h-4 w-4" />
+                      העתק נושא
+                    </button>
+                    {copied === 'subject' && (
+                      <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-green-600 text-white text-xs px-2 py-1 rounded-md whitespace-nowrap">
+                        הועתק!
+                      </div>
+                    )}
+                  </div>
                   
-                  <button
-                    onClick={() => {
-                      copyToClipboard(
-                        `שלום, אשמח שתמלא/י את השאלון: ${shareUrl}`,
-                        'body'
-                      );
-                      logShare('mail', shareUrl);
-                    }}
-                    className="h-10 px-6 bg-primary text-primary-foreground rounded-2xl hover:bg-primary/90 transition-colors flex items-center gap-2 text-sm focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:ring-offset-2"
-                    aria-label="העתק תוכן"
-                  >
-                    <Copy className="h-4 w-4" />
-                    {copied === 'body' ? 'הועתק!' : 'העתק תוכן'}
-                  </button>
+                  <div className="relative">
+                    <button
+                      onClick={() => {
+                        copyToClipboard(
+                          `שלום, אשמח שתמלא/י את השאלון: ${shareUrl}`,
+                          'body'
+                        );
+                        logShare('mail', shareUrl);
+                      }}
+                      className="h-10 px-6 bg-primary text-primary-foreground rounded-2xl hover:bg-primary/90 transition-colors flex items-center gap-2 text-sm font-medium focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:ring-offset-2"
+                      aria-label="העתק תוכן"
+                    >
+                      <Copy className="h-4 w-4" />
+                      העתק תוכן
+                    </button>
+                    {copied === 'body' && (
+                      <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-green-600 text-white text-xs px-2 py-1 rounded-md whitespace-nowrap">
+                        הועתק!
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
