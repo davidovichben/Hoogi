@@ -56,7 +56,7 @@ export default function OnboardingStep2() {
         status: "ready",
         title: "שאלון חדש"
       });
-      navigate(`/questionnaires/${qid}/review`);
+      navigate(`/distribute?qid=${qid}`);
     } catch (e) {
       console.error(e);
       alert("שגיאה בהכנת השאלון לפרסום");

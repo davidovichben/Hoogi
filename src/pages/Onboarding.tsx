@@ -626,7 +626,7 @@ export const Onboarding: React.FC = () => {
       // אם יש ID, עבור ישירות לסקירה
       if (formData.id) {
         console.log('Questionnaire has ID, navigating to review:', formData.id);
-        navigate(`/questionnaires/${formData.id}/review`);
+        navigate(`/distribute?qid=${formData.id}`);
       } else {
         console.log('No ID, using handleSaveAndNavigate...');
         // השתמש בפונקציה הקיימת שעובדת

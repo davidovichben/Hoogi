@@ -179,7 +179,7 @@ export default function QuestionnaireReviewPage() {
 
   const handleReview = () => {
     if (selectedQuestionnaireId) {
-      navigate(`/questionnaires/${selectedQuestionnaireId}/review`);
+      navigate(`/distribute?qid=${selectedQuestionnaireId}`);
     }
   };
 
@@ -205,7 +205,7 @@ export default function QuestionnaireReviewPage() {
 
   const handleResponses = () => {
     if (selectedQuestionnaireId) {
-      navigate(`/questionnaires/${selectedQuestionnaireId}/responses`);
+      navigate(`/responses?questionnaireId=${selectedQuestionnaireId}`);
     }
   };
 
