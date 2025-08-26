@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../integrations/supabase/client';
-import { Eye, Phone, Mail, MessageSquare } from 'lucide-react';
+import { Eye, Phone, Mail, MessageSquare, Download } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../components/ui/tooltip';
 
 // Types
@@ -69,6 +69,84 @@ const getScoreBadge = (score: number | null) => {
       {score}
     </span>
   );
+};
+
+// WhatsApp functions
+const normalizeILPhone = (raw?: string | null) => {
+  if (!raw) return '';
+  const digits = raw.replace(/[^\d+]/g,'');
+  if (digits.startsWith('+')) return digits;
+  if (digits.startsWith('0') && digits.length === 10) {
+    return '+972' + digits.slice(1);
+  }
+  return digits;
+};
+
+const buildWhatsAppLink = (phone?: string | null, questionnaire?: string | null) => {
+  const to = normalizeILPhone(phone);
+  const txt = encodeURIComponent(
+    `שלום! תודה שמילאת את השאלון${questionnaire ? `: ${questionnaire}` : ''}. נחזור אליך בקרוב.`
+  );
+  return to ? `https://wa.me/${to.replace('+','')}/?text=${txt}` : '';
+};
+
+// Export function
+const exportToExcelTsv = (rows: LeadFlat[]) => {
+  // headers (English)
+  const headers = [
+    'Date', 'Name', 'Email', 'Phone', 'Channel', 'Ref', 'Questionnaire', 'Score'
+  ];
+
+  const fmtDate = (iso?: string | null) => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth()+1).padStart(2,'0');
+    const dd = String(d.getDate()).padStart(2,'0');
+    const hh = String(d.getHours()).padStart(2,'0');
+    const mi = String(d.getMinutes()).padStart(2,'0');
+    const ss = String(d.getSeconds()).padStart(2,'0');
+    return `${yyyy}-${mm}-${dd} ${hh}:${mi}:${ss}`;
+  };
+
+  const asPhoneText = (p?: string | null) => p ? `'${p}` : '';
+
+  const rows2D: string[][] = [headers];
+  for (const r of rows) {
+    rows2D.push([
+      fmtDate(r.created_at),
+      r.name ?? '',
+      r.email ?? '',
+      asPhoneText(r.phone ?? ''),
+      r.channel ?? '',
+      r.lead_ref ?? '',
+      r.questionnaire_title ?? '',
+      (r.score ?? '').toString()
+    ]);
+  }
+
+  const tsv = rows2D
+    .map(cols => cols.map(c => (c ?? '').toString().replace(/\t/g,' ').replace(/\r?\n/g,' ')).join('\t'))
+    .join('\r\n');
+
+  // UTF-16LE + BOM
+  const BOM = new Uint8Array([0xFF, 0xFE]);
+  const buf = new Uint16Array(tsv.length);
+  for (let i=0;i<tsv.length;i++) buf[i] = tsv.charCodeAt(i);
+
+  // שימי לב לתוכן (Excel MIME) ולסיומת .xls
+  const blob = new Blob([BOM, buf], { type: 'application/vnd.ms-excel;charset=utf-16le;' });
+  const d = new Date();
+  const fileName = `leads_export_${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}.xls`;
+
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 };
 
 // Main component
@@ -215,25 +293,6 @@ const Leads: React.FC = () => {
     }
   };
 
-  // WhatsApp functions
-  const normalizeILPhone = (raw?: string | null) => {
-    if (!raw) return '';
-    const digits = raw.replace(/[^\d+]/g,'');
-    if (digits.startsWith('+')) return digits;
-    if (digits.startsWith('0') && digits.length === 10) {
-      return '+972' + digits.slice(1);
-    }
-    return digits;
-  };
-
-  const buildWhatsAppLink = (phone?: string | null, questionnaire?: string | null) => {
-    const to = normalizeILPhone(phone);
-    const txt = encodeURIComponent(
-      `שלום! תודה שמילאת את השאלון${questionnaire ? `: ${questionnaire}` : ''}. נחזור אליך בקרוב.`
-    );
-    return to ? `https://wa.me/${to.replace('+','')}/?text=${txt}` : '';
-  };
-
   return (
     <div className="min-h-screen bg-background text-foreground" dir="rtl">
       <div className="container mx-auto p-4 sm:p-6">
@@ -328,6 +387,19 @@ const Leads: React.FC = () => {
           </div>
         </div>
 
+        {/* Export Button */}
+        {!loading && !error && filteredData.length > 0 && (
+          <div className="mb-4 flex justify-end">
+            <button
+              onClick={() => exportToExcelTsv(filteredData)}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-md transition-colors text-sm font-medium"
+            >
+              <Download className="h-4 w-4" />
+              ייצוא לאקסל (TSV)
+            </button>
+          </div>
+        )}
+
         {/* Loading State */}
         {loading && (
           <div className="flex items-center justify-center p-8">
@@ -382,7 +454,7 @@ const Leads: React.FC = () => {
                       ציון
                     </th>
                     <th className="text-right p-4 text-xs sm:text-sm font-medium text-muted-foreground whitespace-nowrap">
-                      פעולות
+                      פעולות מהירות
                     </th>
                   </tr>
                 </thead>
@@ -414,40 +486,61 @@ const Leads: React.FC = () => {
                         {getScoreBadge(lead.score)}
                       </td>
                       <td className="p-4">
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1 justify-center">
                           {/* Phone */}
                           {lead.phone && (
-                            <a
-                              href={`tel:${lead.phone}`}
-                              className="inline-flex items-center justify-center p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
-                              title="התקשר"
-                            >
-                              <Phone className="h-4 w-4" />
-                            </a>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <a
+                                  href={`tel:${lead.phone}`}
+                                  className="inline-flex items-center justify-center p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
+                                  title="התקשר"
+                                >
+                                  <Phone className="h-4 w-4" />
+                                </a>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>התקשר</p>
+                              </TooltipContent>
+                            </Tooltip>
                           )}
                           
                           {/* Email */}
                           {lead.email && (
-                            <a
-                              href={`mailto:${lead.email}`}
-                              className="inline-flex items-center justify-center p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
-                              title="שלח אימייל"
-                            >
-                              <Mail className="h-4 w-4" />
-                            </a>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <a
+                                  href={`mailto:${lead.email}`}
+                                  className="inline-flex items-center justify-center p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
+                                  title="שלח אימייל"
+                                >
+                                  <Mail className="h-4 w-4" />
+                                </a>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>שלח אימייל</p>
+                              </TooltipContent>
+                            </Tooltip>
                           )}
                           
                           {/* WhatsApp */}
                           {lead.phone && (
-                            <a
-                              href={buildWhatsAppLink(lead.phone, lead.questionnaire_title)}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center justify-center p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
-                              title="שלח WhatsApp"
-                            >
-                              <MessageSquare className="h-4 w-4" />
-                            </a>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <a
+                                  href={buildWhatsAppLink(lead.phone, lead.questionnaire_title)}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center justify-center p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
+                                  title="שלח WhatsApp"
+                                >
+                                  <MessageSquare className="h-4 w-4" />
+                                </a>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>שלח WhatsApp</p>
+                              </TooltipContent>
+                            </Tooltip>
                           )}
                         </div>
                       </td>
