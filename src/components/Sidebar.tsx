@@ -35,6 +35,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
     { name: 'סקירת שאלונים', href: '/questionnaire-review', icon: FileText },
     { name: 'תגובות', href: '/responses', icon: MessageCircle },
     { name: t('nav.leads'), href: '/leads', icon: Users },
+    { name: 'הפצה', href: '/distribute', icon: Share2 },
     { name: 'פרופיל', href: '/profile', icon: User },
     { name: t('nav.affiliate'), href: '/affiliate', icon: Share2 },
     { name: t('nav.settings'), href: '/settings', icon: Settings },
