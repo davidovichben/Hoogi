@@ -760,7 +760,7 @@ const getStatusBadge = (status: string | null | undefined) => {
                               
                               {response.lead_phone && (
                                 <a
-                                  href={`tel:${response.lead_phone}`}
+                                  href={`tel:${response.lead_phone_normalized || response.lead_phone}`}
                                   className="inline-flex items-center justify-center p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
                                   title="התקשר"
                                 >
@@ -780,7 +780,7 @@ const getStatusBadge = (status: string | null | undefined) => {
                               
                               {response.lead_phone && (
                                 <a
-                                  href={buildWhatsAppLink(response.lead_phone, response.questionnaire_title)}
+                                  href={buildWhatsAppLink(response.lead_phone_normalized || response.lead_phone, response.questionnaire_title)}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="inline-flex items-center justify-center p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
