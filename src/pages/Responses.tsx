@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../integrations/supabase/client';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip';
-import { Eye, Download } from 'lucide-react';
+import { Eye, Download, Phone, Mail, MessageSquare } from 'lucide-react';
 import ResponseDrawer from '../components/ResponseDrawer';
 
 // טיפוס מקומי לנתוני התגובות
@@ -26,6 +26,25 @@ type ResponseFlat = {
 type Questionnaire = {
   id: string;
   title: string;
+};
+
+// היגיון בסיסי לנורמליזציית מספר ישראלי ל-E.164 (MVP)
+const normalizeILPhone = (raw?: string | null) => {
+  if (!raw) return '';
+  const digits = raw.replace(/[^\d+]/g,'');
+  if (digits.startsWith('+')) return digits;
+  if (digits.startsWith('0') && digits.length === 10) {
+    return '+972' + digits.slice(1);
+  }
+  return digits; // fallback
+};
+
+const buildWhatsAppLink = (phone?: string | null, questionnaire?: string | null) => {
+  const to = normalizeILPhone(phone);
+  const txt = encodeURIComponent(
+    `שלום! תודה שמילאת את השאלון${questionnaire ? `: ${questionnaire}` : ''}. נחזור אליך בקרוב.`
+  );
+  return to ? `https://wa.me/${to.replace('+','')}/?text=${txt}` : '';
 };
 
 const Responses: React.FC = () => {
@@ -629,13 +648,47 @@ const Responses: React.FC = () => {
                             {formatField(response.lead_ref)}
                           </td>
                           <td className="p-4">
-                            <button
-                              onClick={() => handleOpenDrawer(response)}
-                              className="inline-flex items-center justify-center p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
-                              title="פרטים"
-                            >
-                              <Eye className="h-4 w-4" />
-                            </button>
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => handleOpenDrawer(response)}
+                                className="inline-flex items-center justify-center p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
+                                title="פרטים"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </button>
+                              
+                              {response.lead_phone && (
+                                <a
+                                  href={`tel:${response.lead_phone}`}
+                                  className="inline-flex items-center justify-center p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
+                                  title="התקשר"
+                                >
+                                  <Phone className="h-4 w-4" />
+                                </a>
+                              )}
+                              
+                              {response.lead_email && (
+                                <a
+                                  href={`mailto:${response.lead_email}`}
+                                  className="inline-flex items-center justify-center p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
+                                  title="שלח אימייל"
+                                >
+                                  <Mail className="h-4 w-4" />
+                                </a>
+                              )}
+                              
+                              {response.lead_phone && (
+                                <a
+                                  href={buildWhatsAppLink(response.lead_phone, response.questionnaire_title)}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center justify-center p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
+                                  title="שלח WhatsApp"
+                                >
+                                  <MessageSquare className="h-4 w-4" />
+                                </a>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       ))}
