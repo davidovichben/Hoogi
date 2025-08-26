@@ -598,7 +598,7 @@ const Responses: React.FC = () => {
                           <td className="p-4">
                             {getLanguageBadge(response.lang)}
                           </td>
-                          <td className="p-4">
+                          <td className="p-4 text-xs sm:text-sm whitespace-nowrap">
                             {getChannelBadge(response.channel)}
                           </td>
                           <td className="p-4 text-xs sm:text-sm break-words max-w-[200px]">
