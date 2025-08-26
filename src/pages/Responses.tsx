@@ -611,8 +611,9 @@ const Responses: React.FC = () => {
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <div 
-                                  className="line-clamp-2 sm:line-clamp-2 cursor-help"
+                                  className="line-clamp-2 sm:line-clamp-2 cursor-pointer hover:text-primary transition-colors"
                                   title={summarizeAnswers(response.answers)}
+                                  onClick={() => handleOpenDrawer(response)}
                                 >
                                   {summarizeAnswers(response.answers)}
                                 </div>
