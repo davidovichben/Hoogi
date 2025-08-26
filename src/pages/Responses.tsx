@@ -546,11 +546,11 @@ const getStatusBadge = (status: string | null | undefined) => {
                   onChange={(e) => updateFilter('status', e.target.value)}
                   className="w-full px-2 py-1 text-xs bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20"
                 >
-                  <option value="">—</option>
-                  <option value="new">חדש</option>
-                  <option value="in-progress">בטיפול</option>
-                  <option value="done">הושלם</option>
-                  <option value="cancelled">בוטל</option>
+                          <option value="">—</option>
+        <option value="new">חדש</option>
+        <option value="in_progress">בטיפול</option>
+        <option value="done">טופל</option>
+        <option value="spam">ספאם</option>
                 </select>
               </div>
 
