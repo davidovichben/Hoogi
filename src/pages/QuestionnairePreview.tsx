@@ -142,8 +142,8 @@ const QuestionnairePreview: React.FC = () => {
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <Link to={`/questionnaires/${id}/review`} className="px-3 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50">
-              ← חזרה לסקירה
+            <Link to={`/distribute?qid=${id}`} className="px-3 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50">
+              ← חזרה להפצה
             </Link>
             <div className="flex items-center space-x-4 rtl:space-x-reverse">
               <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
