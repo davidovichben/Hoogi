@@ -110,7 +110,7 @@ const DistributionHub: React.FC = () => {
   // Share logging function
   const logShare = async (channel: 'landing' | 'whatsapp' | 'mail' | 'qr' | 'other', shareUrl: string) => {
     try {
-      if (!qid) return;
+      if (!qid || !isUuid(qid)) return;
       await supabase.from('share_logs').insert([{
         questionnaire_id: qid,
         channel,
