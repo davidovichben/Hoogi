@@ -1,0 +1,23 @@
+{
+	"folders": [
+		{
+			"path": "../.."
+		}
+	],
+	"settings": {
+		"terminal.integrated.defaultProfile.windows": "Git Bash",
+		"terminal.integrated.profiles.windows": {
+			"Git Bash": {
+				"path": "C:\\\\Program Files\\\\Git\\\\bin\\\\bash.exe",
+				"args": [
+					"-l"
+				]
+			}
+		},
+		"terminal.integrated.env.windows": {
+			"LANG": "en_US.UTF-8",
+			"LC_ALL": "en_US.UTF-8"
+		},
+		"terminal.integrated.detectLocale": "off"
+	}
+}

@@ -73,6 +73,7 @@ const Responses: React.FC = () => {
   const lang = searchParams.get('lang') || '';
   const channel = searchParams.get('channel') || '';
   const questionnaireId = searchParams.get('questionnaireId') || '';
+  const statusParam = searchParams.get('status') || '';
   const q = searchParams.get('q') || '';
   const offset = parseInt(searchParams.get('offset') || '0');
 
@@ -288,6 +289,11 @@ const Responses: React.FC = () => {
         query = query.eq('questionnaire_id', questionnaireId);
       }
 
+      // סינון לפי סטטוס
+      if (statusParam) {
+        query = query.eq('status', statusParam);
+      }
+
       // סינון לפי תאריכים
       if (from) {
         const fromStartOfDay = new Date(from);
@@ -313,7 +319,7 @@ const Responses: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [from, to, lang, channel, questionnaireId, offset]);
+  }, [from, to, lang, channel, questionnaireId, statusParam, offset]);
 
   // סינון צד לקוח לפי חיפוש טקסט
   useEffect(() => {
@@ -442,7 +448,7 @@ const Responses: React.FC = () => {
           <div className="bg-card border border-border rounded-lg p-3 sm:p-4 mb-4">
             <h3 className="text-sm font-medium text-muted-foreground mb-3">סינון תגובות</h3>
             
-            <div className="grid grid-cols-2 sm:grid-cols-6 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-7 gap-2">
               {/* From Date */}
               <div>
                 <label className="block text-xs text-muted-foreground mb-1 text-right">מתאריך</label>
@@ -511,6 +517,22 @@ const Responses: React.FC = () => {
                       {q.title}
                     </option>
                   ))}
+                </select>
+              </div>
+
+              {/* Status */}
+              <div>
+                <label className="block text-xs text-muted-foreground mb-1 text-right">סטטוס</label>
+                <select
+                  value={statusParam}
+                  onChange={(e) => updateFilter('status', e.target.value)}
+                  className="w-full px-2 py-1 text-xs bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20"
+                >
+                  <option value="">—</option>
+                  <option value="new">חדש</option>
+                  <option value="in-progress">בטיפול</option>
+                  <option value="done">הושלם</option>
+                  <option value="cancelled">בוטל</option>
                 </select>
               </div>
 
