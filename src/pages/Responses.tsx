@@ -423,16 +423,34 @@ const Responses: React.FC = () => {
   };
 
   const getChannelBadge = (channel: string | null) => {
-    if (!channel) return <span className="text-muted-foreground">—</span>;
-    const map: Record<string, string> = {
-      landing: 'bg-purple-100 text-purple-800',
-      whatsapp: 'bg-emerald-100 text-emerald-800',
-      mail: 'bg-sky-100 text-sky-800',
-      qr: 'bg-amber-100 text-amber-800',
-      other: 'bg-zinc-200 text-zinc-800'
-    };
-    return <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${map[channel] ?? 'bg-zinc-200 text-zinc-800'}`}>{channel}</span>;
+  if (!channel) return <span className="text-muted-foreground">—</span>;
+  const map: Record<string, string> = {
+    landing: 'bg-purple-100 text-purple-800',
+    whatsapp: 'bg-emerald-100 text-emerald-800',
+    mail: 'bg-sky-100 text-sky-800',
+    qr: 'bg-amber-100 text-amber-800',
+    other: 'bg-zinc-200 text-zinc-800'
   };
+  return <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${map[channel] ?? 'bg-zinc-200 text-zinc-800'}`}>{channel}</span>;
+};
+
+const getStatusBadge = (status: string | null | undefined) => {
+  if (!status) return <span className="text-muted-foreground">—</span>;
+
+  const map: Record<string, {label: string; cls: string}> = {
+    new:         { label: 'חדש',      cls: 'bg-slate-200 text-slate-800' },
+    in_progress: { label: 'בטיפול',   cls: 'bg-amber-100 text-amber-800' },
+    done:        { label: 'טופל',     cls: 'bg-emerald-100 text-emerald-800' },
+    spam:        { label: 'ספאם',     cls: 'bg-rose-100 text-rose-800' },
+  };
+
+  const item = map[status] ?? { label: status, cls: 'bg-zinc-200 text-zinc-800' };
+  return (
+    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${item.cls}`}>
+      {item.label}
+    </span>
+  );
+};
 
   return (
     <TooltipProvider>
@@ -642,6 +660,9 @@ const Responses: React.FC = () => {
                           ערוץ
                         </th>
                         <th className="text-right p-4 text-xs sm:text-sm font-medium text-muted-foreground whitespace-nowrap">
+                          סטטוס
+                        </th>
+                        <th className="text-right p-4 text-xs sm:text-sm font-medium text-muted-foreground whitespace-nowrap">
                           שם/אימייל
                         </th>
                         <th className="text-right p-4 text-xs sm:text-sm font-medium text-muted-foreground whitespace-nowrap">
@@ -669,6 +690,9 @@ const Responses: React.FC = () => {
                           </td>
                           <td className="p-4 text-xs sm:text-sm whitespace-nowrap">
                             {getChannelBadge(response.channel)}
+                          </td>
+                          <td className="p-4 text-xs sm:text-sm whitespace-nowrap">
+                            {getStatusBadge(response.status)}
                           </td>
                           <td className="p-4 text-xs sm:text-sm break-words max-w-[200px]">
                             <div>
