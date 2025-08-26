@@ -124,8 +124,18 @@ const Responses: React.FC = () => {
 
   // 2) ייצוא כתוכן TSV עם BOM, אבל בסיומת .xls כדי שאקסל יפתח מושלם
   const exportToExcelXls = (rows: ResponseFlat[]) => {
+    // headers (English)
     const headers = [
-      'תאריך_הגשה','שאלון','שפה','ערוץ','שם','אימייל','טלפון','מקור_ref','מזהה_תגובה','תקציר'
+      'submitted_at',
+      'questionnaire',
+      'lang',
+      'channel',
+      'lead_name',
+      'lead_email',
+      'lead_phone',
+      'lead_ref',
+      'response_id',
+      'summary'
     ];
 
     const fmtDate = (iso?: string | null) => {
