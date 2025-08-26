@@ -1,7 +1,5 @@
 import React from 'react';
-import { X, Copy, Download, Mail, Phone, Calendar, FileText, User, MessageCircle } from 'lucide-react';
 
-// טיפוס לנתוני התגובה
 type ResponseFlat = {
   response_id: string;
   submitted_at: string;
@@ -18,329 +16,122 @@ type ResponseFlat = {
   questionnaire_title: string | null;
 };
 
-interface ResponseDrawerProps {
+type Props = {
   open: boolean;
   onClose: () => void;
   row: ResponseFlat | null;
-}
+  onExportOne?: (row: ResponseFlat) => void;
+};
 
-const ResponseDrawer: React.FC<ResponseDrawerProps> = ({ open, onClose, row }) => {
-  if (!row) return null;
+const badge = (text: string, cls: string) => (
+  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${cls}`}>
+    {text}
+  </span>
+);
 
-  const formatDate = (dateString: string) => {
+const langBadge = (lang: string | null) =>
+  !lang ? <span className="text-muted-foreground">—</span> :
+  lang === 'he' ? badge('Hebrew', 'bg-blue-100 text-blue-800') : badge('English', 'bg-green-100 text-green-800');
+
+const channelBadge = (channel: string | null) => {
+  const map: Record<string, string> = {
+    landing: 'bg-purple-100 text-purple-800',
+    whatsapp: 'bg-emerald-100 text-emerald-800',
+    mail: 'bg-sky-100 text-sky-800',
+    qr: 'bg-amber-100 text-amber-800',
+    other: 'bg-zinc-200 text-zinc-800'
+  };
+  if (!channel) return <span className="text-muted-foreground">—</span>;
+  return badge(channel, map[channel] ?? 'bg-zinc-200 text-zinc-800');
+};
+
+const formatDate = (iso?: string | null) => {
+  if (!iso) return '—';
+  try {
+    return new Date(iso).toLocaleString('he-IL');
+  } catch {
+    return '—';
+  }
+};
+
+const ResponseDrawer: React.FC<Props> = ({ open, onClose, row, onExportOne }) => {
+  if (!open || !row) return null;
+
+  const copyJson = () => {
     try {
-      return new Date(dateString).toLocaleString('he-IL');
-    } catch {
-      return '—';
-    }
+      const pretty = JSON.stringify(row.answers ?? {}, null, 2);
+      navigator.clipboard.writeText(pretty);
+    } catch {}
   };
 
-  const formatField = (value: string | null) => {
-    return value || '—';
-  };
-
-  const getLanguageBadge = (lang: string | null) => {
-    if (!lang) return <span className="text-muted-foreground">—</span>;
-    
-    const isHebrew = lang === 'he';
-    return (
-      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-        isHebrew 
-          ? 'bg-blue-100 text-blue-800' 
-          : 'bg-green-100 text-green-800'
-      }`}>
-        {isHebrew ? 'עברית' : 'English'}
-      </span>
-    );
-  };
-
-  const getChannelBadge = (channel: string | null) => {
-    if (!channel) return <span className="text-muted-foreground">—</span>;
-    
-    const channelColors: { [key: string]: string } = {
-      landing: 'bg-purple-100 text-purple-800',
-      whatsapp: 'bg-green-100 text-green-800',
-      mail: 'bg-blue-100 text-blue-800',
-      qr: 'bg-orange-100 text-orange-800',
-      other: 'bg-gray-100 text-gray-800'
-    };
-    
-    const colorClass = channelColors[channel] || 'bg-gray-100 text-gray-800';
-    
-    return (
-      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${colorClass}`}>
-        {channel}
-      </span>
-    );
-  };
-
-  const copyAnswersToClipboard = async () => {
-    try {
-      const formattedJson = JSON.stringify(row.answers, null, 2);
-      await navigator.clipboard.writeText(formattedJson);
-      // כאן אפשר להוסיף toast notification
-    } catch (err) {
-      console.error('Failed to copy to clipboard:', err);
-    }
-  };
-
-  const exportToCSV = () => {
-    try {
-      // יצירת סיכום התשובות
-      const summarizeAnswers = (answers: any): string => {
-        if (!answers || typeof answers !== 'object') {
-          return '—';
-        }
-
-        const priorityFields = ['need', 'timeline', 'budget', 'city', 'category', 'topic', 'service'];
-        const summaryParts: string[] = [];
-
-        for (const field of priorityFields) {
-          if (answers[field] && typeof answers[field] === 'string' && answers[field].trim()) {
-            summaryParts.push(`${answers[field].trim()}`);
-          }
-        }
-
-        if (summaryParts.length === 0) {
-          for (const [key, value] of Object.entries(answers)) {
-            if (typeof value === 'string' && value.trim() && summaryParts.length < 3) {
-              summaryParts.push(`${value.trim()}`);
-            }
-          }
-        }
-
-        if (summaryParts.length === 0) {
-          return '—';
-        }
-
-        const summary = summaryParts.join(' • ');
-        return summary.length > 120 ? summary.substring(0, 120) + '…' : summary;
-      };
-
-      const csvData = [
-        'submitted_at',
-        'questionnaire_title', 
-        'lang',
-        'channel',
-        'lead_name',
-        'lead_email',
-        'lead_phone',
-        'lead_ref',
-        'response_id',
-        'summary'
-      ].join(',');
-
-      const csvRow = [
-        formatDate(row.submitted_at),
-        `"${formatField(row.questionnaire_title)}"`,
-        row.lang || '',
-        row.channel || '',
-        `"${formatField(row.lead_name)}"`,
-        formatField(row.lead_email),
-        formatField(row.lead_phone),
-        formatField(row.lead_ref),
-        row.response_id,
-        `"${summarizeAnswers(row.answers)}"`
-      ].join(',');
-
-      const csvContent = `${csvData}\n${csvRow}`;
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      const url = URL.createObjectURL(blob);
-      link.setAttribute('href', url);
-      link.setAttribute('download', `response-${row.response_id}.csv`);
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } catch (err) {
-      console.error('Failed to export CSV:', err);
-    }
-  };
+  const entries = Object.entries((row.answers ?? {})).slice(0, 100); // הגבלה בטוחה
 
   return (
-    <>
-      {/* Overlay */}
-      {open && (
-        <div 
-          className="fixed inset-0 bg-black/50 z-40"
-          onClick={onClose}
-        />
-      )}
-      
-      {/* Drawer */}
-      <div className={`fixed top-0 right-0 h-full z-50 transform transition-transform duration-300 ease-in-out ${
-        open ? 'translate-x-0' : 'translate-x-full'
-      }`}>
-        <div className="h-full w-full max-w-[480px] bg-background border-l border-border shadow-xl flex flex-col">
-          {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-border">
-            <h2 className="text-lg font-semibold text-foreground">פרטי תגובה</h2>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-muted rounded-md transition-colors"
-            >
-              <X className="h-5 w-5 text-muted-foreground" />
-            </button>
+    <div className="fixed inset-0 z-50" dir="rtl" aria-modal role="dialog">
+      {/* overlay */}
+      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+      {/* panel */}
+      <div className="absolute right-0 top-0 h-full w-full sm:max-w-[480px] bg-card border-l border-border shadow-xl flex flex-col">
+        {/* header */}
+        <div className="p-4 border-b border-border flex items-center justify-between">
+          <h2 className="text-lg font-semibold">פרטי תגובה</h2>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground px-2 py-1 rounded">
+            ✕
+          </button>
+        </div>
+
+        {/* meta */}
+        <div className="p-4 grid grid-cols-1 gap-2 text-sm">
+          <div><span className="text-muted-foreground">תאריך: </span>{formatDate(row.submitted_at)}</div>
+          <div className="flex items-center gap-2">
+            <span className="text-muted-foreground">שפה:</span> {langBadge(row.lang)}
           </div>
-
-          {/* Content */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-6">
-            {/* Meta Information */}
-            <div className="space-y-3">
-              <h3 className="text-sm font-medium text-muted-foreground">מידע כללי</h3>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex items-center space-x-2 space-x-reverse">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <div>
-                    <div className="text-xs text-muted-foreground">תאריך</div>
-                    <div className="text-sm font-medium">{formatDate(row.submitted_at)}</div>
-                  </div>
-                </div>
-                
-                <div className="flex items-center space-x-2 space-x-reverse">
-                  <FileText className="h-4 w-4 text-muted-foreground" />
-                  <div>
-                    <div className="text-xs text-muted-foreground">שאלון</div>
-                    <div className="text-sm font-medium">{formatField(row.questionnaire_title)}</div>
-                  </div>
-                </div>
-                
-                <div className="flex items-center space-x-2 space-x-reverse">
-                  <MessageCircle className="h-4 w-4 text-muted-foreground" />
-                  <div>
-                    <div className="text-xs text-muted-foreground">שפה</div>
-                    <div>{getLanguageBadge(row.lang)}</div>
-                  </div>
-                </div>
-                
-                <div className="flex items-center space-x-2 space-x-reverse">
-                  <MessageCircle className="h-4 w-4 text-muted-foreground" />
-                  <div>
-                    <div className="text-xs text-muted-foreground">ערוץ</div>
-                    <div>{getChannelBadge(row.channel)}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Lead Information */}
-            <div className="space-y-3">
-              <h3 className="text-sm font-medium text-muted-foreground">פרטי ליד</h3>
-              <div className="space-y-3">
-                <div className="flex items-center space-x-2 space-x-reverse">
-                  <User className="h-4 w-4 text-muted-foreground" />
-                  <div>
-                    <div className="text-xs text-muted-foreground">שם</div>
-                    <div className="text-sm font-medium">{formatField(row.lead_name)}</div>
-                  </div>
-                </div>
-                
-                {row.lead_email && (
-                  <div className="flex items-center space-x-2 space-x-reverse">
-                    <Mail className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <div className="text-xs text-muted-foreground">אימייל</div>
-                      <a 
-                        href={`mailto:${row.lead_email}`}
-                        className="text-sm font-medium text-primary hover:underline"
-                      >
-                        {row.lead_email}
-                      </a>
-                    </div>
-                  </div>
-                )}
-                
-                {row.lead_phone && (
-                  <div className="flex items-center space-x-2 space-x-reverse">
-                    <Phone className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <div className="text-xs text-muted-foreground">טלפון</div>
-                      <a 
-                        href={`tel:${row.lead_phone}`}
-                        className="text-sm font-medium text-primary hover:underline"
-                      >
-                        {row.lead_phone}
-                      </a>
-                    </div>
-                  </div>
-                )}
-                
-                {row.lead_ref && (
-                  <div className="flex items-center space-x-2 space-x-reverse">
-                    <User className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <div className="text-xs text-muted-foreground">Ref</div>
-                      <div className="text-sm font-medium">{row.lead_ref}</div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Answers Q&A Table */}
-            <div className="space-y-3">
-              <h3 className="text-sm font-medium text-muted-foreground">תשובות</h3>
-              <div className="border border-border rounded-lg overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-muted/50">
-                      <tr>
-                        <th className="text-right p-3 text-xs font-medium text-muted-foreground border-b border-border">
-                          שאלה
-                        </th>
-                        <th className="text-right p-3 text-xs font-medium text-muted-foreground border-b border-border">
-                          תשובה
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border">
-                      {row.answers && typeof row.answers === 'object' ? (
-                        Object.entries(row.answers).map(([key, value]) => (
-                          <tr key={key}>
-                            <td className="p-3 text-sm font-medium text-foreground border-l border-border">
-                              {key}
-                            </td>
-                            <td className="p-3 text-sm text-muted-foreground break-words">
-                              {typeof value === 'string' ? value : JSON.stringify(value)}
-                            </td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td colSpan={2} className="p-3 text-sm text-muted-foreground text-center">
-                            אין תשובות זמינות
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
+          <div className="flex items-center gap-2">
+            <span className="text-muted-foreground">ערוץ:</span> {channelBadge(row.channel)}
           </div>
-
-          {/* Footer Actions */}
-          <div className="p-4 border-t border-border space-y-3">
-            <button
-              onClick={copyAnswersToClipboard}
-              className="w-full flex items-center justify-center space-x-2 space-x-reverse px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
-            >
-              <Copy className="h-4 w-4" />
-              <span>העתק JSON</span>
-            </button>
-            
-            <button
-              onClick={exportToCSV}
-              className="w-full flex items-center justify-center space-x-2 space-x-reverse px-4 py-2 bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/90 transition-colors"
-            >
-              <Download className="h-4 w-4" />
-              <span>ייצוא CSV לשורה זו</span>
-            </button>
+          <div><span className="text-muted-foreground">שאלון: </span>{row.questionnaire_title || '—'}</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div><span className="text-muted-foreground">שם: </span>{row.lead_name || '—'}</div>
+            <div>
+              <span className="text-muted-foreground">אימייל: </span>
+              {row.lead_email ? <a className="text-primary underline" href={`mailto:${row.lead_email}`}>{row.lead_email}</a> : '—'}
+            </div>
+            <div>
+              <span className="text-muted-foreground">טלפון: </span>
+              {row.lead_phone ? <a className="text-primary underline" href={`tel:${row.lead_phone}`}>{row.lead_phone}</a> : '—'}
+            </div>
+            <div><span className="text-muted-foreground">Ref: </span>{row.lead_ref || '—'}</div>
           </div>
         </div>
+
+        {/* answers */}
+        <div className="px-4 pb-4 flex-1 overflow-auto">
+          <div className="mb-2 text-sm text-muted-foreground">תשובות</div>
+          <div className="border border-border rounded-md divide-y">
+            {entries.length === 0 ? (
+              <div className="p-3 text-sm text-muted-foreground">אין תשובות להצגה</div>
+            ) : entries.map(([k,v]) => (
+              <div key={k} className="p-3 grid grid-cols-3 gap-2 text-sm">
+                <div className="font-medium break-words col-span-1">{k}</div>
+                <div className="col-span-2 break-words">{typeof v === 'object' ? JSON.stringify(v) : String(v)}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* footer actions */}
+        <div className="p-4 border-t border-border flex flex-col sm:flex-row gap-2">
+          <button onClick={copyJson} className="px-4 py-2 rounded-md bg-muted hover:bg-muted/70 text-sm">
+            העתק JSON
+          </button>
+          {onExportOne && (
+            <button onClick={() => onExportOne(row)} className="px-4 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 text-sm">
+              ייצוא XLS לשורה זו
+            </button>
+            )}
+        </div>
       </div>
-    </>
+    </div>
   );
 };
 

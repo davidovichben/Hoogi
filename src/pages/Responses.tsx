@@ -660,6 +660,7 @@ const Responses: React.FC = () => {
           open={drawerOpen}
           onClose={handleCloseDrawer}
           row={selectedRow}
+          onExportOne={(row) => exportToExcelXls([row])}
         />
       </div>
     </TooltipProvider>
