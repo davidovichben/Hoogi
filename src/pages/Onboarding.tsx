@@ -1421,9 +1421,20 @@ export const Onboarding: React.FC = () => {
                     {language === 'he' ? 'שמור טיוטה → שאלונים' : 'Save Draft → Questionnaires'}
                   </Button>
                   
-                  {/* כפתור פרסום והפצה */}
+                  {/* כפתור עבור להפצה */}
                   <Button 
-                    onClick={handlePublishAndGoReview}
+                    onClick={() => {
+                      if (formData.id) {
+                        navigate(`/distribute?qid=${formData.id}`);
+                      } else {
+                        // אם אין ID, שמור קודם ואז עבור להפצה
+                        handleSaveAndNavigate().then(() => {
+                          if (formData.id) {
+                            navigate(`/distribute?qid=${formData.id}`);
+                          }
+                        });
+                      }
+                    }}
                     className="gap-2 px-6 py-3"
                     style={{ 
                       backgroundColor: formData.primaryColor, 
@@ -1431,7 +1442,7 @@ export const Onboarding: React.FC = () => {
                       border: 'none'
                     }}
                   >
-                    {language === 'he' ? 'פרסום והפצה → סקירת שאלונים' : 'Publish & Distribute → Review'}
+                    {language === 'he' ? 'עבור להפצה' : 'Go to Distribution'}
                     <ArrowRight className="h-4 w-4" />
                   </Button>
                 </div>
