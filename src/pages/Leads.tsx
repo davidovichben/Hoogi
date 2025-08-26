@@ -348,6 +348,65 @@ const Leads: React.FC = () => {
           <p className="text-muted-foreground mt-2">ניהול ועקיבה אחר לידים</p>
         </div>
 
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+          {/* Total Leads */}
+          <div className="bg-card border border-border p-3 rounded-lg">
+            <div className="text-xs sm:text-sm text-muted-foreground mb-1">סה"כ לידים</div>
+            <div className="text-lg sm:text-2xl font-bold text-foreground">
+              {filteredData.length}
+            </div>
+          </div>
+
+          {/* Today's Leads */}
+          <div className="bg-card border border-border p-3 rounded-lg">
+            <div className="text-xs sm:text-sm text-muted-foreground mb-1">היום</div>
+            <div className="text-lg sm:text-2xl font-bold text-foreground">
+              {(() => {
+                const today = new Date();
+                const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+                const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000 - 1);
+                
+                return filteredData.filter(lead => {
+                  const leadDate = new Date(lead.created_at);
+                  return leadDate >= todayStart && leadDate <= todayEnd;
+                }).length;
+              })()}
+            </div>
+          </div>
+
+          {/* Top Channel */}
+          <div className="bg-card border border-border p-3 rounded-lg">
+            <div className="text-xs sm:text-sm text-muted-foreground mb-1">ערוץ מוביל</div>
+            <div className="text-lg sm:text-2xl font-bold text-foreground">
+              {(() => {
+                const channelCounts = filteredData.reduce((acc, lead) => {
+                  if (lead.channel) {
+                    acc[lead.channel] = (acc[lead.channel] || 0) + 1;
+                  }
+                  return acc;
+                }, {} as Record<string, number>);
+                
+                const topChannel = Object.entries(channelCounts).sort(([,a], [,b]) => b - a)[0];
+                return topChannel ? topChannel[0] : '—';
+              })()}
+            </div>
+          </div>
+
+          {/* Conversion Rate */}
+          <div className="bg-card border border-border p-3 rounded-lg">
+            <div className="text-xs sm:text-sm text-muted-foreground mb-1">המרה</div>
+            <div className="text-lg sm:text-2xl font-bold text-foreground">
+              {(() => {
+                if (filteredData.length === 0) return '0%';
+                const wonCount = filteredData.filter(lead => lead.status === 'won').length;
+                const conversionRate = Math.round((wonCount / filteredData.length) * 100);
+                return `${conversionRate}%`;
+              })()}
+            </div>
+          </div>
+        </div>
+
         {/* Filters Bar */}
         <div className="bg-card border border-border rounded-lg p-3 sm:p-4 mb-4">
           <div className="text-sm font-medium text-muted-foreground mb-3">סינון לידים</div>
