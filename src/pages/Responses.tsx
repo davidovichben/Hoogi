@@ -20,6 +20,8 @@ type ResponseFlat = {
   lead_ref: string | null;
   questionnaire_id: string | null;
   questionnaire_title: string | null;
+  status?: string | null;
+  rating?: number | null;
 };
 
 // טיפוס לשאלון
@@ -59,6 +61,11 @@ const Responses: React.FC = () => {
   // State ל-Drawer
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState<ResponseFlat | null>(null);
+  
+  // State לניהול סטטוס ודירוג
+  const [status, setStatus] = useState<string>('new');
+  const [rating, setRating] = useState<number | undefined>(undefined);
+  const [saving, setSaving] = useState(false);
 
   // פילטרים מה-URL
   const from = searchParams.get('from') || '';
@@ -133,12 +140,38 @@ const Responses: React.FC = () => {
   const handleOpenDrawer = (row: ResponseFlat) => {
     setSelectedRow(row);
     setDrawerOpen(true);
+    // עדכון state לסטטוס ודירוג
+    setStatus(row.status ?? 'new');
+    setRating(typeof row.rating === 'number' ? row.rating : undefined);
   };
 
   // פונקציה לסגירת Drawer
   const handleCloseDrawer = () => {
     setDrawerOpen(false);
     setSelectedRow(null);
+  };
+  
+  // פונקציה לשמירת סטטוס ודירוג
+  const saveMeta = async () => {
+    if (!selectedRow?.response_id) return;
+    try {
+      setSaving(true);
+      const { error } = await supabase
+        .from('responses')
+        .update({
+          status,
+          rating: rating ?? null,
+          handled_at: status === 'done' ? new Date().toISOString() : null
+        })
+        .eq('id', selectedRow.response_id);
+      if (error) throw error;
+      handleCloseDrawer(); // סגור אחרי שמירה
+    } catch (e) {
+      console.error(e);
+      alert('שמירה נכשלה');
+    } finally {
+      setSaving(false);
+    }
   };
 
   // 2) ייצוא כתוכן TSV עם BOM, אבל בסיומת .xls כדי שאקסל יפתח מושלם
