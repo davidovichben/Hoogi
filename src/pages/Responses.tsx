@@ -74,6 +74,7 @@ const Responses: React.FC = () => {
   const channel = searchParams.get('channel') || '';
   const questionnaireId = searchParams.get('questionnaireId') || '';
   const statusParam = searchParams.get('status') || '';
+  const leadId = searchParams.get('leadId') || '';
   const q = searchParams.get('q') || '';
   const offset = parseInt(searchParams.get('offset') || '0');
 
@@ -294,6 +295,11 @@ const Responses: React.FC = () => {
         query = query.eq('status', statusParam);
       }
 
+      // סינון לפי leadId (אם יש)
+      if (leadId) {
+        query = query.eq('lead_id', leadId);
+      }
+
       // סינון לפי תאריכים
       if (from) {
         const fromStartOfDay = new Date(from);
@@ -319,7 +325,7 @@ const Responses: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [from, to, lang, channel, questionnaireId, statusParam, offset]);
+  }, [from, to, lang, channel, questionnaireId, statusParam, leadId, offset]);
 
   // סינון צד לקוח לפי חיפוש טקסט
   useEffect(() => {
@@ -460,6 +466,27 @@ const getStatusBadge = (status: string | null | undefined) => {
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-foreground mb-2">תגובות</h1>
             <p className="text-muted-foreground">ניהול וצפייה בתגובות השאלונים שלך</p>
+            
+            {/* Lead Filter Notice */}
+            {leadId && (
+              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <span className="text-blue-800 text-sm font-medium">
+                    🔍 מוצגות תגובות לליד ספציפי
+                  </span>
+                  <button
+                    onClick={() => {
+                      const newParams = new URLSearchParams(searchParams);
+                      newParams.delete('leadId');
+                      setSearchParams(newParams);
+                    }}
+                    className="text-blue-600 hover:text-blue-800 text-xs underline"
+                  >
+                    הצג את כל התגובות
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Filters Bar */}

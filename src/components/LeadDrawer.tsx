@@ -249,8 +249,8 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ open, onClose, lead }) => {
   };
 
   const handleOpenResponse = (responseId: string) => {
-    // Navigate to responses page with filter
-    navigate(`/responses?response_id=${responseId}`);
+    // Navigate to responses page with leadId filter
+    navigate(`/responses?leadId=${lead.lead_id}`);
     onClose();
   };
 

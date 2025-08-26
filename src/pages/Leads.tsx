@@ -584,6 +584,9 @@ const Leads: React.FC = () => {
                     <th className="text-right p-4 text-xs sm:text-sm font-medium text-muted-foreground whitespace-nowrap">
                       פרטים
                     </th>
+                    <th className="text-right p-4 text-xs sm:text-sm font-medium text-muted-foreground whitespace-nowrap">
+                      לתגובות
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -690,6 +693,15 @@ const Leads: React.FC = () => {
                           title="פתח פרטי ליד"
                         >
                           <Eye className="h-4 w-4" />
+                        </button>
+                      </td>
+                      <td className="p-4">
+                        <button
+                          onClick={() => navigate(`/responses?leadId=${lead.lead_id}`)}
+                          className="inline-flex items-center justify-center p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
+                          title="פתח תגובות לליד זה"
+                        >
+                          <MessageSquare className="h-4 w-4" />
                         </button>
                       </td>
                     </tr>
