@@ -17,6 +17,7 @@ type LeadFlat = {
   questionnaire_title: string | null;
   score: number | null;
   status: string | null;
+  rating: number | null;
 };
 
 type Questionnaire = {
@@ -92,7 +93,7 @@ const getLeadStatusBadge = (status: string | null) => {
   );
 };
 
-// WhatsApp functions
+// היגיון בסיסי לנורמליזציית מספר ישראלי ל-E.164 (MVP)
 const normalizeILPhone = (raw?: string | null) => {
   if (!raw) return '';
   const digits = raw.replace(/[^\d+]/g,'');
@@ -100,7 +101,7 @@ const normalizeILPhone = (raw?: string | null) => {
   if (digits.startsWith('0') && digits.length === 10) {
     return '+972' + digits.slice(1);
   }
-  return digits;
+  return digits; // fallback
 };
 
 const buildWhatsAppLink = (phone?: string | null, questionnaire?: string | null) => {
@@ -111,11 +112,11 @@ const buildWhatsAppLink = (phone?: string | null, questionnaire?: string | null)
   return to ? `https://wa.me/${to.replace('+','')}/?text=${txt}` : '';
 };
 
-// Export function
-const exportToExcelTsv = (rows: LeadFlat[]) => {
+// Export function - XLS format with UTF-16LE + BOM
+const exportToExcelXls = (rows: LeadFlat[]) => {
   // headers (English)
   const headers = [
-    'Date', 'Name', 'Email', 'Phone', 'Channel', 'Ref', 'Questionnaire', 'Score', 'Status'
+    'created_at','name','email','phone','channel','ref','questionnaire','status','rating'
   ];
 
   const fmtDate = (iso?: string | null) => {
@@ -142,8 +143,8 @@ const exportToExcelTsv = (rows: LeadFlat[]) => {
       r.channel ?? '',
       r.lead_ref ?? '',
       r.questionnaire_title ?? '',
-      (r.score ?? '').toString(),
-      r.status ?? ''
+      r.status ?? '',
+      (r.rating ?? '').toString()
     ]);
   }
 
@@ -437,11 +438,11 @@ const Leads: React.FC = () => {
         {!loading && !error && filteredData.length > 0 && (
           <div className="mb-4 flex justify-end">
             <button
-              onClick={() => exportToExcelTsv(filteredData)}
+              onClick={() => exportToExcelXls(filteredData)}
               className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-md transition-colors text-sm font-medium"
             >
               <Download className="h-4 w-4" />
-              ייצוא לאקסל (TSV)
+              ייצוא לאקסל (XLS)
             </button>
           </div>
         )}
@@ -503,7 +504,7 @@ const Leads: React.FC = () => {
                       סטטוס
                     </th>
                     <th className="text-right p-4 text-xs sm:text-sm font-medium text-muted-foreground whitespace-nowrap">
-                      פעולות מהירות
+                      יצירת קשר
                     </th>
                   </tr>
                 </thead>
