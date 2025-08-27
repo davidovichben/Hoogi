@@ -5,7 +5,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../com
 import { Eye, Download, Phone, Mail, MessageSquare, Share2 } from 'lucide-react';
 import ResponseDrawer from '../components/ResponseDrawer';
 import ShareDialog from '../components/ShareDialog';
-import { toast } from '@/components/ui/toaster';
 
 // טיפוס מקומי לנתוני התגובות
 type ResponseFlat = {
@@ -176,7 +175,7 @@ const Responses: React.FC = () => {
       handleCloseDrawer(); // סגור אחרי שמירה
     } catch (e) {
       console.error(e);
-      toast.error('שמירה נכשלה');
+      alert('שמירה נכשלה');
     } finally {
       setSaving(false);
     }

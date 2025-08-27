@@ -1,5 +1,4 @@
 import { useMemo } from "react";
-import { toast } from "@/components/ui/toaster";
 const siteUrl = (import.meta as any).env.VITE_SITE_URL || window.location.origin;
 
 export function ShareCell({ row }: { row: any }) {
@@ -15,14 +14,7 @@ export function ShareCell({ row }: { row: any }) {
   const embedCode = `<iframe src="${link}" width="100%" height="900" style="border:0;max-width:750px;" allow="clipboard-write"></iframe>`;
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(link)}`;
 
-  const copy = async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      toast.success("קישור הועתק");
-    } catch {
-      toast.error("לא ניתן להעתיק", { description: "נסי ידנית" });
-    }
-  };
+  const copy = async (text: string) => { try { await navigator.clipboard.writeText(text); alert("הועתק ✓"); } catch {} };
 
   return (
     <div className="flex flex-wrap gap-2">

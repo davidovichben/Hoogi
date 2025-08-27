@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { toast } from "@/components/ui/toaster";
 import { useForm, useFieldArray } from "react-hook-form";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -283,7 +282,7 @@ export default function CreateQuestionnaire({ lang = "he", userId, onSuccess }: 
 
     } catch (error) {
       console.error('Error creating questionnaire:', error);
-      toast.error(t.error);
+      alert(t.error);
     } finally {
       setIsSubmitting(false);
     }

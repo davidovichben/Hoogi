@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { upsertDraft } from "@/services/questionnaires";
 import { Button } from "@/components/ui/button";
-import { toast } from "@/components/ui/toaster";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Save, ArrowRight, ArrowLeft, Eye, Settings } from "lucide-react";
 
@@ -40,7 +39,7 @@ export default function OnboardingStep2() {
       navigate("/questionnaires", { replace: true });
     } catch (e) {
       console.error(e);
-      toast.error("שגיאה בשמירת הטיוטה");
+      alert("שגיאה בשמירת הטיוטה");
     } finally {
       setSaving(false);
     }
@@ -60,7 +59,7 @@ export default function OnboardingStep2() {
       navigate(`/distribute`);
     } catch (e) {
       console.error(e);
-      toast.error("שגיאה בהכנת השאלון לפרסום");
+      alert("שגיאה בהכנת השאלון לפרסום");
     } finally {
       setSaving(false);
     }

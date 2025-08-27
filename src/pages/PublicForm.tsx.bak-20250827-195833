@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import BrandStyles from "@/components/BrandStyles";
-import { toast } from "@/components/ui/toaster";
 type Question={id:string;type:"single_choice"|"multi_choice"|"text"|"long_text"|"number"|"date";label:string;help_text:string|null;required:boolean;order_index:number;};
 type Option={id:string;question_id:string;value:string;label:string;order_index:number;};
 export default function PublicForm(){
@@ -31,7 +30,7 @@ export default function PublicForm(){
       const items=questions.map((q)=>{ const val=answers[q.id]; const base:any={response_id:r!.id,question_id:q.id}; switch(q.type){case "number": base.answer_number=Number(val);break;case "date": base.answer_date=val;break;case "text":case "long_text": base.answer_text=String(val??"");break;case "single_choice": base.answer_text=String(val??"");break;case "multi_choice": base.answer_json=Array.isArray(val)?val:[];break; default: base.answer_text=String(val??"");} return base;});
       const {error:ie}=await supabase.from("response_items").insert(items); if(ie) throw ie;
       if(email){ await supabase.functions.invoke("send-auto-reply",{ body:{ to:email, subject:"תודה! קיבלנו את הטופס", html:`<p>שלום ${name||""},</p><p>קיבלנו את הטופס שלך בהצלחה.</p><p>AI-4biz</p>` } }).catch(()=>{}); }
-      toast.success("התשובה נשלחה בהצלחה. תודה!"); window.location.href="/";
+      alert("התשובה נשלחה בהצלחה. תודה!"); window.location.href="/";
     }catch(e:any){ setError(e.message||String(e)); } };
   if(loading) return <div className="p-6">טוען…</div>; if(error) return <div className="p-6 text-red-600">{error}</div>;
   return(<BrandStyles primary={brandPrimary} accent={brandAccent} background={brandBackground}>

@@ -1,5 +1,4 @@
 import React from 'react';
-import { toast } from '@/components/ui/toaster';
 
 type ResponseFlat = {
   response_id: string;
@@ -74,14 +73,11 @@ const ResponseDrawer: React.FC<Props> = ({ open, onClose, row, onExportOne, onSa
   
   if (!open || !row) return null;
 
-  const copyJson = async () => {
+  const copyJson = () => {
     try {
       const pretty = JSON.stringify(row.answers ?? {}, null, 2);
-      await navigator.clipboard.writeText(pretty);
-      toast.success('קובץ JSON הועתק');
-    } catch {
-      toast.error('לא ניתן להעתיק', { description: 'נסי ידנית' });
-    }
+      navigator.clipboard.writeText(pretty);
+    } catch {}
   };
 
   const handleSave = async () => {
