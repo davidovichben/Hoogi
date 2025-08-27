@@ -19,6 +19,7 @@ import {
 } from "../../../services/questionnaires";
 import { DEFAULT_META } from "../../../models/questionnaire";
 import PublicPreviewModal from '../preview/PublicPreviewModal';
+import AdvancedShare from '@/components/AdvancedShare';
 
 // Import all the new components
 import { MetaPanel } from "./MetaPanel";
@@ -782,6 +783,16 @@ export default function ReviewAndPublishPage() {
                     {language === 'he' 
                       ? '💡 טיפ: השתמש בתצוגה מקדימה כדי לראות איך השאלון יראה לציבור' 
                       : '💡 Tip: Use the preview to see how the questionnaire will look to the public'}
+                  </div>
+                )}
+
+                {isPublished && publicUrl && (
+                  <div className="mt-4 flex justify-center">
+                    <AdvancedShare
+                      link={publicUrl}
+                      subject={questionnaire.title || 'שאלון'}
+                      message={language === 'he' ? 'נשמח אם תמלא/י את השאלון' : 'Please fill out the questionnaire'}
+                    />
                   </div>
                 )}
               </div>

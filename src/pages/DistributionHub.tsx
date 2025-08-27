@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../integrations/supabase/client';
 import { buildPublicUrl, buildEditUrl, buildQrApiUrl } from '../lib/publicUrl';
 import ShareDialog from '../components/ShareDialog';
+import AdvancedShare from '@/components/AdvancedShare';
 import { toast, announce } from '@/components/ui/Toaster';
 
 // טיפוסים
@@ -315,6 +316,17 @@ export default function DistributionHub() {
               עריכת השאלון
             </button>
           </div>
+
+          {/* שיתוף מתקדם (לא מחליף את הכפתורים הקיימים כדי לא לשבור זרימות קיימות) */}
+          {publicUrl && (
+            <div className="mt-2">
+              <AdvancedShare
+                link={publicUrl}
+                subject={current?.title || 'שאלון'}
+                message={'נשמח אם תמלא/י את השאלון'}
+              />
+            </div>
+          )}
 
           {/* קישור + טקסט עזר */}
           <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
