@@ -457,14 +457,8 @@ export const fetchQuestionnaireForPreview = async (id: string) => {
 // חדש: פונקציה לטעינת שאלון ציבורי לפי טוקן
 export async function fetchPublicQuestionnaireByToken(token: string): Promise<any> {
   try {
-    // שימוש בפונקציה המאוחדת: public_token או form_token
-    const { data: questionnaire, error: qError } = await fetchQuestionnaireByAnyToken(token);
-    if (qError || !questionnaire) {
-      throw new Error('Questionnaire not found');
-    }
-    if (!questionnaire.is_published) {
-      throw new Error('Questionnaire not found or not published');
-    }
+    // שימוש ב-RPC מאובטח לשליפת שאלון לפי public_token
+    const questionnaire = await fetchQuestionnaireByToken(token);
 
     // טען שאלות
     const { data: questions, error: questionsError } = await supabase
