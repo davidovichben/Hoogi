@@ -1,18 +1,19 @@
-export type BuildUrlParams = {
-  token: string;
+// src/lib/publicUrl.ts
+export type PublicUrlOpts = {
+  token: string;           // questionnaire.token (UUID)
   lang?: 'he' | 'en';
-  ref?: string;
-  channel?: 'landing' | 'whatsapp' | 'mail' | 'qr' | 'other';
+  ref?: string;            // landing / qr / whatsapp / mail / <partner-code> / other
+  origin?: string;         // override window.location.origin for dev
 };
 
-export function buildPublicUrl({ token, lang = 'he', ref = 'landing', channel }: BuildUrlParams) {
-  const base = window.location.origin; // לוקאלי/פרוד – יתאים אוטומטית
-  const url = new URL(`${base}/q/${token}`);
-  if (lang) url.searchParams.set('lang', lang);
-  if (ref) url.searchParams.set('ref', ref);
-  if (channel) url.searchParams.set('ch', channel);
-  return url.toString();
-}
+export const buildPublicUrl = ({ token, lang = 'he', ref = 'landing', origin }: PublicUrlOpts) => {
+  const base = (origin ?? window.location.origin).replace(/\/+$/, '');
+  const qp = new URLSearchParams();
+  if (lang) qp.set('lang', lang);
+  if (ref) qp.set('ref', ref);
+  // מסלול ציבורי אחיד: /q/:token
+  return `${base}/q/${token}?${qp.toString()}`;
+};
 
 export function getShareUrl(token: string): string {
   return `${window.location.origin}/distribute?token=${token}`;
