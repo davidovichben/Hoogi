@@ -38,7 +38,7 @@ export const ToastProvider: React.FC<React.PropsWithChildren> = ({ children }) =
     const item: ToastItem = { id, ...t };
     setToasts((prev) => [...prev, item]);
     if (t.duration > 0) {
-      setTimeout(() => {
+      window.setTimeout(() => {
         setToasts((prev) => prev.filter((x) => x.id !== id));
       }, t.duration);
     }
@@ -47,8 +47,7 @@ export const ToastProvider: React.FC<React.PropsWithChildren> = ({ children }) =
   const announce = useCallback((msg: string) => {
     if (liveRef.current) {
       liveRef.current.textContent = "";
-      // give SR a tick
-      setTimeout(() => {
+      window.setTimeout(() => {
         if (liveRef.current) liveRef.current.textContent = msg;
       }, 10);
     }
@@ -56,7 +55,7 @@ export const ToastProvider: React.FC<React.PropsWithChildren> = ({ children }) =
 
   const ctx = useMemo<Ctx>(() => ({ push, announce }), [push, announce]);
 
-  // תמיכת מקלדת פשוטה: Escape סוגר את הטוסט האחרון
+  // Close last toast with Escape for basic keyboard support
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key === "Escape" && toasts.length) {
       const last = toasts[toasts.length - 1];
@@ -66,7 +65,6 @@ export const ToastProvider: React.FC<React.PropsWithChildren> = ({ children }) =
 
   return (
     <ToastCtx.Provider value={ctx}>
-      {/* Screen-reader live region */}
       <div
         ref={liveRef}
         className="sr-only"
@@ -89,7 +87,7 @@ export const ToastProvider: React.FC<React.PropsWithChildren> = ({ children }) =
                 role="status"
                 aria-live={t.kind === "error" ? "assertive" : "polite"}
                 className={[
-                  "pointer-events-auto rounded-xl shadow-lg border px-4 py-3 max-w-[92vw] sm:max-w-sm",
+                  "pointer-events-auto rounded-xl shadow-lg border px-4 py-3 max-w-[92vw] sm:max-w-sm bg-card",
                   t.kind === "success" && "bg-emerald-50 border-emerald-200 text-emerald-900",
                   t.kind === "error" && "bg-red-50 border-red-200 text-red-900",
                   t.kind === "info" && "bg-slate-50 border-slate-200 text-slate-900",
@@ -119,7 +117,6 @@ export const ToastProvider: React.FC<React.PropsWithChildren> = ({ children }) =
   );
 };
 
-// public singleton api
 function useSingleton() {
   const { push, announce } = useToastCtx();
   return {
@@ -133,7 +130,6 @@ function useSingleton() {
   };
 }
 
-// tiny bridge to expose a stable singleton
 let _api: ReturnType<typeof useSingleton> | null = null;
 export const ToastBridge: React.FC = () => {
   _api = useSingleton();
@@ -147,12 +143,5 @@ export const toast = {
 };
 
 export const announce = (m: string) => _api?.announce(m);
-
-// תאימות ל-App.tsx: ייצוא Toaster כעטיפה שמרנדרת Provider+Bridge
-export const Toaster: React.FC = () => (
-  <ToastProvider>
-    <ToastBridge />
-  </ToastProvider>
-);
 
 

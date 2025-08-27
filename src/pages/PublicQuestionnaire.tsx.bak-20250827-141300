@@ -68,24 +68,16 @@ export default function PublicQuestionnaire() {
     const fetchQuestionnaire = async () => {
       try {
         setLoading(true);
-        setError(null);
         
-        // Fetch questionnaire by public_token (שימוש ב-maybeSingle)
+        // Fetch questionnaire by public_token
         const { data: questionnaireData, error: questionnaireError } = await supabase
           .from("questionnaires")
           .select("*")
           .eq("public_token", token)
-          .maybeSingle();
+          .single();
         
-        if (questionnaireError) {
-          setError(lang === 'he' ? 'שגיאה בטעינת השאלון' : 'Error loading questionnaire');
-          return;
-        }
-        
-        if (!questionnaireData) {
-          setError(lang === 'he' ? 'השאלון לא נמצא או לא זמין כרגע.' : 'Questionnaire not found or unavailable.');
-          return;
-        }
+        if (questionnaireError) throw questionnaireError;
+        if (!questionnaireData) throw new Error("Questionnaire not found");
         
         setQuestionnaire(questionnaireData);
         
@@ -106,7 +98,7 @@ export default function PublicQuestionnaire() {
         }
         
       } catch (err: any) {
-        setError(err.message || (lang === 'he' ? "שגיאה בטעינת השאלון" : "Failed to load questionnaire"));
+        setError(err.message || "Failed to load questionnaire");
       } finally {
         setLoading(false);
       }
@@ -201,7 +193,8 @@ export default function PublicQuestionnaire() {
           <p className="text-gray-600 mb-6">
             {lang === "he" 
               ? "התשובה שלך נשלחה בהצלחה. נציג יצור איתך קשר בקרוב." 
-              : "Your response has been submitted successfully. A representative will contact you soon."}
+              : "Your response has been submitted successfully. A representative will contact you soon."
+            }
           </p>
           <Button 
             onClick={() => window.close()}
@@ -321,7 +314,7 @@ export default function PublicQuestionnaire() {
               <div className="space-y-6">
                 {questions.map((question) => (
                   <div key={question.id} className="space-y-3">
-                    <label className="block text_sm font-medium text-gray-700">
+                    <label className="block text-sm font-medium text-gray-700">
                       {question.text}
                       {question.required && (
                         <span className="text-red-500 ml-1">*</span>
@@ -432,4 +425,3 @@ export default function PublicQuestionnaire() {
     </div>
   );
 }
-

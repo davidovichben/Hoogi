@@ -12,12 +12,15 @@ export default function PublicForm(){
   const [name,setName]=useState(""); const [email,setEmail]=useState(""); const [phone,setPhone]=useState(""); const [answers,setAnswers]=useState<Record<string,any>>({});
   useEffect(()=>{ const p=new URLSearchParams(window.location.search); setToken(p.get("t")); },[]);
   useEffect(()=>{ const load=async()=>{ if(!id) return; setLoading(true); setError(null);
-      try{ const {data:q,error:qe}=await supabase.from("questionnaires").select("id,title,is_published,form_token,brand_logo_url,brand_primary,brand_accent,brand_background").eq("id",id).single();
-        if(qe) throw qe; if(!q?.is_published) throw new Error("השאלון אינו זמין למילוי."); const t=new URLSearchParams(window.location.search).get("t"); if(!t||t!==q.form_token) throw new Error("קישור לא חוקי או חסר טוקן.");
+      try{ const {data:q,error:qe}=await supabase.from("questionnaires").select("id,title,is_published,form_token,brand_logo_url,brand_primary,brand_accent,brand_background").eq("id",id).maybeSingle();
+        if(qe){ setError("שגיאה בטעינת השאלון"); return; }
+        if(!q){ setError("השאלון לא נמצא או לא זמין כרגע."); return; }
+        if(!q?.is_published) { setError("השאלון אינו זמין למילוי."); return; }
+        const t=new URLSearchParams(window.location.search).get("t"); if(!t||t!==q.form_token) { setError("קישור לא חוקי או חסר טוקן."); return; }
         setQTitle(q.title); setLogoUrl(q.brand_logo_url||null); setBrandPrimary(q.brand_primary||"#2563eb"); setBrandAccent(q.brand_accent||"#f59e0b"); setBrandBackground(q.brand_background||"#ffffff");
         const {data:qs,error:qse}=await supabase.from("questions").select("id,type,label,help_text,required,order_index,questionnaire_id").eq("questionnaire_id",id).order("order_index",{ascending:true});
-        if(qse) throw qse; setQuestions((qs||[]) as any);
-        const ids=(qs||[]).map((x:any)=>x.id); if(ids.length){ const {data:opts,error:oe}=await supabase.from("question_options").select("id,question_id,value,label,order_index").in("question_id",ids).order("order_index",{ascending:true}); if(oe) throw oe; setOptions((opts||[]) as any);} else setOptions([]); }
+        if(qse){ setError("שגיאה בטעינת השאלות"); return; } setQuestions((qs||[]) as any);
+        const ids=(qs||[]).map((x:any)=>x.id); if(ids.length){ const {data:opts,error:oe}=await supabase.from("question_options").select("id,question_id,value,label,order_index").in("question_id",ids).order("order_index",{ascending:true}); if(oe){ setOptions([] as any); } else { setOptions((opts||[]) as any);} } else setOptions([]); }
       catch(e:any){ setError(e.message||String(e)); } finally{ setLoading(false);} }; load(); },[id]);
   const optionsByQuestion=useMemo(()=>{ const m:Record<string,Option[]>={}; for(const o of options)(m[o.question_id] ||= []).push(o); return m;},[options]);
   const setAnswer=(qid:string,v:any)=>setAnswers(prev=>({...prev,[qid]:v}));
@@ -49,7 +52,7 @@ export default function PublicForm(){
               {q.type==="number" && <input type="number" className="input" value={answers[q.id]??""} onChange={e=>setAnswer(q.id,e.target.value)}/>}
               {q.type==="date" && <input type="date" className="input" value={answers[q.id]??""} onChange={e=>setAnswer(q.id,e.target.value)}/>}
               {q.type==="single_choice" && <div className="mt-2 space-y-2">{(optionsByQuestion[q.id]||[]).map((o)=>(
-                <label key={o.id} className="flex items-center gap-2"><input type="radio" name={q.id} checked={answers[q.id]===o.value} onChange={()=>setAnswer(q.id,o.value)}/>{o.label}</label>))}</div>}
+                <label key={o.id} className="flex items_center gap-2"><input type="radio" name={q.id} checked={answers[q.id]===o.value} onChange={()=>setAnswer(q.id,o.value)}/>{o.label}</label>))}</div>}
               {q.type==="multi_choice" && <div className="mt-2 space-y-2">{(optionsByQuestion[q.id]||[]).map((o)=>{ const arr:string[]=Array.isArray(answers[q.id])?answers[q.id]:[]; const checked=arr.includes(o.value);
                 return(<label key={o.id} className="flex items-center gap-2"><input type="checkbox" checked={checked} onChange={(e)=>{ const cur=new Set(arr); if(e.target.checked) cur.add(o.value); else cur.delete(o.value); setAnswer(q.id,Array.from(cur)); }}/>{o.label}</label>);})}</div>}
             </div>))}

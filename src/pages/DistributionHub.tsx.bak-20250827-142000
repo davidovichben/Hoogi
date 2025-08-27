@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../integrations/supabase/client';
 import { buildPublicUrl, buildEditUrl } from '../lib/publicUrl';
-import ShareDialog from '../components/ShareDialog';
 
 // טיפוסים
 export type QMin = { id: string; token: string; title: string };
@@ -24,11 +23,6 @@ export default function DistributionHub() {
   // טעינה/שגיאות קטנות
   const [loading, setLoading] = useState<boolean>(false);
   const [inlineMsg, setInlineMsg] = useState<string | null>(null);
-
-  // דיאלוג בחירת מודל אימייל
-  const [emailDialogOpen, setEmailDialogOpen] = useState<boolean>(false);
-  // דיאלוג שיתוף
-  const [shareOpen, setShareOpen] = useState<boolean>(false);
 
   // טעינת רשימה מה־view
   useEffect(() => {
@@ -115,28 +109,12 @@ export default function DistributionHub() {
     }
   };
 
-  // email providers
-  type EmailProvider = 'default' | 'gmail' | 'outlook';
-  const openEmailProvider = (provider: EmailProvider) => {
+  const handleEmail = () => {
     if (!current || !publicUrl) return;
     const subject = encodeURIComponent(current.title || 'Questionnaire');
     const body = encodeURIComponent(shareText);
-    if (provider === 'gmail') {
-      const url = `https://mail.google.com/mail/?view=cm&fs=1&su=${subject}&body=${body}`;
-      window.open(url, '_blank', 'noopener,noreferrer');
-      return;
-    }
-    if (provider === 'outlook') {
-      const url = `https://outlook.live.com/mail/0/deeplink/compose?subject=${subject}&body=${body}`;
-      window.open(url, '_blank', 'noopener,noreferrer');
-      return;
-    }
     const href = `mailto:?subject=${subject}&body=${body}`;
     window.location.href = href;
-  };
-
-  const handleEmail = () => {
-    setEmailDialogOpen(true);
   };
 
   const handlePreview = () => {
@@ -149,32 +127,12 @@ export default function DistributionHub() {
     navigate(buildEditUrl(current.id));
   };
 
-  // החלפת שאלון מהקומבו – מעדכן URL param ושומר מצב, ומוודא קיום token דרך RPC אם חסר
-  const handleSelect = async (id: string) => {
+  // החלפת שאלון מהקומבו – מעדכן URL param ושומר מצב
+  const handleSelect = (id: string) => {
     const next = list.find((x) => x.id === id) ?? null;
-    if (!next) {
-      setCurrent(null);
-      const usp = new URLSearchParams(searchParams);
-      usp.delete('token');
-      setSearchParams(usp, { replace: true });
-      return;
-    }
-
-    let ensuredToken = next.token;
-    if (!ensuredToken) {
-      try {
-        const { data, error } = await supabase.rpc('ensure_questionnaire_token', { qid: id });
-        if (!error && data) {
-          ensuredToken = String(data);
-        }
-      } catch {}
-    }
-
-    const updated: QMin = { id: next.id, title: next.title, token: ensuredToken } as QMin;
-    setCurrent(updated);
-
+    setCurrent(next);
     const usp = new URLSearchParams(searchParams);
-    if (ensuredToken) usp.set('token', ensuredToken); else usp.delete('token');
+    if (next?.token) usp.set('token', next.token); else usp.delete('token');
     setSearchParams(usp, { replace: true });
   };
 
@@ -248,7 +206,7 @@ export default function DistributionHub() {
             </button>
             <button
               type="button"
-              onClick={() => setEmailDialogOpen(true)}
+              onClick={handleEmail}
               disabled={!current}
               aria-label="שיתוף באימייל"
               className="w-full sm:w-auto px-4 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-60 disabled:cursor-not-allowed"
@@ -263,15 +221,6 @@ export default function DistributionHub() {
               className="w-full sm:w-auto px-4 py-2 rounded-md bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed"
             >
               שיתוף ב־WhatsApp
-            </button>
-            <button
-              type="button"
-              onClick={() => setShareOpen(true)}
-              disabled={!publicUrl}
-              aria-label="פתח דיאלוג שיתוף"
-              className="w-full sm:w-auto px-4 py-2 rounded-md bg-muted hover:bg-muted/80 disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              שיתוף…
             </button>
             <button
               type="button"
@@ -322,17 +271,6 @@ export default function DistributionHub() {
             />
           </div>
         </div>
-
-        {/* דיאלוג שיתוף */}
-        <ShareDialog
-          open={shareOpen}
-          onOpenChange={setShareOpen}
-          url={publicUrl}
-          title={current?.title ?? 'שאלון'}
-          subject={current?.title ?? 'שאלון'}
-          body={current ? 'נשמח לפרט, מלא/י את השאלון' : undefined}
-          whatsappTemplate={'היי! מוזמן/ת למלא: {link}'}
-        />
       </div>
     </div>
   );

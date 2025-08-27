@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../integrations/supabase/client';
 import { buildPublicUrl, buildEditUrl } from '../lib/publicUrl';
-import ShareDialog from '../components/ShareDialog';
 
 // טיפוסים
 export type QMin = { id: string; token: string; title: string };
@@ -27,8 +26,6 @@ export default function DistributionHub() {
 
   // דיאלוג בחירת מודל אימייל
   const [emailDialogOpen, setEmailDialogOpen] = useState<boolean>(false);
-  // דיאלוג שיתוף
-  const [shareOpen, setShareOpen] = useState<boolean>(false);
 
   // טעינת רשימה מה־view
   useEffect(() => {
@@ -266,15 +263,6 @@ export default function DistributionHub() {
             </button>
             <button
               type="button"
-              onClick={() => setShareOpen(true)}
-              disabled={!publicUrl}
-              aria-label="פתח דיאלוג שיתוף"
-              className="w-full sm:w-auto px-4 py-2 rounded-md bg-muted hover:bg-muted/80 disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              שיתוף…
-            </button>
-            <button
-              type="button"
               onClick={handlePreview}
               disabled={!publicUrl}
               aria-label="תצוגה מקדימה"
@@ -322,17 +310,6 @@ export default function DistributionHub() {
             />
           </div>
         </div>
-
-        {/* דיאלוג שיתוף */}
-        <ShareDialog
-          open={shareOpen}
-          onOpenChange={setShareOpen}
-          url={publicUrl}
-          title={current?.title ?? 'שאלון'}
-          subject={current?.title ?? 'שאלון'}
-          body={current ? 'נשמח לפרט, מלא/י את השאלון' : undefined}
-          whatsappTemplate={'היי! מוזמן/ת למלא: {link}'}
-        />
       </div>
     </div>
   );

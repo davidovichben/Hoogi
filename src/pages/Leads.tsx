@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../integrations/supabase/client';
-import { Eye, Phone, Mail, MessageSquare, Download } from 'lucide-react';
+import { Eye, Phone, Mail, MessageSquare, Download, Share2 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../components/ui/tooltip';
 import LeadDrawer from '../components/LeadDrawer';
+import ShareDialog from '../components/ShareDialog';
 
 // Types
 type LeadFlat = {
@@ -185,6 +186,9 @@ const Leads: React.FC = () => {
   // Drawer state
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<LeadFlat | null>(null);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [shareUrl, setShareUrl] = useState("");
+  const [shareTitle, setShareTitle] = useState("");
 
   // URL Search Params
   const [searchParams, setSearchParams] = useSearchParams();
@@ -587,6 +591,9 @@ const Leads: React.FC = () => {
                     <th className="text-right p-4 text-xs sm:text-sm font-medium text-muted-foreground whitespace-nowrap">
                       לתגובות
                     </th>
+                    <th className="text-right p-4 text-xs sm:text-sm font-medium text-muted-foreground whitespace-nowrap">
+                      שיתוף
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -704,6 +711,23 @@ const Leads: React.FC = () => {
                           <MessageSquare className="h-4 w-4" />
                         </button>
                       </td>
+                      <td className="p-4">
+                        <button
+                          onClick={() => {
+                            const origin = typeof window !== 'undefined' ? window.location.origin : '';
+                            const url = `${origin}/responses?leadId=${lead.lead_id}`;
+                            const title = `ליד: ${lead.name || lead.email || lead.phone || lead.lead_id}`;
+                            setShareUrl(url);
+                            setShareTitle(title);
+                            setShareOpen(true);
+                          }}
+                          className="inline-flex items-center justify-center p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
+                          title="שיתוף קישור"
+                          aria-label="שיתוף קישור"
+                        >
+                          <Share2 className="h-4 w-4" />
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -749,6 +773,15 @@ const Leads: React.FC = () => {
         open={drawerOpen} 
         onClose={handleCloseDrawer} 
         lead={selectedLead} 
+      />
+      <ShareDialog
+        open={shareOpen}
+        onOpenChange={setShareOpen}
+        url={shareUrl}
+        title={shareTitle || 'קישור לליד'}
+        subject={shareTitle || 'קישור לליד'}
+        body={'צפי בתגובות של ליד זה במערכת'}
+        whatsappTemplate={'היי! הנה קישור לתגובות של הליד: {link}'}
       />
     </div>
   );
