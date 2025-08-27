@@ -4,30 +4,11 @@ export type PublicUrlOptions = {
   ref?: string;
 };
 
-export type PublicUrlObjectArg = {
-  token?: string;
-  lang?: string;
-  ref?: string;
-};
-
 // חתימה חדשה עם origin (compat): buildPublicUrl(origin, token, lang, ref)
 export function buildPublicUrl(origin: string, token: string, lang: string, ref: string): string;
 // חתימה ישנה (ללא origin) שנשמרת לתאימות: buildPublicUrl(token, opts)
 export function buildPublicUrl(token: string, opts?: PublicUrlOptions): string;
-// חתימה חדשה בסגנון אובייקט: buildPublicUrl({ token, lang, ref }) – מחזירה URL מלא עם window.origin
-export function buildPublicUrl(args: PublicUrlObjectArg): string;
-export function buildPublicUrl(a: string | PublicUrlObjectArg, b?: any, c?: any, d?: any): string {
-  // מצב 0: נקרא עם ({ token, lang, ref }) – משתמש ב-window.location.origin
-  if (typeof a === 'object' && a !== null) {
-    const { token, lang, ref } = a as PublicUrlObjectArg;
-    if (!token) return '';
-    const origin = typeof window !== 'undefined' ? window.location.origin : '';
-    const qs = new URLSearchParams();
-    if (lang) qs.set('lang', lang);
-    if (ref)  qs.set('ref', ref);
-    const query = qs.toString();
-    return `${origin}/q/${encodeURIComponent(token)}${query ? `?${query}` : ''}`;
-  }
+export function buildPublicUrl(a: string, b?: any, c?: any, d?: any): string {
   // מצב 1: נקרא עם (origin, token, lang, ref)
   if (typeof b === 'string') {
     const origin = a.replace(/\/$/, '');
