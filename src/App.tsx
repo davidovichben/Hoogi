@@ -31,6 +31,7 @@ import QuestionnairePreviewPage from "./pages/QuestionnairePreview";
 import DistributionHub from "./pages/DistributionHub";
 import Partners from "./pages/Partners";
 import { UpdatePassword } from "./pages/auth/UpdatePassword";
+import LegacyDistributeRedirect from "./pages/LegacyDistributeRedirect";
 
 const queryClient = new QueryClient();
 
@@ -50,6 +51,8 @@ const App = () => (
               <Route path="/auth/update-password" element={<UpdatePassword />} />
               <Route path="/onboarding" element={<Onboarding />} />
               <Route path="/onboarding/step2" element={<OnboardingStep2 />} />
+              {/* מסלול לגאסי שמתרגם qid→token */}
+              <Route path="/questionnaires/:id/distribute" element={<LegacyDistributeRedirect />} />
               <Route element={<Layout />}>
                 <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
                 <Route path="/questionnaires" element={<RequireAuth><QuestionnairesList /></RequireAuth>} />
@@ -72,7 +75,7 @@ const App = () => (
               <Route path="/q/:token" element={<PublicQuestionnaire />} />
               <Route path="*" element={<NotFound />} />
               <Route path="/auth/callback" element={<AuthCallback />} />
-</Routes>
+            </Routes>
           </BrowserRouter>
         </DemoProvider>
       </LanguageProvider>

@@ -68,22 +68,25 @@ export default function ReviewAndPublishPage() {
   const loadQuestionnaireData = async () => {
     try {
       setLoading(true);
+      setError(null);
       console.log('Loading questionnaire data for Token:', token);
 
-      // Load questionnaire data
+      // Load questionnaire data (שינוי ל-maybeSingle)
       const { data: questionnaire, error: qError } = await supabase
         .from('questionnaires')
         .select('*')
         .eq('token', token)
-        .single();
+        .maybeSingle();
 
       if (qError) {
         console.error('Error loading questionnaire:', qError);
-        throw qError;
+        setError(qError.message || (language === 'he' ? 'שגיאה בטעינה' : 'Loading error'));
+        return;
       }
 
       if (!questionnaire) {
-        throw new Error('Questionnaire not found');
+        setError(language === 'he' ? 'לא נמצא שאלון עבור הקישור הזה' : 'No questionnaire found for this link');
+        return;
       }
 
       // Load questions
@@ -95,7 +98,8 @@ export default function ReviewAndPublishPage() {
 
       if (questionsError) {
         console.error('Error loading questions:', questionsError);
-        throw questionsError;
+        setError(questionsError.message || (language === 'he' ? 'שגיאה בטעינת שאלות' : 'Failed to load questions'));
+        return;
       }
 
       // Extract design colors and other metadata
@@ -142,7 +146,7 @@ export default function ReviewAndPublishPage() {
         setIsPublished(true);
         const url = buildPublicUrl(questionnaire.public_token);
         setPublicUrl(url);
-        setToken(questionnaire.public_token);
+        setPublicToken(questionnaire.public_token);
       }
 
     } catch (err: any) {
@@ -471,11 +475,8 @@ export default function ReviewAndPublishPage() {
           </h2>
           <p className="text-muted-foreground mb-4">{error}</p>
           <div className="flex gap-2 justify-center">
-            <Button onClick={() => window.location.reload()}>
-              {language === 'he' ? 'נסה שוב' : 'Try Again'}
-            </Button>
-            <Button variant="outline" onClick={() => navigate('/')}>
-              {language === 'he' ? 'חזרה לדף הבית' : 'Back to Home'}
+            <Button onClick={() => navigate('/distribute')}>
+              {language === 'he' ? 'חזרה למסך ההפצה' : 'Back to Distribute'}
             </Button>
           </div>
         </div>
@@ -494,12 +495,11 @@ export default function ReviewAndPublishPage() {
           <p className="text-muted-foreground mb-4">
             {language === 'he' 
               ? 'לא ניתן היה לטעון את השאלון המבוקש' 
-              : "The requested questionnaire could not be loaded."
-            }
+              : "The requested questionnaire could not be loaded."}
           </p>
-          <Button onClick={() => navigate('/')}>
+          <Button onClick={() => navigate('/distribute')}>
             <ArrowLeft className={`h-4 w-4 ${language === 'he' ? 'ml-2' : 'mr-2'}`} />
-            {language === 'he' ? 'חזרה לשאלונים' : 'Back to Questionnaires'}
+            {language === 'he' ? 'חזרה למסך ההפצה' : 'Back to Distribute'}
           </Button>
         </div>
       </div>
@@ -571,8 +571,7 @@ export default function ReviewAndPublishPage() {
               <CardDescription className="text-lg">
                 {language === 'he' 
                   ? 'סקור את הגדרות השאלון והכן לפרסום' 
-                  : 'Review your questionnaire settings and prepare for publication'
-                }
+                  : 'Review your questionnaire settings and prepare for publication'}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -702,8 +701,7 @@ export default function ReviewAndPublishPage() {
               <CardDescription>
                 {language === 'he' 
                   ? 'צור קישור ציבורי לשאלון ותצוגה מקדימה' 
-                  : 'Create public link and preview questionnaire'
-                }
+                  : 'Create public link and preview questionnaire'}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -786,8 +784,7 @@ export default function ReviewAndPublishPage() {
                   <div className="text-xs text-gray-600 text-center">
                     {language === 'he' 
                       ? '💡 טיפ: השתמש בתצוגה מקדימה כדי לראות איך השאלון יראה לציבור' 
-                      : '💡 Tip: Use the preview to see how the questionnaire will look to the public'
-                    }
+                      : '💡 Tip: Use the preview to see how the questionnaire will look to the public'}
                   </div>
                 )}
               </div>

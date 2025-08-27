@@ -83,17 +83,13 @@ export default function DistributionHub() {
     return buildPublicUrl(current.token, { lang, ref });
   }, [current, lang, ref]);
 
-  // תבנית שיתוף אחידה
-  const shareText = useMemo(() => {
-    return `${current?.title ?? 'שאלון'} – נשמח לפרט, מלא/י: ${publicUrl}`;
-  }, [current?.title, publicUrl]);
-
   // פעולות
   const handleCopy = async () => {
     if (!publicUrl) return;
     try {
       await navigator.clipboard.writeText(publicUrl);
       // כאן אפשר לשלב toast אם יש מערכת טוסטים
+      // למשל: toast.success('הקישור הועתק')
     } catch {
       window.prompt('העתיקו ידנית:', publicUrl);
     }
@@ -101,17 +97,18 @@ export default function DistributionHub() {
 
   const handleWhatsApp = async () => {
     if (!current || !publicUrl) return;
-    const href = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
+    const text = `${current.title ?? ''} ${publicUrl}`.trim();
+    const href = `https://wa.me/?text=${encodeURIComponent(text)}`;
     const popup = window.open(href, '_blank', 'noopener,noreferrer');
     if (!popup || popup.closed) {
-      try { await navigator.clipboard.writeText(shareText); } catch {}
+      try { await navigator.clipboard.writeText(text); } catch {}
     }
   };
 
   const handleEmail = () => {
     if (!current || !publicUrl) return;
-    const subject = encodeURIComponent(current.title || 'Questionnaire');
-    const body = encodeURIComponent(shareText);
+    const subject = encodeURIComponent(current.title || 'שאלון');
+    const body = encodeURIComponent(publicUrl);
     const href = `mailto:?subject=${subject}&body=${body}`;
     window.location.href = href;
   };
