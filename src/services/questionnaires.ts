@@ -152,9 +152,31 @@ export async function ensurePublicToken(qid: string): Promise<string> {
 }
 
 export function buildPublicUrl(token: string) {
-  const origin =
-    (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8080');
+  const origin = (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8080');
   return `${origin}/q/${token}`;
+}
+
+// מאחד: טען שאלון לפי public_token או form_token עם maybeSingle
+export async function fetchQuestionnaireByAnyToken(token: string): Promise<{ data: any | null; error: any | null }> {
+  // נסיון לפי public_token
+  let { data, error } = await supabase
+    .from('questionnaires')
+    .select('*')
+    .eq('public_token', token)
+    .maybeSingle();
+
+  if (!data && !error) {
+    // נסיון לפי form_token
+    const alt = await supabase
+      .from('questionnaires')
+      .select('*')
+      .eq('form_token', token)
+      .maybeSingle();
+    data = alt.data ?? null;
+    error = alt.error ?? null;
+  }
+
+  return { data, error };
 }
 
 
@@ -423,21 +445,13 @@ export const fetchQuestionnaireForPreview = async (id: string) => {
 // חדש: פונקציה לטעינת שאלון ציבורי לפי טוקן
 export async function fetchPublicQuestionnaireByToken(token: string): Promise<any> {
   try {
-    // מצא שאלון לפי public_token
-    const { data: questionnaire, error: qError } = await supabase
-      .from('questionnaires')
-      .select('*')
-      .eq('public_token', token)
-      .eq('is_published', true)
-      .single();
-
-    if (qError) {
-      console.error('Error loading questionnaire by token:', qError);
-      throw new Error('Questionnaire not found or not published');
-    }
-
-    if (!questionnaire) {
+    // שימוש בפונקציה המאוחדת: public_token או form_token
+    const { data: questionnaire, error: qError } = await fetchQuestionnaireByAnyToken(token);
+    if (qError || !questionnaire) {
       throw new Error('Questionnaire not found');
+    }
+    if (!questionnaire.is_published) {
+      throw new Error('Questionnaire not found or not published');
     }
 
     // טען שאלות
@@ -455,24 +469,19 @@ export async function fetchPublicQuestionnaireByToken(token: string): Promise<an
     // טען אפשרויות לכל שאלה
     const questionsWithOptions = await Promise.all(
       (questions || []).map(async (question) => {
-        // נסה קודם question_options ואם לא קיים אז options
         let options = [];
-        
         try {
           const { data: questionOptions, error: optionsError } = await supabase
             .from('question_options')
             .select('*')
             .eq('question_id', question.id)
             .order('order_index', { ascending: true });
-          
           if (!optionsError && questionOptions) {
             options = questionOptions;
           }
         } catch (error) {
           console.warn('question_options table not found, trying options table');
         }
-        
-        // אם לא מצאנו ב-question_options, נסה בטבלת options
         if (options.length === 0) {
           try {
             const { data: legacyOptions, error: legacyError } = await supabase
@@ -480,7 +489,6 @@ export async function fetchPublicQuestionnaireByToken(token: string): Promise<an
               .select('*')
               .eq('question_id', question.id)
               .order('order_index', { ascending: true });
-            
             if (!legacyError && legacyOptions) {
               options = legacyOptions;
             }
@@ -488,18 +496,11 @@ export async function fetchPublicQuestionnaireByToken(token: string): Promise<an
             console.warn('Could not load options for question:', question.id, error);
           }
         }
-
-        return {
-          ...question,
-          options: options || []
-        };
+        return { ...question, options: options || [] };
       })
     );
 
-    return {
-      ...questionnaire,
-      questions: questionsWithOptions
-    };
+    return { ...questionnaire, questions: questionsWithOptions };
   } catch (error) {
     console.error('Error in fetchPublicQuestionnaireByToken:', error);
     throw error;

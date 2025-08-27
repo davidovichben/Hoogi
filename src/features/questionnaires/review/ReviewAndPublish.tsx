@@ -14,7 +14,8 @@ import {
   buildPublicUrl,
   generateQRCode,
   getQuestionnaireStats,
-  getEmbedCode
+  getEmbedCode,
+  fetchQuestionnaireByAnyToken
 } from "../../../services/questionnaires";
 import { DEFAULT_META } from "../../../models/questionnaire";
 import PublicPreviewModal from '../preview/PublicPreviewModal';
@@ -71,12 +72,8 @@ export default function ReviewAndPublishPage() {
       setError(null);
       console.log('Loading questionnaire data for Token:', token);
 
-      // Load questionnaire data (שינוי ל-maybeSingle)
-      const { data: questionnaire, error: qError } = await supabase
-        .from('questionnaires')
-        .select('*')
-        .eq('token', token)
-        .maybeSingle();
+      // Load questionnaire data (public_token or form_token) with maybeSingle
+      const { data: questionnaire, error: qError } = await fetchQuestionnaireByAnyToken(token);
 
       if (qError) {
         console.error('Error loading questionnaire:', qError);

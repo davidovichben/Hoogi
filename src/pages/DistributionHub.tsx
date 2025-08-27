@@ -1,12 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../integrations/supabase/client';
-import { buildPublicUrl, buildEditUrl } from '../lib/publicUrl';
+import { buildPublicUrl, buildEditUrl, buildQrApiUrl } from '../lib/publicUrl';
 import ShareDialog from '../components/ShareDialog';
 import { toast, announce } from '@/components/ui/Toaster';
 
 // טיפוסים
-export type QMin = { id: string; token: string; title: string };
+export type QMin = { id: string; public_token: string; title: string };
 export type Lang = 'he' | 'en';
 
 export default function DistributionHub() {
@@ -40,7 +40,7 @@ export default function DistributionHub() {
       try {
         const { data, error } = await supabase
           .from('questionnaires_min')
-          .select('id,token,title')
+          .select('id,public_token,title')
           .order('title', { ascending: true });
         if (error) throw error;
         const listData = (data ?? []) as QMin[];
@@ -52,7 +52,7 @@ export default function DistributionHub() {
           setCurrent(null);
         } else {
           const byToken = urlToken
-            ? listData.find((x) => x.token === urlToken) ?? null
+            ? listData.find((x) => x.public_token === urlToken) ?? null
             : null;
           setCurrent(byToken ?? listData[0]);
 
@@ -60,8 +60,8 @@ export default function DistributionHub() {
             // אם הטוקן לא נמצא ברשימה, ננסה שליפה נקודתית כדי להבדיל בין "לא נמצא" ל-406/null
             const { data: single, error: singleErr } = await supabase
               .from('questionnaires_min')
-              .select('id,token,title')
-              .eq('token', urlToken)
+              .select('id,public_token,title')
+              .eq('public_token', urlToken)
               .maybeSingle();
             if (!ignore) {
               if (singleErr) {
@@ -87,8 +87,7 @@ export default function DistributionHub() {
   // קישור ציבורי (מוחלט)
   const publicUrl = useMemo(() => {
     if (!current) return '';
-    const origin = typeof window !== 'undefined' ? window.location.origin : '';
-    const built = buildPublicUrl(origin, current.token, lang, ref);
+    const built = buildPublicUrl(current.public_token, { lang, ref });
     announce('הקישור עודכן');
     return built;
   }, [current, lang, ref]);
@@ -184,7 +183,7 @@ export default function DistributionHub() {
       return;
     }
 
-    let ensuredToken = next.token;
+    let ensuredToken = next.public_token;
     if (!ensuredToken) {
       try {
         const { data, error } = await supabase.rpc('ensure_questionnaire_token', { qid: id });
@@ -194,7 +193,7 @@ export default function DistributionHub() {
       } catch {}
     }
 
-    const updated: QMin = { id: next.id, title: next.title, token: ensuredToken } as QMin;
+    const updated: QMin = { id: next.id, title: next.title, public_token: ensuredToken } as QMin;
     setCurrent(updated);
 
     const usp = new URLSearchParams(searchParams);
@@ -342,7 +341,7 @@ export default function DistributionHub() {
             <img
               alt="QR"
               className="w-[256px] h-[256px] border border-border rounded-md"
-              src={`https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodeURIComponent(publicUrl)}`}
+              src={publicUrl ? buildQrApiUrl(publicUrl, 256) : ''}
             />
             <div className="mt-2">
               <button
