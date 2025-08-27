@@ -39,28 +39,12 @@ export default function DistributionHub() {
       setLoading(true);
       setInlineMsg(null);
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        // First try optimized view (if exists) scoped to user
-        let listData: QMin[] = [];
-        try {
-          const res = await supabase
-            .from('questionnaires_min')
-            .select('id,public_token,title')
-            .or(user?.id ? `owner_id.eq.${user.id},user_id.eq.${user.id},created_by.eq.${user.id}` : undefined)
-            .order('title', { ascending: true });
-          if (!res.error) listData = (res.data ?? []) as QMin[];
-        } catch {}
-
-        // Fallback to base table if view/column not found
-        if (listData.length === 0) {
-          const res2 = await supabase
-            .from('questionnaires')
-            .select('id, public_token, title')
-            .or(user?.id ? `owner_id.eq.${user.id},user_id.eq.${user.id},created_by.eq.${user.id}` : undefined)
-            .order('title', { ascending: true });
-          if (res2.error) throw res2.error;
-          listData = (res2.data ?? []) as QMin[];
-        }
+        const { data, error } = await supabase
+          .from('questionnaires_min')
+          .select('id,public_token,title')
+          .order('title', { ascending: true });
+        if (error) throw error;
+        const listData = (data ?? []) as QMin[];
         if (ignore) return;
         setList(listData);
 
@@ -75,26 +59,11 @@ export default function DistributionHub() {
 
           if (urlToken && !byToken) {
             // אם הטוקן לא נמצא ברשימה, ננסה שליפה נקודתית כדי להבדיל בין "לא נמצא" ל-406/null
-            let single: QMin | null = null;
-            let singleErr: any = null;
-            try {
-              const r1 = await supabase
-                .from('questionnaires_min')
-                .select('id,public_token,title')
-                .eq('public_token', urlToken)
-                .maybeSingle();
-              single = (r1.data as any) ?? null;
-              singleErr = r1.error ?? null;
-            } catch {}
-            if (!single && !singleErr) {
-              const r2 = await supabase
-                .from('questionnaires')
-                .select('id, public_token, title')
-                .eq('public_token', urlToken)
-                .maybeSingle();
-              single = (r2.data as any) ?? null;
-              singleErr = r2.error ?? null;
-            }
+            const { data: single, error: singleErr } = await supabase
+              .from('questionnaires_min')
+              .select('id,public_token,title')
+              .eq('public_token', urlToken)
+              .maybeSingle();
             if (!ignore) {
               if (singleErr) {
                 setInlineMsg(singleErr.message || 'שגיאה בטעינה');
