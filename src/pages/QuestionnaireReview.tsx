@@ -10,7 +10,7 @@ import { useToast } from "../hooks/use-toast";
 import { useLanguage } from "../contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { buildPublicUrl } from "../lib/publicUrl";
-import { toast, announce } from '@/components/ui/toaster';
+import { toast, announce } from '@/components/ui/Toaster';
 import { QRModal } from "../components/QRModal";
 
 interface Questionnaire {

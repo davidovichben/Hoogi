@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { TooltipWrapper } from '../components/TooltipWrapper';
-import { toast, announce } from '@/components/ui/toaster';
+import { toast, announce } from '@/components/ui/Toaster';
 import { supabase } from "@/integrations/supabase/client";
 import { Share2, BarChart3, Edit, Settings, ExternalLink } from 'lucide-react';
 

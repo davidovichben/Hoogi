@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../integrations/supabase/client';
 import { buildPublicUrl, buildEditUrl } from '../lib/publicUrl';
 import ShareDialog from '../components/ShareDialog';
-import { toast, announce } from '@/components/ui/toaster';
+import { toast, announce } from '@/components/ui/Toaster';
 
 // טיפוסים
 export type QMin = { id: string; token: string; title: string };

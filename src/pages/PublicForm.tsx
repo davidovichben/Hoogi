@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import BrandStyles from "@/components/BrandStyles";
-import { toast } from "@/components/ui/toaster";
+import { toast } from "@/components/ui/Toaster";
 type Question={id:string;type:"single_choice"|"multi_choice"|"text"|"long_text"|"number"|"date";label:string;help_text:string|null;required:boolean;order_index:number;};
 type Option={id:string;question_id:string;value:string;label:string;order_index:number;};
 export default function PublicForm(){

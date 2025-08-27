@@ -1,5 +1,5 @@
 import React from 'react';
-import { toast } from '@/components/ui/toaster';
+import { toast } from '@/components/ui/Toaster';
 
 type ResponseFlat = {
   response_id: string;

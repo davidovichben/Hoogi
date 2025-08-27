@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { upsertDraft } from "@/services/questionnaires";
 import { Button } from "@/components/ui/button";
-import { toast } from "@/components/ui/toaster";
+import { toast } from "@/components/ui/Toaster";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Save, ArrowRight, ArrowLeft, Eye, Settings } from "lucide-react";
 

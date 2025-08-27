@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { HoogiMessage } from '@/components/HoogiMascot';
 import { TooltipWrapper } from '@/components/TooltipWrapper';
-import { toast, announce } from '@/components/ui/toaster';
+import { toast, announce } from '@/components/ui/Toaster';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useDemo, getDemoData } from '@/contexts/DemoContext';
 

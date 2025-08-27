@@ -5,7 +5,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../com
 import { Eye, Download, Phone, Mail, MessageSquare, Share2 } from 'lucide-react';
 import ResponseDrawer from '../components/ResponseDrawer';
 import ShareDialog from '../components/ShareDialog';
-import { toast } from '@/components/ui/toaster';
+import { toast } from '@/components/ui/Toaster';
 
 // טיפוס מקומי לנתוני התגובות
 type ResponseFlat = {

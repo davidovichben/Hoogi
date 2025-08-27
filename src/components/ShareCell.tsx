@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { toast } from "@/components/ui/toaster";
+import { toast } from "@/components/ui/Toaster";
 const siteUrl = (import.meta as any).env.VITE_SITE_URL || window.location.origin;
 
 export function ShareCell({ row }: { row: any }) {

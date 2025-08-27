@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { toast } from "@/components/ui/toaster";
+import { toast } from "@/components/ui/Toaster";
 import { useForm, useFieldArray } from "react-hook-form";
 import { supabase } from "@/integrations/supabase/client";
 
