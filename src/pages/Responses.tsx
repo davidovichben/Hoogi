@@ -17,6 +17,7 @@ type ResponseFlat = {
   lead_name: string | null;
   lead_email: string | null;
   lead_phone: string | null;
+  lead_phone_normalized?: string | null;
   lead_ref: string | null;
   questionnaire_id: string | null;
   questionnaire_title: string | null;
@@ -165,7 +166,7 @@ const Responses: React.FC = () => {
           rating: rating ?? null,
           handled_at: status === 'done' ? new Date().toISOString() : null
         })
-        .eq('id', selectedRow.response_id);
+        .eq('response_id', selectedRow.response_id);
       if (error) throw error;
       handleCloseDrawer(); // סגור אחרי שמירה
     } catch (e) {

@@ -179,7 +179,10 @@ export default function QuestionnaireReviewPage() {
 
   const handleReview = () => {
     if (selectedQuestionnaireId) {
-      navigate(`/distribute?qid=${selectedQuestionnaireId}`);
+      // עדיפות ל-public_token אם קיים
+      const selectedQuestionnaire = questionnaires.find(q => q.id === selectedQuestionnaireId);
+      const qid = selectedQuestionnaire?.public_token || selectedQuestionnaireId;
+      navigate(`/distribute`);
     }
   };
 
@@ -192,14 +195,20 @@ export default function QuestionnaireReviewPage() {
   const handlePreview = () => {
     if (selectedQuestionnaireId) {
       // Redirect to new distribute route instead of old preview route
-      navigate(`/distribute?qid=${selectedQuestionnaireId}`);
+      // עדיפות ל-public_token אם קיים
+      const selectedQuestionnaire = questionnaires.find(q => q.id === selectedQuestionnaireId);
+      const qid = selectedQuestionnaire?.public_token || selectedQuestionnaireId;
+      navigate(`/distribute`);
     }
   };
 
   const handleShare = () => {
     if (selectedQuestionnaireId) {
       // Redirect to new distribute route instead of old share route
-      navigate(`/distribute?qid=${selectedQuestionnaireId}`);
+      // עדיפות ל-public_token אם קיים
+      const selectedQuestionnaire = questionnaires.find(q => q.id === selectedQuestionnaireId);
+      const qid = selectedQuestionnaire?.public_token || selectedQuestionnaireId;
+      navigate(`/distribute`);
     }
   };
 

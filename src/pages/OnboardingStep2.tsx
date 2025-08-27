@@ -56,7 +56,7 @@ export default function OnboardingStep2() {
         status: "ready",
         title: "שאלון חדש"
       });
-      navigate(`/distribute?qid=${qid}`);
+      navigate(`/distribute`);
     } catch (e) {
       console.error(e);
       alert("שגיאה בהכנת השאלון לפרסום");
@@ -74,7 +74,7 @@ export default function OnboardingStep2() {
   function handlePreview() {
     if (!qid) return;
     // Redirect to new distribute route instead of old preview route
-    navigate(`/distribute?qid=${qid}`);
+    navigate(`/distribute`);
   }
 
   return (

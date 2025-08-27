@@ -1,17 +1,23 @@
-export function buildPublicUrl(
-  token: string,
-  lang?: "he" | "en",
-  ref?: string
-): string {
-  // Prefer explicit base URL if set; otherwise current origin (browser)
-  const explicit = (import.meta as ImportMeta).env?.VITE_PUBLIC_BASE_URL as string | undefined;
-  const origin = (explicit && explicit.trim().length > 0
-    ? explicit
-    : (typeof window !== "undefined" ? window.location.origin : "")
-  ).replace(/\/+$/, "");
+export type BuildUrlParams = {
+  token: string;
+  lang?: 'he' | 'en';
+  ref?: string;
+  channel?: 'landing' | 'whatsapp' | 'mail' | 'qr' | 'other';
+};
 
-  const url = new URL(`/q/${token}`, origin);
-  if (lang) url.searchParams.set("lang", lang);
-  if (ref) url.searchParams.set("ref", ref);
+export function buildPublicUrl({ token, lang = 'he', ref = 'landing', channel }: BuildUrlParams) {
+  const base = window.location.origin; // לוקאלי/פרוד – יתאים אוטומטית
+  const url = new URL(`${base}/q/${token}`);
+  if (lang) url.searchParams.set('lang', lang);
+  if (ref) url.searchParams.set('ref', ref);
+  if (channel) url.searchParams.set('ch', channel);
   return url.toString();
+}
+
+export function getShareUrl(token: string): string {
+  return `${window.location.origin}/distribute?token=${token}`;
+}
+
+export function getReviewUrl(token: string): string {
+  return `${window.location.origin}/questionnaires/${token}/review`;
 }

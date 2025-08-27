@@ -626,7 +626,9 @@ export const Onboarding: React.FC = () => {
       // אם יש ID, עבור ישירות לסקירה
       if (formData.id) {
         console.log('Questionnaire has ID, navigating to review:', formData.id);
-        navigate(`/distribute?qid=${formData.id}`);
+        // עדיפות ל-public_token אם קיים
+        const qid = formData.id;
+        navigate(`/distribute`);
       } else {
         console.log('No ID, using handleSaveAndNavigate...');
         // השתמש בפונקציה הקיימת שעובדת
@@ -889,7 +891,7 @@ export const Onboarding: React.FC = () => {
 
       // Navigate to review page
       setTimeout(() => {
-        const reviewUrl = `/questionnaires/${questionnaire.id}/review`;
+        const reviewUrl = `/questionnaires/${questionnaire.token || questionnaire.id}/review`;
         console.log('Navigating to review after save:', reviewUrl);
         navigate(reviewUrl);
       }, 1000);
@@ -1425,12 +1427,16 @@ export const Onboarding: React.FC = () => {
                   <Button 
                     onClick={() => {
                       if (formData.id) {
-                        navigate(`/distribute?qid=${formData.id}`);
+                        // עדיפות ל-public_token אם קיים
+                        const qid = formData.id;
+                        navigate(`/distribute`);
                       } else {
                         // אם אין ID, שמור קודם ואז עבור להפצה
                         handleSaveAndNavigate().then(() => {
                           if (formData.id) {
-                            navigate(`/distribute?qid=${formData.id}`);
+                            // עדיפות ל-public_token אם קיים
+                            const qid = formData.id;
+                            navigate(`/distribute`);
                           }
                         });
                       }

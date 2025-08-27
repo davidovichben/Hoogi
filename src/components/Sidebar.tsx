@@ -90,7 +90,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
         <nav className="p-4 space-y-2">
           {navigation.map((item) => {
             const Icon = item.icon;
-            const isActive = location.pathname === item.href;
+            // בדיקה מיוחדת עבור /distribute - פעיל אם הנתיב מתחיל ב-/distribute
+            const isActive = item.href === '/distribute' 
+              ? location.pathname.startsWith('/distribute')
+              : location.pathname === item.href;
             
             return (
               <TooltipWrapper key={item.name} content={`${t('sidebar.navigateTo')} ${item.name}`}>

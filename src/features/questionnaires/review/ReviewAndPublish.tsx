@@ -33,7 +33,7 @@ export default function ReviewAndPublishPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { language } = useLanguage();
-  const id = params?.id as string;
+  const token = params?.token as string;
   
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<any>(null);
@@ -45,44 +45,36 @@ export default function ReviewAndPublishPage() {
 
   // חדש: שיתוף ציבורי מתקדם
   const [showPreview, setShowPreview] = useState(false);
-  const [token, setToken] = useState<string|null>(null);
+  const [publicToken, setPublicToken] = useState<string|null>(null);
   const [publicUrl, setPublicUrl] = useState<string>('');
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
   const [embedCode, setEmbedCode] = useState<string>('');
-  const [stats, setStats] = useState<any>(null);
+  const [stats, setStats] = useState(null);
   const [isPublished, setIsPublished] = useState(false);
 
   // Load real questionnaire data
   useEffect(() => {
-    console.log('ReviewAndPublishPage useEffect - ID:', id, 'Language:', language);
+    console.log('ReviewAndPublishPage useEffect - Token:', token, 'Language:', language);
     
-    if (!id || id === '[ID]' || id === '%5BID%5D') {
-      console.warn('Invalid ID provided, redirecting to questionnaires');
-      navigate('/');
-      return;
-    }
-
-    // בדוקID הוא UUID תקין
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(id)) {
-      console.warn('Invalid UUID format, redirecting to questionnaires');
-      navigate('/');
+    if (!token) {
+      console.warn('No token provided, redirecting to questionnaires');
+      navigate('/questionnaires');
       return;
     }
 
     loadQuestionnaireData();
-  }, [id, navigate, language]);
+  }, [token, navigate, language]);
 
   const loadQuestionnaireData = async () => {
     try {
       setLoading(true);
-      console.log('Loading questionnaire data for ID:', id);
+      console.log('Loading questionnaire data for Token:', token);
 
       // Load questionnaire data
       const { data: questionnaire, error: qError } = await supabase
         .from('questionnaires')
         .select('*')
-        .eq('id', id)
+        .eq('token', token)
         .single();
 
       if (qError) {
@@ -98,7 +90,7 @@ export default function ReviewAndPublishPage() {
       const { data: questions, error: questionsError } = await supabase
         .from('questions')
         .select('*')
-        .eq('questionnaire_id', id)
+        .eq('questionnaire_id', questionnaire.id)
         .order('created_at', { ascending: true });
 
       if (questionsError) {
@@ -177,14 +169,14 @@ export default function ReviewAndPublishPage() {
       
       // צור טוקן ציבורי אם לא קיים
       if (!token) {
-        const newToken = await ensurePublicToken(id);
-        setToken(newToken);
+        const newToken = await ensurePublicToken(data.questionnaire.id);
+        setPublicToken(newToken);
         const url = buildPublicUrl(newToken);
         setPublicUrl(url);
       }
       
       // פרסם את השאלון
-      const success = await publishQuestionnaire(id);
+              const success = await publishQuestionnaire(data.questionnaire.id);
       if (success) {
         setIsPublished(true);
         toast({
@@ -211,7 +203,7 @@ export default function ReviewAndPublishPage() {
   // חדש: פונקציה לתצוגה מקדימה פרטית (לא ציבורית)
   const handlePreview = () => {
     // Redirect to new distribute route instead of old preview route
-    navigate(`/distribute?qid=${id}`);
+            navigate(`/distribute?token=${data?.questionnaire?.public_token || data?.questionnaire?.token}`);
   };
 
   // חדש: פונקציה לתצוגה מקדימה ציבורית
@@ -276,10 +268,10 @@ export default function ReviewAndPublishPage() {
   };
 
   const handleLoadStats = async () => {
-    if (!id) return;
+    if (!data?.questionnaire?.id) return;
     
     try {
-      const statsData = await getQuestionnaireStats(id);
+              const statsData = await getQuestionnaireStats(data.questionnaire.id);
       setStats(statsData);
       toast({
         title: language === 'he' ? 'סטטיסטיקות נטענו!' : 'Stats loaded!',
@@ -342,11 +334,11 @@ export default function ReviewAndPublishPage() {
 
   const handleBackToEdit = () => {
     console.log('🔍 handleBackToEdit called');
-    console.log('📋 Current ID from params:', id);
+    console.log('📋 Current Token from params:', token);
     console.log('📋 Current data.questionnaire.id:', data?.questionnaire?.id);
     
     // Go back to onboarding step 2 (question builder)
-    const targetId = data?.questionnaire?.id || id;
+    const targetId = data?.questionnaire?.id;
     const targetUrl = `/onboarding?step=2&id=${targetId}`;
     
     console.log('🚀 Navigating to:', targetUrl);
@@ -355,21 +347,21 @@ export default function ReviewAndPublishPage() {
 
   const handleContinue = () => {
     // Priority 1: Navigate to new distribute route if questionnaire has public_token
-    if (id && data?.questionnaire?.public_token) {
+    if (data?.questionnaire?.public_token) {
       console.log('Navigating to new distribute route with public_token:', data.questionnaire.public_token);
-      navigate(`/distribute?qid=${id}`);
+      navigate(`/distribute?token=${data.questionnaire.public_token}`);
       return;
     }
     
-    // Fallback: Navigate to distribute route without public_token (will handle creation)
-    if (id) {
-      console.log('Navigating to distribute route for questionnaire setup:', id);
-      navigate(`/distribute?qid=${id}`);
+    // Fallback: Navigate to distribute route with token
+    if (data?.questionnaire?.token) {
+      console.log('Navigating to distribute route for questionnaire setup:', data.questionnaire.token);
+      navigate(`/distribute?token=${data.questionnaire.token}`);
       return;
     } else {
-      // Final fallback to home if no ID
-      console.warn('No questionnaire ID, navigating to home');
-      navigate('/');
+      // Final fallback to questionnaires if no token
+      console.warn('No questionnaire token, navigating to questionnaires');
+      navigate('/questionnaires');
     }
   };
 
@@ -388,7 +380,7 @@ export default function ReviewAndPublishPage() {
             selectedChannel: selectedChannel
           }
         })
-        .eq('id', id);
+        .eq('id', data?.questionnaire?.id);
 
       if (error) throw error;
 
@@ -805,7 +797,7 @@ export default function ReviewAndPublishPage() {
 
         {/* Sticky Bottom Bar */}
         <PublishBar
-          questionnaireId={id}
+          questionnaireId={data?.questionnaire?.id}
           criticalIssues={criticalIssues}
           warnings={warnings}
           onContinue={handleContinue}
@@ -822,8 +814,8 @@ export default function ReviewAndPublishPage() {
       </div>
 
       {/* חדש: Modal תצוגה מקדימה */}
-      {showPreview && token && (
-        <PublicPreviewModal token={token} onClose={() => setShowPreview(false)} />
+      {showPreview && publicToken && (
+        <PublicPreviewModal token={publicToken} onClose={() => setShowPreview(false)} />
       )}
     </div>
   );

@@ -11,6 +11,7 @@ type ResponseFlat = {
   lead_name: string | null;
   lead_email: string | null;
   lead_phone: string | null;
+  lead_phone_normalized?: string | null;
   lead_ref: string | null;
   questionnaire_id: string | null;
   questionnaire_title: string | null;
