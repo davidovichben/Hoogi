@@ -147,6 +147,27 @@ export default function DistributionHub() {
     window.open(publicUrl, '_blank', 'noopener,noreferrer');
   };
 
+  const handleSaveQr = async () => {
+    try {
+      if (!publicUrl) return;
+      const qrApi = `https://api.qrserver.com/v1/create-qr-code/?size=512x512&data=${encodeURIComponent(publicUrl)}`;
+      const res = await fetch(qrApi);
+      if (!res.ok) throw new Error('bad response');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'questionnaire_qr.png';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast.success('QR נשמר/הורד');
+    } catch {
+      toast.error('נכשל ליצור QR', { description: 'נסי שוב' });
+    }
+  };
+
   const handleEdit = () => {
     if (!current) return;
     navigate(buildEditUrl(current.id));
@@ -323,6 +344,16 @@ export default function DistributionHub() {
               className="w-[256px] h-[256px] border border-border rounded-md"
               src={`https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodeURIComponent(publicUrl)}`}
             />
+            <div className="mt-2">
+              <button
+                type="button"
+                onClick={handleSaveQr}
+                disabled={!publicUrl}
+                className="px-4 py-2 rounded-md bg-muted hover:bg-muted/80 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                הורד QR
+              </button>
+            </div>
           </div>
         </div>
 
