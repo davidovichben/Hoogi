@@ -1,9 +1,14 @@
-import 'dotenv/config';
 import fs from 'fs-extra';
 import { createClient } from '@supabase/supabase-js';
 import { Parser as Json2CsvParser } from 'json2csv';
+import dotenv from 'dotenv';
 
 const ENV_FILE = '.env.local';
+// טען במפורש את .env.local (אם קיים); במידה ולא, ניפול אחורה ל-.env כברירת מחדל
+dotenv.config({ path: ENV_FILE });
+if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
+  dotenv.config();
+}
 (async () => {
   const started = Date.now();
   try {
@@ -11,8 +16,8 @@ const ENV_FILE = '.env.local';
       console.warn(`[warn] ${ENV_FILE} not found. Will rely on process env if set.`);
     }
 
-    const SUPABASE_URL = process.env.SUPABASE_URL;
-    const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
+    const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     const SUPABASE_TABLES_ENV = (process.env.SUPABASE_TABLES || '').trim();
 
     if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
