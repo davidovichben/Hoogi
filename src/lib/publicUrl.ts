@@ -1,35 +1,44 @@
 // src/lib/publicUrl.ts
-export type PublicUrlOptions = {
-  lang?: 'he' | 'en';
-  ref?: string;
+export type BuildUrlParams = { lang?: string; ref?: string; baseUrl?: string };
+
+export function pickToken(q: { public_token?: string | null; token?: string | null; form_token?: string | null }) {
+  return q?.public_token ?? q?.token ?? q?.form_token ?? '';
+}
+
+// עוזר: בחירת origin על בסיס baseUrl/env/window
+const resolveOrigin = (baseUrl?: string) => {
+  const fromEnv = (import.meta as any)?.env?.VITE_PUBLIC_BASE_URL as string | undefined;
+  const origin = baseUrl || fromEnv || (typeof window !== 'undefined' ? window.location.origin : '');
+  return origin.replace(/\/$/, '');
 };
 
-export type PublicUrlObjectArg = {
-  token?: string;
-  lang?: string;
-  ref?: string;
-};
-
-// חתימה חדשה עם origin (compat): buildPublicUrl(origin, token, lang, ref)
-export function buildPublicUrl(origin: string, token: string, lang: string, ref: string): string;
-// חתימה ישנה (ללא origin) שנשמרת לתאימות: buildPublicUrl(token, opts)
-export function buildPublicUrl(token: string, opts?: PublicUrlOptions): string;
-// חתימה חדשה בסגנון אובייקט: buildPublicUrl({ token, lang, ref }) – מחזירה URL מלא עם window.origin
-export function buildPublicUrl(args: PublicUrlObjectArg): string;
-export function buildPublicUrl(a: string | PublicUrlObjectArg, b?: any, c?: any, d?: any): string {
-  // מצב 0: נקרא עם ({ token, lang, ref }) – משתמש ב-window.location.origin
+// חתימות נתמכות:
+// 1) buildPublicUrl(origin, token, lang?, ref?)
+export function buildPublicUrl(origin: string, token: string, lang?: string, ref?: string): string;
+// 2) buildPublicUrl(token)
+export function buildPublicUrl(token: string): string;
+// 3) buildPublicUrl(token, lang)
+export function buildPublicUrl(token: string, lang: string): string;
+// 4) buildPublicUrl(token, { lang, ref, baseUrl })
+export function buildPublicUrl(token: string, params: BuildUrlParams): string;
+// 5) buildPublicUrl({ token, lang, ref, baseUrl })
+export function buildPublicUrl(args: { token?: string; lang?: string; ref?: string; baseUrl?: string }): string;
+export function buildPublicUrl(a: any, b?: any, c?: any, d?: any): string {
+  // 5) אובייקט פרמטרים
   if (typeof a === 'object' && a !== null) {
-    const { token, lang, ref } = a as PublicUrlObjectArg;
+    const { token, lang, ref, baseUrl } = a as { token?: string; lang?: string; ref?: string; baseUrl?: string };
     if (!token) return '';
-    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    const origin = resolveOrigin(baseUrl);
     const qs = new URLSearchParams();
     if (lang) qs.set('lang', lang);
     if (ref)  qs.set('ref', ref);
     const query = qs.toString();
     return `${origin}/q/${encodeURIComponent(token)}${query ? `?${query}` : ''}`;
   }
-  // מצב 1: נקרא עם (origin, token, lang, ref)
-  if (typeof b === 'string') {
+
+  // 1) origin, token, lang?, ref?
+  if (typeof a === 'string' && typeof b === 'string' && (typeof c === 'string' || typeof d === 'string' || c === undefined && d === undefined)) {
+    // אם c/d קיימים – זה בוודאות origin+token+lang+ref; אם לא – זה עדיין תקין (origin+token)
     const origin = a.replace(/\/$/, '');
     const token = b as string;
     const lang = (c as string) || '';
@@ -41,14 +50,29 @@ export function buildPublicUrl(a: string | PublicUrlObjectArg, b?: any, c?: any,
     return `${origin}/q/${encodeURIComponent(token)}${query ? `?${query}` : ''}`;
   }
 
-  // מצב 2: נקרא עם (token, opts)
-  const token = a;
-  const opts = (b as PublicUrlOptions) || {};
-  const params = new URLSearchParams();
-  if (opts.lang) params.set('lang', opts.lang);
-  if (opts.ref)  params.set('ref',  opts.ref);
-  const qs = params.toString();
-  return `/q/${encodeURIComponent(token)}${qs ? `?${qs}` : ''}`;
+  // 3) token, lang  או  4) token, { ... }
+  if (typeof a === 'string') {
+    const token = a as string;
+    // 4) token, { lang, ref, baseUrl }
+    if (b && typeof b === 'object') {
+      const { lang, ref, baseUrl } = b as BuildUrlParams;
+      const origin = resolveOrigin(baseUrl);
+      const qs = new URLSearchParams();
+      if (lang) qs.set('lang', lang);
+      if (ref)  qs.set('ref', ref);
+      const query = qs.toString();
+      return `${origin}/q/${encodeURIComponent(token)}${query ? `?${query}` : ''}`;
+    }
+    // 2) token  או  3) token, lang
+    const origin = resolveOrigin();
+    const lang = typeof b === 'string' ? (b as string) : '';
+    const qs = new URLSearchParams();
+    if (lang) qs.set('lang', lang);
+    const query = qs.toString();
+    return `${origin}/q/${encodeURIComponent(token)}${query ? `?${query}` : ''}`;
+  }
+
+  return '';
 }
 
 // חתימה חדשה עם origin
@@ -67,4 +91,9 @@ export function buildEditUrl(a: string, b?: string): string {
 
 export function buildReviewUrl(id: string) {
   return `/questionnaires/${encodeURIComponent(id)}/review`;
+}
+
+// נוח ל-QR
+export function buildQrApiUrl(url: string, size = 256) {
+  return `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(url)}&size=${size}x${size}`;
 }
