@@ -3,7 +3,6 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../integrations/supabase/client';
 import { buildPublicUrl, buildEditUrl } from '../lib/publicUrl';
 import ShareDialog from '../components/ShareDialog';
-import { toast, announce } from '@/components/ui/toaster';
 
 // טיפוסים
 export type QMin = { id: string; token: string; title: string };
@@ -88,9 +87,7 @@ export default function DistributionHub() {
   const publicUrl = useMemo(() => {
     if (!current) return '';
     const origin = typeof window !== 'undefined' ? window.location.origin : '';
-    const built = buildPublicUrl(origin, current.token, lang, ref);
-    announce('הקישור עודכן');
-    return built;
+    return buildPublicUrl(origin, current.token, lang, ref);
   }, [current, lang, ref]);
 
   // תבנית שיתוף אחידה
@@ -103,9 +100,9 @@ export default function DistributionHub() {
     if (!publicUrl) return;
     try {
       await navigator.clipboard.writeText(publicUrl);
-      toast.success('קישור הועתק');
+      // כאן אפשר לשלב toast אם יש מערכת טוסטים
     } catch {
-      toast.error('לא ניתן להעתיק', { description: 'נסי ידנית' });
+      window.prompt('העתיקו ידנית:', publicUrl);
     }
   };
 
@@ -114,7 +111,7 @@ export default function DistributionHub() {
     const href = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
     const popup = window.open(href, '_blank', 'noopener,noreferrer');
     if (!popup || popup.closed) {
-      try { await navigator.clipboard.writeText(shareText); toast.success('קישור הועתק'); } catch { toast.error('לא ניתן להעתיק', { description: 'נסי ידנית' }); }
+      try { await navigator.clipboard.writeText(shareText); } catch {}
     }
   };
 

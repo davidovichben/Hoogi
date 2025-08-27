@@ -3,7 +3,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { TooltipWrapper } from '../components/TooltipWrapper';
-import { toast, announce } from '@/components/ui/toaster';
 import { supabase } from "@/integrations/supabase/client";
 import { Share2, BarChart3, Edit, Settings, ExternalLink } from 'lucide-react';
 
@@ -96,7 +95,6 @@ export default function QuestionnairesList(){
         {rows.map((q)=>{
           const token=q.public_token||q.form_token||"";
           const shareUrl = `${location.origin}/q/${q.id}${token?`?t=${token}`:""}`;
-          announce('הקישור עודכן');
           // ספירות אמת – במידה ויש טבלאות
           // נוכל לשפר לשליפה אמיתית; כרגע נשאיר 0 כברירת מחדל
           const responses = respCount[q.id] ?? 0;
@@ -129,7 +127,7 @@ export default function QuestionnairesList(){
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <TooltipWrapper content="שיתוף">
-                    <Button variant="outline" size="sm" onClick={async()=>{ try { await navigator.clipboard.writeText(shareUrl); toast.success('קישור הועתק'); } catch { toast.error('לא ניתן להעתיק', { description: 'נסי ידנית' }); } }}>
+                    <Button variant="outline" size="sm" onClick={()=>navigator.clipboard.writeText(shareUrl)}>
                       <Share2 className="h-4 w-4 mr-1" /> שיתוף
                     </Button>
                   </TooltipWrapper>

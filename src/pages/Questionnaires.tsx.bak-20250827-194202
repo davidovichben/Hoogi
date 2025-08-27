@@ -6,7 +6,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { HoogiMessage } from '@/components/HoogiMascot';
 import { TooltipWrapper } from '@/components/TooltipWrapper';
-import { toast, announce } from '@/components/ui/toaster';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useDemo, getDemoData } from '@/contexts/DemoContext';
 
@@ -19,11 +18,11 @@ export const Questionnaires: React.FC = () => {
   const demoData = getDemoData ? getDemoData(language) : { questionnaires: [] };
   const questionnaires = isDemoMode ? demoData.questionnaires : [];
 
-  const handleShare = async (id: string, title: string) => {
+  const handleShare = (id: string, title: string) => {
     const shareUrl = `${window.location.origin}/q/${id}`;
-    announce('הקישור עודכן');
-    try { await navigator.clipboard.writeText(shareUrl); toast.success('קישור הועתק'); }
-    catch { toast.error('לא ניתן להעתיק', { description: 'נסי ידנית' }); }
+    navigator.clipboard.writeText(shareUrl);
+    // Show share modal in real app
+    alert(`${t('toast.linkCopied')}\n${shareUrl}`);
   };
 
   return (
