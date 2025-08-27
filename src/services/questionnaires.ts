@@ -156,6 +156,18 @@ export function buildPublicUrl(token: string) {
   return `${origin}/q/${token}`;
 }
 
+// RPC מאובטח: שליפת שאלון לפי public_token
+export async function fetchQuestionnaireByToken(publicToken: string): Promise<any> {
+  const { data, error } = await supabase
+    .rpc('get_questionnaire_by_token', { p_token: publicToken })
+    .single();
+  if (error) {
+    console.error('get_questionnaire_by_token failed', error);
+    throw error;
+  }
+  return data; // מצופה: { id, public_token, title, lang, user_id }
+}
+
 // מאחד: טען שאלון לפי public_token או form_token עם maybeSingle
 export async function fetchQuestionnaireByAnyToken(token: string): Promise<{ data: any | null; error: any | null }> {
   // נסיון לפי public_token

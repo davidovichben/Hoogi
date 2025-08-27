@@ -97,3 +97,13 @@ export function buildReviewUrl(id: string) {
 export function buildQrApiUrl(url: string, size = 256) {
   return `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(url)}&size=${size}x${size}`;
 }
+
+// עטיפה נוחה: Preview URL זהה ל-public URL
+export function buildPreviewUrl(origin: string, token: string, lang?: string, ref?: string) {
+  return buildPublicUrl(origin, token, lang, ref);
+}
+
+// עטיפה נוחה: שם חלופי תואם
+export function qrPngUrl(link: string) {
+  return buildQrApiUrl(link, 256);
+}
