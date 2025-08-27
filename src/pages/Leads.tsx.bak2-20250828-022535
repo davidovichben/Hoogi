@@ -206,12 +206,9 @@ const Leads: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      const { data: { user } } = await supabase.auth.getUser();
-
       let query = supabase
         .from('leads_flat_v2')
         .select('*')
-        .eq('owner_id', user?.id || '')
         .order('created_at', { ascending: false });
 
       // Apply filters
@@ -289,7 +286,7 @@ const Leads: React.FC = () => {
       const { data: questionnairesData, error } = await supabase
         .from('questionnaires')
         .select('id, title')
-        .eq('owner_id', user?.id || '')
+        .or(user?.id ? `owner_id.eq.${user.id},user_id.eq.${user.id},created_by.eq.${user.id}` : undefined)
         .order('title');
 
       if (error) throw error;

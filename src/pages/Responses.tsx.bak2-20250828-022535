@@ -255,7 +255,7 @@ const Responses: React.FC = () => {
       const { data: questionnairesData, error: questionnairesError } = await supabase
         .from('questionnaires')
         .select('id, title')
-        .eq('owner_id', user?.id || '')
+        .or(user?.id ? `owner_id.eq.${user.id},user_id.eq.${user.id},created_by.eq.${user.id}` : undefined)
         .order('title');
 
       if (questionnairesError) {
@@ -276,12 +276,10 @@ const Responses: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const { data: { user } } = await supabase.auth.getUser();
       
       let query = supabase
         .from('responses_flat')
         .select('*')
-        .eq('owner_id', user?.id || '')
         .order('submitted_at', { ascending: false })
         .range(offset, offset + 19);
 

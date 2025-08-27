@@ -31,11 +31,11 @@ export default function QuestionnairesList(){
         return;
       }
 
-      // Attempt 1: סינון ישיר לפי owner_id (עדיף כאשר RLS קיים)
+      // Attempt 1: לפי types.ts – עמודות title, category, design_colors, logo_url, user_id
       let res = await supabase
         .from("questionnaires")
         .select("id,title,category,design_colors,logo_url,created_at,user_id,public_token")
-        .eq('owner_id', user.id)
+        .eq('user_id', user.id)
         .order("created_at",{ascending:false});
 
       // אם אין תוצאות – ננסה וריאנט חלופי
@@ -43,7 +43,6 @@ export default function QuestionnairesList(){
         res = await supabase
           .from("questionnaires")
           .select("id,title,category,design_colors,logo_url,created_at,user_id,public_token")
-          .eq('user_id', user.id)
           .order("created_at",{ascending:false})
           .limit(20);
       }
