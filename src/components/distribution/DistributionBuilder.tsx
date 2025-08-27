@@ -29,6 +29,8 @@ const DistributionBuilder = () => {
   const [pHasMore, setPHasMore] = useState(false);
   const [questionnaires, setQuestionnaires] = useState<Questionnaire[]>([]);
   const [partners, setPartners] = useState<Partner[]>([]);
+  const [qSearch, setQSearch] = useState("");
+  const [pSearch, setPSearch] = useState("");
 
   // ui
   const [resultUrl, setResultUrl] = useState<string>("");
@@ -50,17 +52,20 @@ const DistributionBuilder = () => {
     (async () => {
       const from = qPage * PAGE_SIZE;
       const to = from + PAGE_SIZE;
-      const { data, error, count } = await supabase
+      let query = supabase
         .from("questionnaires")
         .select("id,title,created_at", { count: "exact" })
-        .eq("owner_id", userId)
+        .eq("owner_id", userId);
+      const term = qSearch.trim();
+      if (term) query = query.ilike("title", `%${term}%`);
+      const { data, error, count } = await query
         .order("created_at", { ascending: false })
         .range(from, to - 1);
       if (error) { setErr(error.message); return; }
       setQuestionnaires(data || []);
       setQHasMore(((count ?? 0) > to));
     })();
-  }, [userId, qPage]);
+  }, [userId, qPage, qSearch]);
 
   // load partners page (owner scoped)
   useEffect(() => {
@@ -68,17 +73,24 @@ const DistributionBuilder = () => {
     (async () => {
       const from = pPage * PAGE_SIZE;
       const to = from + PAGE_SIZE;
-      const { data, error, count } = await supabase
+      let query = supabase
         .from("partners")
         .select("id,name,code", { count: "exact" })
-        .eq("owner_id", userId)
+        .eq("owner_id", userId);
+      const term = pSearch.trim();
+      if (term) query = query.or(`name.ilike.%${term}%,code.ilike.%${term}%`);
+      const { data, error, count } = await query
         .order("created_at", { ascending: false })
         .range(from, to - 1);
       if (error) { setErr(error.message); return; }
       setPartners(data || []);
       setPHasMore(((count ?? 0) > to));
     })();
-  }, [userId, pPage]);
+  }, [userId, pPage, pSearch]);
+
+  // reset page when search changes
+  useEffect(() => { setQPage(0); }, [qSearch]);
+  useEffect(() => { setPPage(0); }, [pSearch]);
 
   const createLink = async () => {
     setErr(null);
@@ -137,6 +149,12 @@ const DistributionBuilder = () => {
         <div className="grid gap-1">
           <label className="text-xs text-muted-foreground">שאלון</label>
           <div className="flex items-center gap-2">
+            <input
+              value={qSearch}
+              onChange={(e)=>setQSearch(e.target.value)}
+              placeholder="חיפוש לפי כותרת"
+              className="px-3 py-2 rounded-md border bg-background w-40"
+            />
             <select
               value={questionnaireId}
               onChange={(e) => setQuestionnaireId(e.target.value)}
@@ -157,6 +175,12 @@ const DistributionBuilder = () => {
         <div className="grid gap-1">
           <label className="text-xs text-muted-foreground">שותפה (לא חובה)</label>
           <div className="flex items-center gap-2">
+            <input
+              value={pSearch}
+              onChange={(e)=>setPSearch(e.target.value)}
+              placeholder="חיפוש שותפה (שם/קוד)"
+              className="px-3 py-2 rounded-md border bg-background w-40"
+            />
             <select
               value={partnerId ?? ""}
               onChange={(e) => setPartnerId(e.target.value || null)}
