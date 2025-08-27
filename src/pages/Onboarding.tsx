@@ -13,7 +13,7 @@ import { Badge } from '../components/ui/badge';
 import { HoogiMessage } from '../components/HoogiMascot';
 import { TooltipWrapper } from '../components/TooltipWrapper';
 import { useLanguage } from '../contexts/LanguageContext';
-import { toast } from '../hooks/use-toast';
+import { toast } from '@/components/ui/Toaster';
 import { fetchProfile } from '../lib/profile';
 import { QRModal } from '../components/QRModal';
 import { buildPublicUrl } from '../lib/publicUrl';
