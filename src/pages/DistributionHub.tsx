@@ -1,310 +1,251 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
-import { supabase } from '../integrations/supabase/client';
-import { buildPublicUrl } from '../lib/publicUrl';
+import { useSearchParams, Link } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { buildPublicUrl } from '@/lib/publicUrl';
 
-// אם אין את הספרייה, התקיני פעם אחת:  npm i qrcode
-import QRCode from 'qrcode';
-
-type Questionnaire = {
+type Q = {
   id: string;
-  title: string | null;
   token: string;
+  title: string | null;
   default_lang?: 'he' | 'en' | null;
 };
 
-const DistributionHub: React.FC = () => {
-  const [sp, setSp] = useSearchParams();
-  const navigate = useNavigate();
+type Partner = { id: string; name: string; code: string };
 
-  const token = sp.get('token') || '';
-  const [q, setQ] = useState<Questionnaire | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
-  const [questionnaires, setQuestionnaires] = useState<Questionnaire[]>([]);
-  const [loadingList, setLoadingList] = useState(false);
+const LANGS: Array<{label: string; value: 'he'|'en'}> = [
+  { label: 'Hebrew', value: 'he' },
+  { label: 'English', value: 'en' },
+];
 
-  const [lang, setLang] = useState<'he' | 'en'>('he');
-  const [ref, setRef] = useState('landing');
-  const [qr, setQr] = useState<string>('');
+const REFS = [
+  { label: 'landing', value: 'landing' },
+  { label: 'whatsapp', value: 'whatsapp' },
+  { label: 'mail', value: 'mail' },
+  { label: 'qr', value: 'qr' },
+  { label: 'other', value: 'other' },
+];
 
-  const publicUrl = useMemo(
-    () => (q ? buildPublicUrl({ token: q.token, lang, ref }) : ''),
-    [q, lang, ref]
-  );
+export default function DistributionHub() {
+  const [sp] = useSearchParams();
+  const token = sp.get('token') ?? '';
+  const [q, setQ] = useState<Q|null>(null);
+  const [loading, setLoading] = useState(true);
+  const [lang, setLang] = useState<'he'|'en'>('he');
+  const [ref, setRef]   = useState<string>('landing');
+  const [partners, setPartners] = useState<Partner[]>([]);
+  const [partnerCode, setPartnerCode] = useState<string>('');
 
-  // טעינת שאלון לפי token מה-URL
+  // load questionnaire by token
   useEffect(() => {
-    const load = async () => {
-      setErr(null);
+    let ignore = false;
+    (async () => {
       setLoading(true);
-      try {
-        if (!token) {
-          // אין token: לא נטען כלום - נציג את הרשימה
-          setQ(null);
-          setLoading(false);
-          return;
+      const { data, error } = await supabase
+        .from('questionnaires')
+        .select('id, token, title, default_lang')
+        .eq('token', token)
+        .single();
+      if (!ignore) {
+        if (error) console.error('Failed to fetch questionnaire:', error);
+        setQ(data ?? null);
+        if (data?.default_lang && (data.default_lang === 'he' || data.default_lang === 'en')) {
+          setLang(data.default_lang);
         }
-        const { data, error } = await supabase
-          .from('questionnaires')
-          .select('id,title,token,default_lang')
-          .eq('token', token)
-          .single();
-
-        if (error) throw error;
-        if (!data) throw new Error('שאלון לא נמצא');
-
-        setQ(data);
-        setLang((data.default_lang as 'he' | 'en') || 'he');
-      } catch (e: any) {
-        console.error('Failed to fetch questionnaire:', e);
-        setErr(e?.message || 'שגיאה בטעינת השאלון');
-      } finally {
         setLoading(false);
       }
-    };
-    load();
+    })();
+    return () => { ignore = true; };
   }, [token]);
 
-  // טעינת רשימת שאלונים
+  // load partners (optional)
   useEffect(() => {
-    const loadQuestionnaires = async () => {
-      if (q) return; // אם יש שאלון נבחר, לא נטען רשימה
-      setLoadingList(true);
-      try {
-        const { data, error } = await supabase
-          .from('questionnaires')
-          .select('id,title,token,default_lang')
-          .order('created_at', { ascending: false });
-        
-        if (error) throw error;
-        setQuestionnaires(data || []);
-      } catch (e: any) {
-        console.error('Failed to fetch questionnaires:', e);
-      } finally {
-        setLoadingList(false);
-      }
-    };
-    loadQuestionnaires();
-  }, [q]);
+    (async () => {
+      const { data } = await supabase
+        .from('partners')
+        .select('id, name, code')
+        .order('name');
+      setPartners(data ?? []);
+    })();
+  }, []);
 
-  // בניית QR בכל שינוי קישור
-  useEffect(() => {
-    const makeQR = async () => {
-      if (!publicUrl) return setQr('');
-      try {
-        const dataUrl = await QRCode.toDataURL(publicUrl, { width: 512, margin: 1 });
-        setQr(dataUrl);
-      } catch {
-        setQr('');
-      }
-    };
-    makeQR();
-  }, [publicUrl]);
+  // final ref (UI selector OR partner code)
+  const effectiveRef = partnerCode?.trim() ? partnerCode.trim() : ref;
 
-  const copyLink = async () => {
-    if (!publicUrl) return;
-    await navigator.clipboard.writeText(publicUrl);
-    alert('הקישור הועתק ✅');
-    // לוג שיתוף — לא חובה, עטוף ב-try/catch אם אין טבלה
+  const shareUrl = useMemo(() => {
+    if (!q?.token) return '';
+    return buildPublicUrl({ token: q.token, lang, ref: effectiveRef });
+  }, [q?.token, lang, effectiveRef]);
+
+  // helpers
+  const copy = async (text: string) => {
     try {
-      await supabase.from('share_logs').insert({
-        questionnaire_id: q?.id,
-        token: q?.token,
-        channel: 'copy',
-        lang,
-        ref,
-      });
-    } catch {/* ignore */}
+      await navigator.clipboard.writeText(text);
+      alert('קישור הועתק ✔');
+    } catch {
+      prompt('העתיקו ידנית:', text);
+    }
   };
 
-  const shareWhatsApp = () => {
-    if (!publicUrl) return;
-    const text = encodeURIComponent(`אשמח לקבל את תשובתך\n${publicUrl}`);
-    window.open(`https://wa.me/?text=${text}`, '_blank', 'noopener,noreferrer');
-    try {
-      supabase.from('share_logs').insert({ questionnaire_id: q?.id, token: q?.token, channel: 'whatsapp', lang, ref });
-    } catch {/* ignore */}
-  };
+  const mailtoHref = useMemo(() => {
+    const subject = encodeURIComponent(q?.title ? `שאלון: ${q.title}` : 'שאלון');
+    const body    = encodeURIComponent(`אשמח שתענו: ${shareUrl}`);
+    return `mailto:?subject=${subject}&body=${body}`;
+  }, [q?.title, shareUrl]);
 
-  const shareMail = () => {
-    if (!publicUrl) return;
-    const subject = encodeURIComponent(q?.title || 'אשמח לתשובתך');
-    const body = encodeURIComponent(`היי,\nאשמח שתענו על השאלון:\n${publicUrl}\nתודה!`);
-    window.location.href = `mailto:?subject=${subject}&body=${body}`;
-    try {
-      supabase.from('share_logs').insert({ questionnaire_id: q?.id, token: q?.token, channel: 'mail', lang, ref });
-    } catch {/* ignore */}
-  };
+  const whatsappHref = useMemo(() => {
+    const text = encodeURIComponent(`אשמח שתענו: ${shareUrl}`);
+    return `https://wa.me/?text=${text}`;
+  }, [shareUrl]);
 
-  const openPreview = () => {
-    if (!publicUrl) return;
-    window.open(publicUrl, '_blank', 'noopener,noreferrer');
-  };
-
-  const pickAnother = () => navigate('/questionnaires');
-
-  if (loading) {
+  if (!token) {
     return (
-      <div className="min-h-screen bg-background" dir="rtl">
-        <div className="container mx-auto p-4 sm:p-6">
-          <div className="h-10 w-48 bg-muted rounded animate-pulse mb-4" />
-          <div className="h-24 bg-muted rounded animate-pulse" />
-        </div>
-      </div>
-    );
-  }
-
-  if (err) {
-    return (
-      <div className="min-h-screen bg-background" dir="rtl">
-        <div className="container mx-auto p-4 sm:p-6">
-          <h1 className="text-2xl font-bold mb-2">שגיאה בטעינת השאלון</h1>
-          <div className="text-destructive">{err}</div>
-          <button onClick={pickAnother} className="mt-4 px-4 py-2 rounded bg-primary text-primary-foreground">חזרה לשאלונים</button>
-        </div>
+      <div className="p-6" dir="rtl">
+        <div className="text-2xl font-bold mb-2">הפצה</div>
+        <div className="text-muted-foreground">חסרה פרמטר token ב־URL. חזרי למסך השאלונים ובחרי "הפצה".</div>
+        <Link to="/questionnaires" className="underline text-primary mt-4 inline-block">למסך השאלונים</Link>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-background" dir="rtl">
-      <div className="container mx-auto p-4 sm:p-6">
-        {/* Header */}
+      <div className="container mx-auto p-4 sm:p-6 max-w-3xl">
         <div className="mb-6">
           <h1 className="text-3xl font-bold">הפצה</h1>
-          <p className="text-muted-foreground">יצירת קישורי הפצה לשאלון + שיתוף מהיר</p>
+          <p className="text-muted-foreground">
+            יצירת קישורי הפצה לשאלון + שיתוף מהיר
+          </p>
         </div>
 
-        {/* רשימת שאלונים אם אין token נבחר */}
-        {!q && !loading && (
-          <div className="bg-card border border-border rounded-lg p-4 sm:p-6 mb-6">
-            <h3 className="text-lg font-medium mb-4">בחרי שאלון להפצה</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {loadingList ? (
-                <div className="p-4 border rounded-lg text-center">
-                  <p className="text-muted-foreground">טוען שאלונים...</p>
-                </div>
-              ) : questionnaires.length > 0 ? (
-                questionnaires.map((questionnaire) => (
-                  <button
-                    key={questionnaire.id}
-                    onClick={() => {
-                      const newParams = new URLSearchParams(sp);
-                      newParams.set('token', questionnaire.token);
-                      setSp(newParams);
-                    }}
-                    className="p-4 border rounded-lg text-right hover:bg-muted transition-colors"
-                  >
-                    <div className="font-medium">{questionnaire.title || 'ללא כותרת'}</div>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      {questionnaire.token.slice(0, 8)}...
-                    </div>
-                  </button>
-                ))
-              ) : (
-                <div className="p-4 border rounded-lg text-center">
-                  <p className="text-muted-foreground">אין שאלונים להצגה</p>
-                </div>
-              )}
-            </div>
+        {/* Controls */}
+        <div className="bg-card border border-border rounded-lg p-4 space-y-3">
+          <div className="text-sm text-muted-foreground">
+            שאלון: <span className="font-medium text-foreground">{q?.title ?? (loading ? 'טוען…' : '—')}</span>
           </div>
-        )}
 
-        {/* Card */}
-        <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
-          {/* Row 1: Selectors */}
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-            <div className="sm:col-span-2">
-              <label className="block text-xs text-muted-foreground mb-1">שאלון</label>
-              <div className="flex items-center gap-2">
-                <input
-                  readOnly
-                  value={q?.title || '—'}
-                  className="w-full px-3 py-2 text-sm bg-background border border-border rounded-md"
-                />
-                <button onClick={pickAnother} className="px-3 py-2 text-sm rounded-md border">בחרי אחר</button>
-              </div>
-            </div>
-
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <div>
               <label className="block text-xs text-muted-foreground mb-1">שפה</label>
               <select
                 value={lang}
-                onChange={(e) => setLang(e.target.value as 'he' | 'en')}
-                className="w-full px-3 py-2 text-sm bg-background border border-border rounded-md"
+                onChange={(e) => setLang(e.target.value as 'he'|'en')}
+                className="w-full px-2 py-1 text-sm bg-background border border-border rounded-md"
               >
-                <option value="he">Hebrew</option>
-                <option value="en">English</option>
+                {LANGS.map(l => <option key={l.value} value={l.value}>{l.label}</option>)}
               </select>
             </div>
 
             <div>
               <label className="block text-xs text-muted-foreground mb-1">Ref</label>
-              <input
+              <select
                 value={ref}
                 onChange={(e) => setRef(e.target.value)}
-                placeholder="landing / campaign / demo…"
-                className="w-full px-3 py-2 text-sm bg-background border border-border rounded-md"
+                className="w-full px-2 py-1 text-sm bg-background border border-border rounded-md"
+                disabled={!!partnerCode}
+              >
+                {REFS.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+              </select>
+              <div className="text-[11px] text-muted-foreground mt-1">אפשר לבחור כאן או להזין קוד שותף</div>
+            </div>
+
+            <div>
+              <label className="block text-xs text-muted-foreground mb-1">קוד שותף (אופציונלי)</label>
+              <input
+                list="partners-list"
+                value={partnerCode}
+                onChange={(e) => setPartnerCode(e.target.value)}
+                placeholder="ex: prtnr123"
+                className="w-full px-2 py-1 text-sm bg-background border border-border rounded-md"
               />
+              <datalist id="partners-list">
+                {partners.map(p => <option key={p.id} value={p.code}>{p.name}</option>)}
+              </datalist>
             </div>
           </div>
+        </div>
 
-          {/* Row 2: Actions */}
-          <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {/* Preview + Share */}
+        <div className="bg-card border border-border rounded-lg p-4 mt-4 space-y-4">
+          <div className="flex flex-col sm:flex-row gap-2">
             <button
-              onClick={shareWhatsApp}
-              className="px-4 py-3 rounded-md bg-emerald-600 text-white text-sm"
-            >
-              שיתוף ב־WhatsApp
-            </button>
-            <button
-              onClick={shareMail}
-              className="px-4 py-3 rounded-md bg-sky-600 text-white text-sm"
-            >
-              שיתוף באימייל
-            </button>
-            <button
-              onClick={copyLink}
-              className="px-3 py-3 rounded-md bg-muted text-foreground text-sm"
+              onClick={() => copy(shareUrl)}
+              className="px-4 py-2 rounded-md bg-muted hover:bg-muted/80"
+              disabled={!shareUrl}
             >
               העתק קישור
             </button>
+
+            <a
+              href={mailtoHref}
+              className="px-4 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 text-center"
+              onClick={() => {/* future: log share */}}
+            >
+              שיתוף באימייל
+            </a>
+
+            <a
+              href={whatsappHref}
+              target="_blank" rel="noreferrer"
+              className="px-4 py-2 rounded-md bg-emerald-600 text-white hover:bg-emerald-700 text-center"
+              onClick={() => {/* future: log share */}}
+            >
+              שיתוף ב־WhatsApp
+            </a>
           </div>
 
-          {/* Row 3: Link + Preview */}
-          <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div className="sm:col-span-2">
-              <label className="block text-xs text-muted-foreground mb-1">קישור להפצה</label>
-              <input
-                readOnly
-                value={publicUrl}
-                className="w-full px-3 py-2 text-sm bg-background border border-border rounded-md"
-              />
-            </div>
-            <div className="flex items-end">
-              <button onClick={openPreview} className="w-full px-4 py-2 rounded-md bg-primary text-primary-foreground">
-                תצוגה מקדימה
-              </button>
-            </div>
-          </div>
+          {/* Link line */}
+          <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
+            <input
+              readOnly
+              value={shareUrl}
+              className="flex-1 px-3 py-2 bg-background border border-border rounded-md text-sm"
+            />
+            <button
+              onClick={() => window.open(shareUrl, '_blank')}
+              className="px-4 py-2 rounded-md bg-secondary text-secondary-foreground hover:bg-secondary/90"
+              disabled={!shareUrl}
+            >
+              תצוגה מקדימה
+            </button>
 
-          {/* Row 4: QR */}
-          <div className="mt-6">
-            <h3 className="text-sm font-medium mb-2">קוד QR</h3>
-            {qr ? (
-              <img src={qr} alt="qr" className="w-40 h-40 border rounded" />
-            ) : (
-              <div className="w-40 h-40 bg-muted rounded animate-pulse" />
+            {q?.id && (
+              <Link
+                to={`/questionnaires/${q.id}/review`}
+                className="px-4 py-2 rounded-md bg-muted hover:bg-muted/80"
+              >
+                עריכת השאלון
+              </Link>
             )}
-            <div className="text-xs text-muted-foreground mt-2">
-              שמירה: לחיצה ימנית → Save image as…
+          </div>
+
+          {/* QR */}
+          <div className="mt-2">
+            <label className="block text-xs text-muted-foreground mb-2">קוד QR</label>
+            <img
+              alt="QR"
+              src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(shareUrl)}`}
+              className="w-[220px] h-[220px] border border-border rounded-md"
+            />
+          </div>
+        </div>
+
+        {/* Automations placeholder */}
+        <div className="bg-card border border-border rounded-lg p-4 mt-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="font-medium">אוטומציות (בקרוב)</div>
+              <div className="text-sm text-muted-foreground">הפעלת מענה אוטומטי/שליחת מיילים על תגובה חדשה.</div>
             </div>
+            <button
+              disabled
+              className="px-4 py-2 rounded-md bg-muted text-muted-foreground cursor-not-allowed"
+              title="יגיע בשלב הבא"
+            >
+              נהל אוטומציות
+            </button>
           </div>
         </div>
       </div>
     </div>
   );
-};
-
-export default DistributionHub;
+}
