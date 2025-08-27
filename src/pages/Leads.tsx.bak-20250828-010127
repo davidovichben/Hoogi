@@ -282,11 +282,9 @@ const Leads: React.FC = () => {
   // Fetch questionnaires on initial load
   const fetchQuestionnaires = useCallback(async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
       const { data: questionnairesData, error } = await supabase
         .from('questionnaires')
         .select('id, title')
-        .or(user?.id ? `owner_id.eq.${user.id},user_id.eq.${user.id},created_by.eq.${user.id}` : undefined)
         .order('title');
 
       if (error) throw error;

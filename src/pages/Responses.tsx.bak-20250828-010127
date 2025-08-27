@@ -251,11 +251,9 @@ const Responses: React.FC = () => {
   const fetchQuestionnaires = useCallback(async () => {
     try {
       setLoadingQuestionnaires(true);
-      const { data: { user } } = await supabase.auth.getUser();
       const { data: questionnairesData, error: questionnairesError } = await supabase
         .from('questionnaires')
         .select('id, title')
-        .or(user?.id ? `owner_id.eq.${user.id},user_id.eq.${user.id},created_by.eq.${user.id}` : undefined)
         .order('title');
 
       if (questionnairesError) {
