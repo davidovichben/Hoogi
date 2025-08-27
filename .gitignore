@@ -25,6 +25,7 @@ dist-ssr
 
 .env
 .env.*
+!.env.local.example
 
 # Export outputs
 exports/
