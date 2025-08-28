@@ -44,65 +44,58 @@ export function Dashboard() {
 
   // ============ fetch live data ============
   useEffect(() => {
-    let mounted = true;
-    (async () => {
+    let mounted = true
+    ;(async () => {
       try {
-        setLoading(true);
-        setError(null);
+        setLoading(true)
+        setError(null)
 
-        // 1) זהוי משתמש
-        const { data: authData, error: authErr } = await supabase.auth.getUser();
-        if (authErr) throw authErr;
-        const userId = authData.user?.id;
-        if (!userId) throw new Error("Not authenticated");
+        // counts
+        const [{ count: qCount, error: qErr }, { count: rCount, error: rErr }, { count: lCount, error: lErr }] = await Promise.all([
+          supabase.from(CONFIG.tables.questionnaires).select('*', { count: 'exact', head: true }),
+          supabase.from(CONFIG.tables.responses).select('*', { count: 'exact', head: true }),
+          supabase.from(CONFIG.tables.leads).select('*', { count: 'exact', head: true }),
+        ])
+        if (qErr || rErr || lErr) throw qErr || rErr || lErr
 
-        // 2) ספירות — מסוננות לפי בעלים (וגם RLS יאכוף)
-        const [
-          { count: qCount, error: qErr },
-          { count: rCount, error: rErr },
-          { count: lCount, error: lErr },
-        ] = await Promise.all([
-          supabase.from(CONFIG.tables.questionnaires).select("*", { count: "exact", head: true }).eq("owner_id", userId),
-          supabase.from(CONFIG.tables.responses).select("*", { count: "exact", head: true }).eq("owner_id", userId),
-          supabase.from(CONFIG.tables.leads).select("*", { count: "exact", head: true }).eq("owner_id", userId),
-        ]);
-        if (qErr || rErr || lErr) throw (qErr || rErr || lErr);
-
-        // 3) שאלונים אחרונים — גם מסונן לפי בעלות
+        // recent questionnaires
         const { data: qList, error: qListErr } = await supabase
           .from(CONFIG.tables.questionnaires)
-          .select([
-            CONFIG.columns.questionnaires.id,
-            CONFIG.columns.questionnaires.title,
-            CONFIG.columns.questionnaires.category,
-            CONFIG.columns.questionnaires.created_at,
-          ].join(","))
-          .eq("owner_id", userId)
+          .select(
+            [
+              CONFIG.columns.questionnaires.id,
+              CONFIG.columns.questionnaires.title,
+              CONFIG.columns.questionnaires.category,
+              CONFIG.columns.questionnaires.created_at,
+            ].join(',')
+          )
           .order(CONFIG.columns.questionnaires.created_at, { ascending: false })
-          .limit(CONFIG.limits.recent);
+          .limit(CONFIG.limits.recent)
 
-        if (qListErr) throw qListErr;
+        if (qListErr) throw qListErr
 
-        if (!mounted) return;
+        if (!mounted) return
         setCounts({
           questionnaires: qCount ?? 0,
           responses: rCount ?? 0,
           leads: lCount ?? 0,
-        });
-        setRecentQ((qList || []).map((r: any) => ({
+        })
+        setRecentQ((qList as any[] | null)?.map((r) => ({
           id: r[CONFIG.columns.questionnaires.id],
-          title: r[CONFIG.columns.questionnaires.title] ?? "ללא כותרת",
+          title: r[CONFIG.columns.questionnaires.title] ?? 'ללא כותרת',
           category: r[CONFIG.columns.questionnaires.category] ?? null,
           created_at: r[CONFIG.columns.questionnaires.created_at] ?? null,
-        })));
+        })) ?? [])
       } catch (e: any) {
-        setError(e?.message || "Failed to load dashboard");
+        setError(e?.message || 'Failed to load dashboard')
       } finally {
-        if (mounted) setLoading(false);
+        if (mounted) setLoading(false)
       }
-    })();
-    return () => { mounted = false; };
-  }, []);
+    })()
+    return () => {
+      mounted = false
+    }
+  }, [])
 
   // ============ UI helpers ============
   const Stat = ({ label, value, icon }: { label: string; value: number | string; icon?: React.ReactNode }) => (
