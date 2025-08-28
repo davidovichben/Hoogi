@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { supabase } from '../integrations/supabase/client';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { supabase } from '@/lib/supabaseClient';
 import { Eye, Phone, Mail, MessageSquare, Download, Share2 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../components/ui/tooltip';
 import LeadDrawer from '../components/LeadDrawer';
@@ -190,8 +190,9 @@ const Leads: React.FC = () => {
   const [shareUrl, setShareUrl] = useState("");
   const [shareTitle, setShareTitle] = useState("");
 
-  // URL Search Params
+  // URL Search Params and Navigation
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const from = searchParams.get('from') || '';
   const to = searchParams.get('to') || '';
   const channel = searchParams.get('channel') || '';
@@ -206,12 +207,9 @@ const Leads: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      const { data: { user } } = await supabase.auth.getUser();
-
       let query = supabase
         .from('leads_flat_v2')
         .select('*')
-        .eq('owner_id', user?.id || '')
         .order('created_at', { ascending: false });
 
       // Apply filters
@@ -285,11 +283,9 @@ const Leads: React.FC = () => {
   // Fetch questionnaires on initial load
   const fetchQuestionnaires = useCallback(async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
       const { data: questionnairesData, error } = await supabase
         .from('questionnaires')
         .select('id, title')
-        .eq('owner_id', user?.id || '')
         .order('title');
 
       if (error) throw error;

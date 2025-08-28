@@ -1,11 +1,9 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { supabase } from '../integrations/supabase/client';
+import { supabase } from '@/lib/supabaseClient';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip';
-import { Eye, Download, Phone, Mail, MessageSquare, Share2 } from 'lucide-react';
+import { Eye, Download, Phone, Mail, MessageSquare } from 'lucide-react';
 import ResponseDrawer from '../components/ResponseDrawer';
-import ShareDialog from '../components/ShareDialog';
-import { toast } from '@/components/ui/Toaster';
 
 // טיפוס מקומי לנתוני התגובות
 type ResponseFlat = {
@@ -60,9 +58,6 @@ const Responses: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [questionnaires, setQuestionnaires] = useState<Questionnaire[]>([]);
   const [loadingQuestionnaires, setLoadingQuestionnaires] = useState(false);
-  const [shareOpen, setShareOpen] = useState(false);
-  const [shareUrl, setShareUrl] = useState('');
-  const [shareTitle, setShareTitle] = useState('');
   
   // State ל-Drawer
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -176,7 +171,7 @@ const Responses: React.FC = () => {
       handleCloseDrawer(); // סגור אחרי שמירה
     } catch (e) {
       console.error(e);
-      toast.error('שמירה נכשלה');
+      alert('שמירה נכשלה');
     } finally {
       setSaving(false);
     }
@@ -251,11 +246,9 @@ const Responses: React.FC = () => {
   const fetchQuestionnaires = useCallback(async () => {
     try {
       setLoadingQuestionnaires(true);
-      const { data: { user } } = await supabase.auth.getUser();
       const { data: questionnairesData, error: questionnairesError } = await supabase
         .from('questionnaires')
         .select('id, title')
-        .eq('owner_id', user?.id || '')
         .order('title');
 
       if (questionnairesError) {
@@ -276,12 +269,10 @@ const Responses: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const { data: { user } } = await supabase.auth.getUser();
       
       let query = supabase
         .from('responses_flat')
         .select('*')
-        .eq('owner_id', user?.id || '')
         .order('submitted_at', { ascending: false })
         .range(offset, offset + 19);
 
@@ -466,13 +457,13 @@ const getStatusBadge = (status: string | null | undefined) => {
       {item.label}
     </span>
   );
-  };
+};
 
   return (
     <TooltipProvider>
       <div className="min-h-screen bg-background" dir="rtl">
         <div className="container mx-auto p-4 sm:p-6">
-      {/* Header */}
+          {/* Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-foreground mb-2">תגובות</h1>
             <p className="text-muted-foreground">ניהול וצפייה בתגובות השאלונים שלך</p>
@@ -592,7 +583,7 @@ const getStatusBadge = (status: string | null | undefined) => {
               </div>
 
               {/* Search */}
-        <div>
+              <div>
                 <label className="block text-xs text-muted-foreground mb-1 text-right">חיפוש</label>
                 <input
                   type="text"
@@ -612,8 +603,8 @@ const getStatusBadge = (status: string | null | undefined) => {
               >
                 איפוס
               </button>
-        </div>
-      </div>
+            </div>
+          </div>
 
           {/* Actions Bar — תמיד מוצג */}
           <div className="bg-card border border-border rounded-lg p-3 sm:p-4 mb-4 flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
@@ -674,7 +665,7 @@ const getStatusBadge = (status: string | null | undefined) => {
                     : 'נסה לשנות את הפילטרים או לחפש משהו אחר'
                   }
                 </p>
-            </div>
+              </div>
             )}
 
             {/* Data Table */}
@@ -732,7 +723,7 @@ const getStatusBadge = (status: string | null | undefined) => {
                             {getStatusBadge(response.status)}
                           </td>
                           <td className="p-4 text-xs sm:text-sm break-words max-w-[200px]">
-                        <div>
+                            <div>
                               <div className="font-medium">{formatField(response.lead_name)}</div>
                               <div className="text-muted-foreground">{formatField(response.lead_email)}</div>
                             </div>
@@ -746,12 +737,12 @@ const getStatusBadge = (status: string | null | undefined) => {
                                   onClick={() => handleOpenDrawer(response)}
                                 >
                                   {summarizeAnswers(response.answers)}
-                        </div>
+                                </div>
                               </TooltipTrigger>
                               <TooltipContent side="top" className="max-w-xs">
                                 <div className="whitespace-pre-line text-xs">
                                   {getTooltipContent(response.answers)}
-                        </div>
+                                </div>
                               </TooltipContent>
                             </Tooltip>
                           </td>
@@ -759,7 +750,7 @@ const getStatusBadge = (status: string | null | undefined) => {
                             {formatField(response.lead_ref)}
                           </td>
                           <td className="p-4">
-                        <div className="flex items-center gap-1">
+                            <div className="flex items-center gap-1">
                               <button
                                 onClick={() => handleOpenDrawer(response)}
                                 className="inline-flex items-center justify-center p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
@@ -799,21 +790,6 @@ const getStatusBadge = (status: string | null | undefined) => {
                                   <MessageSquare className="h-4 w-4" />
                                 </a>
                               )}
-                              <button
-                                onClick={() => {
-                                  const origin = typeof window !== 'undefined' ? window.location.origin : '';
-                                  const url = `${origin}/responses?leadId=${response.lead_id ?? ''}`;
-                                  const title = `תגובה: ${response.questionnaire_title || ''}`;
-                                  setShareUrl(url);
-                                  setShareTitle(title);
-                                  setShareOpen(true);
-                                }}
-                                className="inline-flex items-center justify-center p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
-                                title="שיתוף קישור"
-                                aria-label="שיתוף קישור"
-                              >
-                                <Share2 className="h-4 w-4" />
-                              </button>
                             </div>
                           </td>
                         </tr>
@@ -838,7 +814,7 @@ const getStatusBadge = (status: string | null | undefined) => {
                   
                   <div className="text-sm text-muted-foreground">
                     עמוד {Math.floor(offset / 20) + 1}
-                        </div>
+                  </div>
                   
                   <button
                     onClick={handleNext}
@@ -851,10 +827,10 @@ const getStatusBadge = (status: string | null | undefined) => {
                   >
                     הבא
                   </button>
-            </div>
+                </div>
               </>
-      )}
-    </div>
+            )}
+          </div>
         </div>
 
         {/* Response Drawer */}
@@ -867,15 +843,6 @@ const getStatusBadge = (status: string | null | undefined) => {
           saving={saving}
         />
       </div>
-      <ShareDialog
-        open={shareOpen}
-        onOpenChange={setShareOpen}
-        url={shareUrl}
-        title={shareTitle || 'קישור לתגובות'}
-        subject={shareTitle || 'קישור לתגובות'}
-        body={'לינק לתגובות לפי ליד'}
-        whatsappTemplate={'בדקי את התגובות כאן: {link}'}
-      />
     </TooltipProvider>
   );
 };

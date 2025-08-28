@@ -1,5 +1,5 @@
-import { useEffect } from "react";
-import { supabase } from "../integrations/supabase/client";
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabaseClient";
 import { fetchProfile } from "../lib/profile";
 import { useLanguage } from "../contexts/LanguageContext";
 

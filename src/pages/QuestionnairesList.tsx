@@ -49,11 +49,11 @@ export default function QuestionnairesList(){
       }
 
       if(res.error){
-        // Attempt 2: created_by (alternative schema)
+        // Attempt 2: user_id fallback
         res = await supabase
           .from("questionnaires")
           .select("id,title,category,design_colors,logo_url,created_at,user_id,public_token")
-          .eq("created_by", user.id)
+          .eq("user_id", user.id)
           .order("created_at",{ascending:false});
       }
 

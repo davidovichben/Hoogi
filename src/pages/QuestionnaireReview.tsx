@@ -80,7 +80,7 @@ export default function QuestionnaireReviewPage() {
       const { data, error } = await supabase
         .from('questionnaires')
         .select('*')
-        .or(`owner_id.eq.${user.id},user_id.eq.${user.id},created_by.eq.${user.id}`)
+        .eq('owner_id', user.id)
         .order('created_at', { ascending: false });
 
       console.log('📊 Supabase response:', { data, error });

@@ -1,10 +1,20 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../integrations/supabase/client';
+import { buildDistributeUrl, openShare, Channel } from '../lib/share';
 import { buildPublicUrl, buildEditUrl, buildQrApiUrl } from '../lib/publicUrl';
 import ShareDialog from '../components/ShareDialog';
 import AdvancedShare from '@/components/AdvancedShare';
 import { toast, announce } from '@/components/ui/Toaster';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { 
+  Share2, Copy, Eye, Edit, Download, QrCode, 
+  MessageCircle, Mail, Instagram, Facebook, 
+  Linkedin, Globe, Settings, BarChart3 
+} from 'lucide-react';
 
 // טיפוסים
 export type QMin = { id: string; public_token: string; title: string };
@@ -32,77 +42,56 @@ export default function DistributionHub() {
   // דיאלוג שיתוף
   const [shareOpen, setShareOpen] = useState<boolean>(false);
 
+  // --- Guard נגד 400: נטען userId לפני כל שאילתות ---
+  const [userId, setUserId] = useState<string | null>(null);
+  useEffect(() => {
+    let cancel = false;
+    supabase.auth.getUser().then(({ data, error }) => {
+      if (!cancel && !error) setUserId(data.user?.id ?? null);
+    });
+    return () => { cancel = true; };
+  }, []);
+
   // טעינת רשימה מה־view
   useEffect(() => {
+    if (!userId) return; // אל תשלח שאילתות לפני שיש משתמש
     let ignore = false;
     (async () => {
-      setLoading(true);
-      setInlineMsg(null);
+      setLoading(true); setInlineMsg(null);
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        // First try optimized view (if exists) scoped to user
-        let listData: QMin[] = [];
-        try {
-          const res = await supabase
-            .from('questionnaires_min')
-            .select('id,public_token,title')
-            .or(user?.id ? `owner_id.eq.${user.id},user_id.eq.${user.id},created_by.eq.${user.id}` : undefined)
-            .order('title', { ascending: true });
-          if (!res.error) listData = (res.data ?? []) as QMin[];
-        } catch {}
-
-        // Fallback to base table if view/column not found
-        if (listData.length === 0) {
-          const res2 = await supabase
-            .from('questionnaires')
-            .select('id, public_token, title')
-            .or(user?.id ? `owner_id.eq.${user.id},user_id.eq.${user.id},created_by.eq.${user.id}` : undefined)
-            .order('title', { ascending: true });
-          if (res2.error) throw res2.error;
-          listData = (res2.data ?? []) as QMin[];
+        // שאלונים
+        const { data: qs, error: qErr } = await supabase
+          .from("questionnaires")
+          .select("id,title,created_at")
+          .eq("owner_id", userId)
+          .order("created_at", { ascending: false });
+        if (qErr) {
+          console.error("[Distribute] questionnaires error:", { message: qErr.message, details: qErr.details, hint: qErr.hint });
+          throw qErr;
         }
-        if (ignore) return;
-        setList(listData);
 
-        // בחירת current לפי token מה-URL, או ברירת מחדל לפריט הראשון
-        if (listData.length === 0) {
-          setCurrent(null);
-        } else {
-          const byToken = urlToken
-            ? listData.find((x) => x.public_token === urlToken) ?? null
-            : null;
-          setCurrent(byToken ?? listData[0]);
+        // שותפים (אם יש)
+        // Note: There's no existing 'partners' state or usage in the provided DistributionHub.tsx.
+        // Assuming 'partners' logic is intended for DistributionBuilder.tsx or similar.
+        // For now, I'm adding a placeholder to avoid build errors if it's meant to be here.
+        const ps: any[] = []; // Placeholder for partners data
 
-          if (urlToken && !byToken) {
-            // אם הטוקן לא נמצא ברשימה, ננסה שליפה נקודתית כדי להבדיל בין "לא נמצא" ל-406/null
-            let single: QMin | null = null;
-            let singleErr: any = null;
-            try {
-              const r1 = await supabase
-                .from('questionnaires_min')
-                .select('id,public_token,title')
-                .eq('public_token', urlToken)
-                .maybeSingle();
-              single = (r1.data as any) ?? null;
-              singleErr = r1.error ?? null;
-            } catch {}
-            if (!single && !singleErr) {
-              const r2 = await supabase
-                .from('questionnaires')
-                .select('id, public_token, title')
-                .eq('public_token', urlToken)
-                .maybeSingle();
-              single = (r2.data as any) ?? null;
-              singleErr = r2.error ?? null;
-            }
-            if (!ignore) {
-              if (singleErr) {
-                setInlineMsg(singleErr.message || 'שגיאה בטעינה');
-              } else if (!single) {
-                setInlineMsg('שאלון לא נמצא');
-              }
-            }
-          }
+        // If you intended to load partners from Supabase here, uncomment and complete this section:
+        /*
+        const { data: ps, error: pErr } = await supabase
+          .from("partners")
+          .select("id,name,code,created_at")
+          .eq("owner_id", userId)
+          .order("created_at", { ascending: false });
+        if (pErr) {
+          console.error("[Distribute] partners error:", { message: pErr.message, details: pErr.details, hint: pErr.hint });
+          throw pErr;
+        }
+        */
+
+        if (!ignore) {
+          setList(qs ?? []); // Assuming qs is the questionnaire list
+          // setPartners(ps ?? []); // Uncomment if partners state is added
         }
       } catch (e: any) {
         if (!ignore) setInlineMsg(e?.message ?? 'שגיאה בטעינת השאלונים');
@@ -110,16 +99,13 @@ export default function DistributionHub() {
         if (!ignore) setLoading(false);
       }
     })();
-    return () => {
-      ignore = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    return () => { ignore = true; };
+  }, [userId]);
 
   // קישור ציבורי (מוחלט)
   const publicUrl = useMemo(() => {
     if (!current) return '';
-    const built = buildPublicUrl(current.public_token, { lang, ref });
+    const built = buildDistributeUrl(current.public_token, { lang, partnerId: ref, channel: null });
     announce('הקישור עודכן');
     return built;
   }, [current, lang, ref]);
@@ -132,21 +118,34 @@ export default function DistributionHub() {
   // פעולות
   const handleCopy = async () => {
     if (!publicUrl) return;
-    try {
-      await navigator.clipboard.writeText(publicUrl);
-      toast.success('קישור הועתק');
-    } catch {
-      toast.error('לא ניתן להעתיק', { description: 'נסי ידנית' });
-    }
+    openShare("direct", publicUrl);
   };
 
   const handleWhatsApp = async () => {
     if (!current || !publicUrl) return;
-    const href = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
-    const popup = window.open(href, '_blank', 'noopener,noreferrer');
-    if (!popup || popup.closed) {
-      try { await navigator.clipboard.writeText(shareText); toast.success('קישור הועתק'); } catch { toast.error('לא ניתן להעתיק', { description: 'נסי ידנית' }); }
-    }
+    openShare("whatsapp", publicUrl);
+  };
+
+  const handleFacebook = () => {
+    if (!publicUrl) return;
+    openShare("facebook", publicUrl);
+  };
+
+  const handleInstagram = async () => {
+    if (!publicUrl) return;
+    openShare("instagram", publicUrl);
+  };
+
+  const handleLinkedin = () => {
+    if (!publicUrl) return;
+    openShare("linkedin", publicUrl);
+  };
+
+  const handleTwitter = () => {
+    if (!publicUrl) return;
+    const text = `${current?.title ?? 'שאלון'} – נשמח לפרט`;
+    const href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(publicUrl)}`;
+    window.open(href, '_blank', 'noopener,noreferrer,width=600,height=400');
   };
 
   // email providers
@@ -170,7 +169,8 @@ export default function DistributionHub() {
   };
 
   const handleEmail = () => {
-    setEmailDialogOpen(true);
+    if (!publicUrl) return;
+    openShare("email", publicUrl);
   };
 
   const handlePreview = () => {
@@ -235,169 +235,395 @@ export default function DistributionHub() {
 
   return (
     <div className="min-h-screen bg-background" dir="rtl">
-      <div className="container mx-auto p-4 sm:p-6 max-w-3xl">
+      <div className="container mx-auto p-4 sm:p-6 max-w-5xl">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold">הפצה</h1>
-          <p className="text-muted-foreground">ניהול קישורי הפצה, תצוגה מקדימה ושיתוף מהיר – במקום אחד.</p>
+          <h1 className="text-3xl font-bold flex items-center gap-2">
+            <Share2 className="w-8 h-8" />
+            הפצה
+          </h1>
+          <p className="text-muted-foreground">ניהול קישורי הפצה, שיתוף ברשתות חברתיות ותצוגה מקדימה – במקום אחד.</p>
         </div>
 
-        <div className="bg-card border border-border rounded-lg p-4 space-y-4">
-          {/* בחירת שאלון */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-              <label className="block text-xs text-muted-foreground mb-1" htmlFor="qsel">שאלון</label>
-              <select
-                id="qsel"
-                aria-label="בחירת שאלון"
-                className="w-full px-2 py-2 text-sm bg-background border border-border rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                value={current?.id ?? ''}
-                onChange={(e) => handleSelect(e.target.value)}
-                disabled={loading || list.length === 0}
-              >
-                {list.map((q) => (
-                  <option key={q.id} value={q.id}>{q.title || q.token}</option>
-                ))}
-              </select>
-              {inlineMsg && (
-                <div className="mt-1 text-xs text-destructive">{inlineMsg}</div>
-              )}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Settings className="w-5 h-5" />
+              הגדרות בסיסיות
+            </CardTitle>
+            <CardDescription>בחר שאלון והגדר את פרמטרי השיתוף</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {/* בחירת שאלון */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-2" htmlFor="qsel">שאלון</label>
+                <select
+                  id="qsel"
+                  aria-label="בחירת שאלון"
+                  className="w-full px-3 py-2 bg-background border border-border rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  value={current?.id ?? ''}
+                  onChange={(e) => handleSelect(e.target.value)}
+                  disabled={loading || list.length === 0}
+                >
+                  {list.map((q) => (
+                    <option key={q.id} value={q.id}>{q.title || q.id}</option>
+                  ))}
+                </select>
+                {inlineMsg && (
+                  <div className="mt-1 text-xs text-destructive">{inlineMsg}</div>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2" htmlFor="ref">מקור תנועה</label>
+                <input
+                  id="ref"
+                  aria-label="מקור תנועה"
+                  className="w-full px-3 py-2 bg-background border border-border rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  placeholder="landing / campaign / partner-code…"
+                  value={ref}
+                  onChange={(e) => setRef(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2" htmlFor="lang">שפה</label>
+                <select
+                  id="lang"
+                  aria-label="שפה"
+                  className="w-full px-3 py-2 bg-background border border-border rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  value={lang}
+                  onChange={(e) => setLang(e.target.value as Lang)}
+                >
+                  <option value="he">עברית</option>
+                  <option value="en">English</option>
+                </select>
+              </div>
             </div>
 
-            <div>
-              <label className="block text-xs text-muted-foreground mb-1" htmlFor="ref">Ref</label>
-              <input
-                id="ref"
-                aria-label="ref"
-                className="w-full px-2 py-2 text-sm bg-background border border-border rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                placeholder="landing / campaign / partner-code…"
-                value={ref}
-                onChange={(e) => setRef(e.target.value)}
-              />
+            {/* קישור מוכן */}
+            <div className="mt-6">
+              <label className="block text-sm font-medium mb-2">קישור להפצה</label>
+              <div className="flex gap-2">
+                <input
+                  readOnly
+                  value={publicUrl}
+                  aria-label="קישור להפצה"
+                  className="flex-1 px-3 py-2 bg-muted border border-border rounded-md text-sm font-mono"
+                />
+                <Button onClick={handleCopy} disabled={!current} variant="outline" size="sm">
+                  <Copy className="w-4 h-4 ml-1" />
+                  העתק
+                </Button>
+                <Button onClick={handlePreview} disabled={!publicUrl} variant="outline" size="sm">
+                  <Eye className="w-4 h-4 ml-1" />
+                  תצוגה מקדימה
+                </Button>
+              </div>
+              <div className="text-xs text-muted-foreground mt-1">הקישור מתעדכן אוטומטית לפי הבחירות שלך</div>
             </div>
+          </CardContent>
+        </Card>
 
-            <div>
-              <label className="block text-xs text-muted-foreground mb-1" htmlFor="lang">שפה</label>
-              <select
-                id="lang"
-                aria-label="שפה"
-                className="w-full px-2 py-2 text-sm bg-background border border-border rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                value={lang}
-                onChange={(e) => setLang(e.target.value as Lang)}
-              >
-                <option value="he">Hebrew</option>
-                <option value="en">English</option>
-              </select>
+        <Tabs defaultValue="share" className="w-full">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="share" className="flex items-center gap-2">
+              <Share2 className="w-4 h-4" />
+              שיתוף ברשתות
+            </TabsTrigger>
+            <TabsTrigger value="email" className="flex items-center gap-2">
+              <Mail className="w-4 h-4" />
+              אימייל
+            </TabsTrigger>
+            <TabsTrigger value="qr" className="flex items-center gap-2">
+              <QrCode className="w-4 h-4" />
+              QR קוד
+            </TabsTrigger>
+            <TabsTrigger value="tools" className="flex items-center gap-2">
+              <Settings className="w-4 h-4" />
+              כלים
+            </TabsTrigger>
+          </TabsList>
+
+          {/* לשונית שיתוף ברשתות חברתיות */}
+          <TabsContent value="share" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>שיתוף ברשתות חברתיות</CardTitle>
+                <CardDescription>שתף את השאלון ברשתות החברתיות הפופולריות</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  <Button
+                    onClick={handleWhatsApp}
+                    disabled={!current}
+                    className="flex flex-col items-center p-6 h-auto bg-[#25D366] hover:bg-[#128C7E] text-white"
+                  >
+                    <MessageCircle className="w-8 h-8 mb-2" />
+                    <span>WhatsApp</span>
+                  </Button>
+                  
+                  <Button
+                    onClick={handleFacebook}
+                    disabled={!publicUrl}
+                    className="flex flex-col items-center p-6 h-auto bg-[#1877F2] hover:bg-[#166FE5] text-white"
+                  >
+                    <Facebook className="w-8 h-8 mb-2" />
+                    <span>Facebook</span>
+                  </Button>
+                  
+                  <Button
+                    onClick={handleLinkedin}
+                    disabled={!publicUrl}
+                    className="flex flex-col items-center p-6 h-auto bg-[#0A66C2] hover:bg-[#004182] text-white"
+                  >
+                    <Linkedin className="w-8 h-8 mb-2" />
+                    <span>LinkedIn</span>
+                  </Button>
+                  
+                  <Button
+                    onClick={handleInstagram}
+                    disabled={!publicUrl}
+                    className="flex flex-col items-center p-6 h-auto bg-gradient-to-r from-[#E4405F] to-[#F77737] hover:from-[#D73447] hover:to-[#F56500] text-white"
+                  >
+                    <Instagram className="w-8 h-8 mb-2" />
+                    <span>Instagram</span>
+                  </Button>
+                </div>
+                
+                <div className="mt-4 text-sm text-muted-foreground">
+                  <p>💡 <strong>טיפ:</strong> Instagram - הקישור יועתק ותוכל להדביק אותו ב-Stories או בביו</p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* לשונית אימייל */}
+          <TabsContent value="email" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>שיתוף באימייל</CardTitle>
+                <CardDescription>שלח את השאלון באימייל או העתק תבנית מוכנה</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <Button
+                    onClick={() => openEmailProvider('gmail')}
+                    disabled={!current}
+                    variant="outline"
+                    className="flex flex-col items-center p-6 h-auto"
+                  >
+                    <Mail className="w-8 h-8 mb-2 text-[#EA4335]" />
+                    <span>Gmail</span>
+                  </Button>
+                  
+                  <Button
+                    onClick={() => openEmailProvider('outlook')}
+                    disabled={!current}
+                    variant="outline"
+                    className="flex flex-col items-center p-6 h-auto"
+                  >
+                    <Mail className="w-8 h-8 mb-2 text-[#0078D4]" />
+                    <span>Outlook</span>
+                  </Button>
+                  
+                  <Button
+                    onClick={() => openEmailProvider('default')}
+                    disabled={!current}
+                    variant="outline"
+                    className="flex flex-col items-center p-6 h-auto"
+                  >
+                    <Mail className="w-8 h-8 mb-2" />
+                    <span>אימייל כללי</span>
+                  </Button>
+                </div>
+                
+                <div className="mt-6 p-4 bg-muted rounded-lg">
+                  <h4 className="font-medium mb-2">תבנית אימייל מוכנה:</h4>
+                  <div className="text-sm text-muted-foreground bg-background p-3 rounded border font-mono">
+                    {shareText}
+                  </div>
+                  <Button 
+                    onClick={() => navigator.clipboard.writeText(shareText)}
+                    variant="outline" 
+                    size="sm" 
+                    className="mt-2"
+                  >
+                    <Copy className="w-4 h-4 ml-1" />
+                    העתק תבנית
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* לשונית QR קוד */}
+          <TabsContent value="qr" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>QR קוד</CardTitle>
+                <CardDescription>צור וצפה בקוד QR לשאלון שלך</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <div className="flex justify-center">
+                      <div className="p-4 bg-white rounded-lg border">
+                        <img
+                          alt="QR קוד לשאלון"
+                          className="w-64 h-64"
+                          src={publicUrl ? buildQrApiUrl(publicUrl, 512) : ''}
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="flex justify-center gap-2">
+                      <Button
+                        onClick={handleSaveQr}
+                        disabled={!publicUrl}
+                        className="flex items-center gap-2"
+                      >
+                        <Download className="w-4 h-4" />
+                        הורד QR
+                      </Button>
+                      <Button
+                        onClick={handlePreview}
+                        disabled={!publicUrl}
+                        variant="outline"
+                        className="flex items-center gap-2"
+                      >
+                        <Eye className="w-4 h-4" />
+                        תצוגה מקדימה
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="font-medium mb-2">איך להשתמש בקוד QR:</h4>
+                      <ul className="text-sm text-muted-foreground space-y-1">
+                        <li>• הורד את הקוד והדפס אותו</li>
+                        <li>• שתף ברשתות חברתיות</li>
+                        <li>• הוסף לחומרי שיווק</li>
+                        <li>• שלח בווטסאפ או אימייל</li>
+                      </ul>
+                    </div>
+                    
+                    <div className="p-4 bg-muted rounded-lg">
+                      <h5 className="font-medium mb-2">💡 טיפים מקצועיים:</h5>
+                      <ul className="text-sm text-muted-foreground space-y-1">
+                        <li>• הוסף טקסט הסבר מתחת לקוד</li>
+                        <li>• השתמש ברקע לבן לסריקה טובה יותר</li>
+                        <li>• בדוק שהקוד סריק לפני הדפסה</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* לשונית כלים */}
+          <TabsContent value="tools" className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Edit className="w-5 h-5" />
+                    עריכה וניהול
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <Button
+                    onClick={handleEdit}
+                    disabled={!current}
+                    variant="outline"
+                    className="w-full justify-start"
+                  >
+                    <Edit className="w-4 h-4 ml-2" />
+                    ערוך את השאלון
+                  </Button>
+                  
+                  <Button
+                    onClick={handlePreview}
+                    disabled={!publicUrl}
+                    variant="outline"
+                    className="w-full justify-start"
+                  >
+                    <Eye className="w-4 h-4 ml-2" />
+                    תצוגה מקדימה
+                  </Button>
+                  
+                  <Button
+                    onClick={handleCopy}
+                    disabled={!current}
+                    variant="outline"
+                    className="w-full justify-start"
+                  >
+                    <Copy className="w-4 h-4 ml-2" />
+                    העתק קישור מהיר
+                  </Button>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="w-5 h-5" />
+                    מידע ותובנות
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {current && (
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">שם השאלון:</span>
+                        <span className="font-medium">{current.title}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">טוקן:</span>
+                        <Badge variant="outline" className="font-mono text-xs">
+                          {current.public_token}
+                        </Badge>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">מקור תנועה:</span>
+                        <Badge variant="secondary">{ref || 'ללא'}</Badge>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">שפה:</span>
+                        <Badge variant="secondary">{lang === 'he' ? 'עברית' : 'English'}</Badge>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {!current && (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      בחר שאלון כדי לראות פרטים
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
             </div>
-          </div>
-
-          {/* פעולות */}
-          <div className="flex flex-col sm:flex-row gap-2">
-            <button
-              type="button"
-              onClick={handleCopy}
-              disabled={!current}
-              aria-label="העתק קישור"
-              className="w-full sm:w-auto px-4 py-2 rounded-md bg-muted hover:bg-muted/80 disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              העתק קישור
-            </button>
-            <button
-              type="button"
-              onClick={() => setEmailDialogOpen(true)}
-              disabled={!current}
-              aria-label="שיתוף באימייל"
-              className="w-full sm:w-auto px-4 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              שיתוף באימייל
-            </button>
-            <button
-              type="button"
-              onClick={handleWhatsApp}
-              disabled={!current}
-              aria-label="שיתוף בוואטסאפ"
-              className="w-full sm:w-auto px-4 py-2 rounded-md bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              שיתוף ב־WhatsApp
-            </button>
-            <button
-              type="button"
-              onClick={() => setShareOpen(true)}
-              disabled={!publicUrl}
-              aria-label="פתח דיאלוג שיתוף"
-              className="w-full sm:w-auto px-4 py-2 rounded-md bg-muted hover:bg-muted/80 disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              שיתוף…
-            </button>
-            <button
-              type="button"
-              onClick={handlePreview}
-              disabled={!publicUrl}
-              aria-label="תצוגה מקדימה"
-              className="w-full sm:w-auto px-4 py-2 rounded-md bg-secondary text-secondary-foreground hover:bg-secondary/90 disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              תצוגה מקדימה
-            </button>
-            <button
-              type="button"
-              onClick={handleEdit}
-              disabled={!current}
-              aria-label="עריכת השאלון"
-              className="w-full sm:w-auto px-4 py-2 rounded-md bg-muted hover:bg-muted/80 disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              עריכת השאלון
-            </button>
-          </div>
-
-          {/* שיתוף מתקדם (לא מחליף את הכפתורים הקיימים כדי לא לשבור זרימות קיימות) */}
-          {publicUrl && (
-            <div className="mt-2">
-              <AdvancedShare
-                link={publicUrl}
-                subject={current?.title || 'שאלון'}
-                message={'נשמח אם תמלא/י את השאלון'}
-              />
-            </div>
-          )}
-
-          {/* קישור + טקסט עזר */}
-          <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
-            <input
-              readOnly
-              value={publicUrl}
-              aria-label="קישור להפצה"
-              className="flex-1 px-3 py-2 bg-background border border-border rounded-md text-sm w-full"
-            />
-            <button
-              type="button"
-              onClick={handlePreview}
-              disabled={!publicUrl}
-              className="px-4 py-2 rounded-md bg-secondary text-secondary-foreground hover:bg-secondary/90 disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              פתח תצוגה
-            </button>
-          </div>
-          <div className="text-[11px] text-muted-foreground">הקישור מתעדכן אוטומטית לפי הבחירות שלך</div>
-
-          {/* QR */}
-          <div className="mt-2">
-            <label className="block text-xs text-muted-foreground mb-2">קוד QR</label>
-            <img
-              alt="QR"
-              className="w-[256px] h-[256px] border border-border rounded-md"
-              src={publicUrl ? buildQrApiUrl(publicUrl, 256) : ''}
-            />
-            <div className="mt-2">
-              <button
-                type="button"
-                onClick={handleSaveQr}
-                disabled={!publicUrl}
-                className="px-4 py-2 rounded-md bg-muted hover:bg-muted/80 disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                הורד QR
-              </button>
-            </div>
-          </div>
-        </div>
+            
+            {/* שיתוף מתקדם */}
+            {publicUrl && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>שיתוף מתקדם</CardTitle>
+                  <CardDescription>אפשרויות שיתוף נוספות ומותאמות אישית</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <AdvancedShare
+                    link={publicUrl}
+                    subject={current?.title || 'שאלון'}
+                    message={'נשמח אם תמלא/י את השאלון'}
+                  />
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+        </Tabs>
 
         {/* דיאלוג שיתוף */}
         <ShareDialog

@@ -1,4 +1,4 @@
-import { supabase } from "../integrations/supabase/client";
+import { supabase } from "./supabaseClient";
 
 export async function upsertProfile(
   userId: string,
