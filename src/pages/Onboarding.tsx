@@ -13,10 +13,20 @@ import { Badge } from '../components/ui/badge';
 import { HoogiMessage } from '../components/HoogiMascot';
 import { TooltipWrapper } from '../components/TooltipWrapper';
 import { useLanguage } from '../contexts/LanguageContext';
-import { toast } from '@/components/ui/Toaster';
+import { useToast as useShadcnToast } from '@/hooks/use-toast';
 import { fetchProfile } from '../lib/profile';
 import { QRModal } from '../components/QRModal';
 import { buildPublicUrl } from '../lib/publicUrl';
+import { routes } from "@/routes";
+
+type ToastApi = ((opts: { title?: string; description?: string, variant?: 'default' | 'destructive' }) => void) | undefined;
+function safeToast(toastApi: ToastApi, title: string, description?: string, variant?: 'default' | 'destructive') {
+  try {
+    if (typeof toastApi === "function") {
+       toastApi({ title, description, variant });
+    }
+  } catch (_) { /* no-op */ }
+}
 
 type QuestionType = 'text' | 'single_choice' | 'multiple_choice' | 'rating' | 'date' | 'audio' | 'conditional' | 'email' | 'phone';
 
@@ -57,6 +67,7 @@ export const Onboarding: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { t, language } = useLanguage();
+  const { toast } = useShadcnToast();
   
   // Get step and questionnaire ID from URL params using URLSearchParams
   const urlParams = new URLSearchParams(location.search);
@@ -482,11 +493,11 @@ export const Onboarding: React.FC = () => {
 
   const generateAIOptions = async (questionId: string, questionText: string) => {
     if (!questionText.trim()) {
-      toast({
-        title: language === 'he' ? 'שגיאה' : 'Error',
-        description: language === 'he' ? 'יש להזין טקסט שאלה תחילה' : 'Please enter question text first',
-        variant: 'destructive'
-      });
+      safeToast(toast, 
+        language === 'he' ? 'שגיאה' : 'Error',
+        language === 'he' ? 'יש להזין טקסט שאלה תחילה' : 'Please enter question text first',
+        'destructive'
+      );
       return;
     }
 
@@ -501,24 +512,24 @@ export const Onboarding: React.FC = () => {
       updateQuestion(questionId, { options: sampleOptions });
       setIsGeneratingOptions(null);
       
-      toast({
-        title: language === 'he' ? 'אפשרויות נוצרו' : 'Options Generated',
-        description: language === 'he' 
+      safeToast(toast, 
+        language === 'he' ? 'אפשרויות נוצרו' : 'Options Generated',
+        language === 'he' 
           ? 'נוצרו אפשרויות מוצעות בעזרת AI' 
           : 'AI-powered options have been generated'
-      });
+      );
     }, 2000);
   };
 
   const loadSuggestedQuestions = () => {
     if (!formData.category) {
-      toast({
-        title: language === 'he' ? 'יש לבחור קטגוריה' : 'Please Select a Category',
-        description: language === 'he' 
+      safeToast(toast, 
+        language === 'he' ? 'יש לבחור קטגוריה' : 'Please Select a Category',
+        language === 'he' 
           ? 'יש לבחור תחום עסקי תחילה כדי לטעון שאלות מוצעות'
           : 'Please select a business category first to load suggested questions',
-        variant: 'destructive'
-      });
+        'destructive'
+      );
       return;
     }
 
@@ -532,20 +543,20 @@ export const Onboarding: React.FC = () => {
         isRequired: false
       }));
       setFormData({ ...formData, questions });
-      toast({
-        title: language === 'he' ? 'שאלות נטענו בהצלחה' : 'Questions Loaded Successfully',
-        description: language === 'he' 
+      safeToast(toast, 
+        language === 'he' ? 'שאלות נטענו בהצלחה' : 'Questions Loaded Successfully',
+        language === 'he' 
           ? `נוספו ${suggested.length} שאלות מוצעות עבור תחום ${categories.find(c => c.value === formData.category)?.label}.`
           : `Added ${suggested.length} suggested questions for ${categories.find(c => c.value === formData.category)?.label}.`
-      });
+      );
     } else {
-      toast({
-        title: language === 'he' ? 'אין שאלות זמינות' : 'No Questions Available',
-        description: language === 'he' 
+      safeToast(toast, 
+        language === 'he' ? 'אין שאלות זמינות' : 'No Questions Available',
+        language === 'he' 
           ? 'אין שאלות מוצעות זמינות עבור התחום הנבחר'
           : 'No suggested questions available for the selected category',
-        variant: 'destructive'
-      });
+        'destructive'
+      );
     }
   };
 
@@ -561,32 +572,32 @@ export const Onboarding: React.FC = () => {
     };
     localStorage.setItem('hoogiProfile', JSON.stringify(profile));
     setProfileData(profile);
-    toast({
-      title: language === 'he' ? 'פרופיל נשמר' : 'Profile Saved',
-      description: language === 'he' 
+    safeToast(toast, 
+      language === 'he' ? 'פרופיל נשמר' : 'Profile Saved',
+      language === 'he' 
         ? 'הפרטים נשמרו ויועברו לשאלונים עתידיים'
         : 'Your details have been saved for future questionnaires'
-    });
+    );
   };
 
   const saveAsDraft = () => {
     setFormData({ ...formData, status: 'draft' });
-    toast({
-      title: language === 'he' ? 'נשמר כטיוטה' : 'Saved as Draft',
-      description: language === 'he' 
+    safeToast(toast, 
+      language === 'he' ? 'נשמר כטיוטה' : 'Saved as Draft',
+      language === 'he' 
         ? 'השאלון נשמר כטיוטה וניתן לערוך אותו מאוחר יותר'
         : 'Questionnaire saved as draft and can be edited later'
-    });
+    );
   };
 
   const lockQuestionnaire = () => {
     setFormData({ ...formData, status: 'locked' });
-    toast({
-      title: language === 'he' ? 'השאלון נעול' : 'Questionnaire Locked',
-      description: language === 'he' 
+    safeToast(toast, 
+      language === 'he' ? 'השאלון נעול' : 'Questionnaire Locked',
+      language === 'he' 
         ? 'השאלון נעול ולא ניתן לערוך אותו יותר'
         : 'Questionnaire is locked and cannot be edited anymore'
-    });
+    );
   };
 
   // פונקציות חדשות לכפתורים שעובדים
@@ -596,23 +607,23 @@ export const Onboarding: React.FC = () => {
       setFormData({ ...formData, status: 'draft' });
       
       // ניווט לרשימת השאלונים
-      navigate('/questionnaires');
+      navigate(routes.questionnaires);
       
-      toast({
-        title: language === 'he' ? 'נשמר כטיוטה' : 'Saved as Draft',
-        description: language === 'he' 
+      safeToast(toast, 
+        language === 'he' ? 'נשמר כטיוטה' : 'Saved as Draft',
+        language === 'he' 
           ? 'השאלון נשמר כטיוטה ועברת לרשימת השאלונים'
           : 'Questionnaire saved as draft and moved to questionnaires list'
-      });
+      );
     } catch (error) {
       console.error('Error saving draft:', error);
-      toast({
-        title: language === 'he' ? 'שגיאה' : 'Error',
-        description: language === 'he' 
+      safeToast(toast,
+        language === 'he' ? 'שגיאה' : 'Error',
+        language === 'he' 
           ? 'שגיאה בשמירת הטיוטה'
           : 'Error saving draft',
-        variant: 'destructive'
-      });
+        'destructive'
+      );
     }
   };
 
@@ -628,28 +639,28 @@ export const Onboarding: React.FC = () => {
         console.log('Questionnaire has ID, navigating to review:', formData.id);
         // עדיפות ל-public_token אם קיים
         const qid = formData.id;
-        navigate(`/distribute`);
+        navigate(routes.distributeHub);
       } else {
         console.log('No ID, using handleSaveAndNavigate...');
         // השתמש בפונקציה הקיימת שעובדת
         await handleSaveAndNavigate();
       }
       
-      toast({
-        title: language === 'he' ? 'מוכן לפרסום' : 'Ready for Publishing',
-        description: language === 'he' 
+      safeToast(toast, 
+        language === 'he' ? 'מוכן לפרסום' : 'Ready for Publishing',
+        language === 'he' 
           ? 'השאלון מוכן לפרסום ועברת לסקירה'
           : 'Questionnaire ready for publishing and moved to review'
-      });
+      );
     } catch (error) {
       console.error('Error preparing for publishing:', error);
-      toast({
-        title: language === 'he' ? 'שגיאה' : 'Error',
-        description: language === 'he' 
+      safeToast(toast,
+        language === 'he' ? 'שגיאה' : 'Error',
+        language === 'he' 
           ? 'שגיאה בהכנת השאלון לפרסום'
           : 'Error preparing questionnaire for publishing',
-        variant: 'destructive'
-      });
+        'destructive'
+      );
     }
   };
 
@@ -667,12 +678,12 @@ export const Onboarding: React.FC = () => {
     existingQuestionnaires.push(duplicatedQuestionnaire);
     localStorage.setItem('hoogiQuestionnaires', JSON.stringify(existingQuestionnaires));
     
-    toast({
-      title: language === 'he' ? 'שכפול בוצע' : 'Duplication Complete',
-      description: language === 'he' 
+    safeToast(toast, 
+      language === 'he' ? 'שכפול בוצע' : 'Duplication Complete',
+      language === 'he' 
         ? `השאלון שוכפל ל${languageLabel}`
         : `Questionnaire duplicated to ${languageLabel}`
-    });
+    );
   };
 
   const addOptionToQuestion = (questionId: string) => {
@@ -706,13 +717,13 @@ export const Onboarding: React.FC = () => {
       if (!formData.title.trim()) missing.push(language==='he'?'כותרת השאלון':'Title');
       if (!formData.companyName.trim()) missing.push(language==='he'?'שם החברה':'Company');
       if (formData.questions.length === 0) missing.push(language==='he'?'לפחות שאלה אחת':'At least one question');
-      toast({
-        title: language === 'he' ? 'שגיאה' : 'Error',
-        description: (language==='he'
+      safeToast(toast,
+        language === 'he' ? 'שגיאה' : 'Error',
+        (language==='he'
           ? `שדות חסרים: ${missing.join(', ')}. ודאו שקיימת לפחות שאלה אחת (מומלץ לסמן אותה כחובה).`
           : `Missing fields: ${missing.join(', ')}. Ensure at least one question (preferably marked required).`),
-        variant: 'destructive'
-      });
+        'destructive'
+      );
       return;
     }
 
@@ -782,32 +793,40 @@ export const Onboarding: React.FC = () => {
         }
       }
 
-      toast({
-        title: language==='he' ? 'השאלון נשמר' : 'Questionnaire saved',
-        description: language==='he' ? 'השאלון נשמר בהצלחה בבסיס הנתונים' : 'Saved to database successfully'
-      });
+      safeToast(toast, 
+        language==='he' ? 'השאלון נשמר' : 'Questionnaire saved',
+        language==='he' ? 'השאלון נשמר בהצלחה בבסיס הנתונים' : 'Saved to database successfully'
+      );
     } catch (e:any) {
       console.error('Supabase insert failed:', e?.message || e);
-      alert(language==='he' ? 'השמירה ל-Supabase נכשלה. ודאי שקיימת הרשאה ושורת משתמש בטבלת users, או פני אליי.' : 'Saving to Supabase failed. Ensure policies and public.users row exist.');
+      safeToast(
+        toast,
+        language === "he"
+          ? "שמירה ל-Supabase נכשלה. ודאי שמדיניות RLS קיימת ושיש רשומת משתמש בטבלת profiles/public.users."
+          : "Saving to Supabase failed. Ensure RLS policies exist and there's a user row in profiles/public.users.",
+        undefined,
+        "destructive"
+      );
     }
 
-    toast({
-      title: language === 'he' ? 'השאלון נוצר בהצלחה!' : 'Questionnaire Created Successfully!',
-      description: language === 'he' 
+    safeToast(toast, 
+      language === 'he' ? 'השאלון נוצר בהצלחה!' : 'Questionnaire Created Successfully!',
+      language === 'he' 
         ? `נוצר שאלון חדש עם ${formData.questions.length} שאלות`
         : `Created new questionnaire with ${formData.questions.length} questions`
-    });
-    navigate('/questionnaires');
+    );
+    navigate(routes.questionnaires);
   };
 
   const handleSaveAndNavigate = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        toast({
-          title: language === 'he' ? 'יש להתחבר כדי לשמור' : 'Please login to save',
-          variant: 'destructive'
-        });
+        safeToast(toast,
+          language === 'he' ? 'יש להתחבר כדי לשמור' : 'Please login to save',
+          'Please login to save',
+          'destructive'
+        );
         return;
       }
 
@@ -884,25 +903,25 @@ export const Onboarding: React.FC = () => {
       // Update formData with the new ID
       setFormData(prev => ({ ...prev, id: questionnaire.id }));
       
-      toast({
-        title: language === 'he' ? 'השאלון נשמר בהצלחה' : 'Questionnaire saved successfully',
-        description: language === 'he' ? 'מעביר לדף הסקירה...' : 'Redirecting to review...'
-      });
+      safeToast(toast, 
+        language === 'he' ? 'השאלון נשמר בהצלחה' : 'Questionnaire saved successfully',
+        language === 'he' ? 'מעביר לדף הסקירה...' : 'Redirecting to review...'
+      );
 
       // Navigate to review page
       setTimeout(() => {
-        const reviewUrl = `/questionnaires/${questionnaire.token || questionnaire.id}/review`;
+        const reviewUrl = routes.questionnaireReviewById(questionnaire.token || questionnaire.id);
         console.log('Navigating to review after save:', reviewUrl);
         navigate(reviewUrl);
       }, 1000);
 
     } catch (error: any) {
       console.error('Save error:', error);
-      toast({
-        title: language === 'he' ? 'שגיאה בשמירה' : 'Save Error',
-        description: error.message || (language === 'he' ? 'לא ניתן היה לשמור את השאלון' : 'Could not save questionnaire'),
-        variant: 'destructive'
-      });
+      safeToast(toast,
+        language === 'he' ? 'שגיאה בשמירה' : 'Save Error',
+        error.message || (language === 'he' ? 'לא ניתן היה לשמור את השאלון' : 'Could not save questionnaire'),
+        'destructive'
+      );
     }
   };
 
@@ -1429,14 +1448,14 @@ export const Onboarding: React.FC = () => {
                       if (formData.id) {
                         // עדיפות ל-public_token אם קיים
                         const qid = formData.id;
-                        navigate(`/distribute`);
+                        navigate(routes.distributeHub);
                       } else {
                         // אם אין ID, שמור קודם ואז עבור להפצה
                         handleSaveAndNavigate().then(() => {
                           if (formData.id) {
                             // עדיפות ל-public_token אם קיים
                             const qid = formData.id;
-                            navigate(`/distribute`);
+                            navigate(routes.distributeHub);
                           }
                         });
                       }
@@ -1576,16 +1595,16 @@ export const Onboarding: React.FC = () => {
                               await navigator.clipboard.writeText(
                                 buildPublicUrl(publicLinkData.public_token!, publicLinkData.default_lang as 'he' | 'en')
                               );
-                              toast({
-                                title: language === 'he' ? 'הועתק!' : 'Copied!',
-                                description: language === 'he' ? 'הקישור הועתק ללוח' : 'Link copied to clipboard',
-                              });
+                              safeToast(toast, 
+                                language === 'he' ? 'הועתק!' : 'Copied!',
+                                language === 'he' ? 'הקישור הועתק ללוח' : 'Link copied to clipboard'
+                              );
                             } catch (err) {
-                              toast({
-                                title: language === 'he' ? 'שגיאה' : 'Error',
-                                description: language === 'he' ? 'לא ניתן היה להעתיק את הקישור' : 'Could not copy the link',
-                                variant: 'destructive',
-                              });
+                              safeToast(toast, 
+                                language === 'he' ? 'שגיאה' : 'Error',
+                                language === 'he' ? 'לא ניתן היה להעתיק את הקישור' : 'Could not copy the link',
+                                'destructive'
+                              );
                             }
                           }}
                           variant="outline"

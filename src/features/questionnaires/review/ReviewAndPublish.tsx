@@ -20,6 +20,7 @@ import {
 import { DEFAULT_META } from "../../../models/questionnaire";
 import PublicPreviewModal from '../preview/PublicPreviewModal';
 import AdvancedShare from '@/components/AdvancedShare';
+import { routes } from "@/routes";
 
 // Import all the new components
 import { MetaPanel } from "./MetaPanel";
@@ -60,7 +61,7 @@ export default function ReviewAndPublishPage() {
     
     if (!token) {
       console.warn('No token provided, redirecting to questionnaires');
-      navigate('/questionnaires');
+      navigate(routes.questionnaires);
       return;
     }
 
@@ -205,7 +206,11 @@ export default function ReviewAndPublishPage() {
   // חדש: פונקציה לתצוגה מקדימה פרטית (לא ציבורית)
   const handlePreview = () => {
     // Redirect to new distribute route instead of old preview route
-            navigate(`/distribute?token=${data?.questionnaire?.public_token || data?.questionnaire?.token}`);
+    navigate(
+      `${routes.distributeHub}?token=${
+        data?.questionnaire?.public_token || data?.questionnaire?.token
+      }`
+    );
   };
 
   // חדש: פונקציה לתצוגה מקדימה ציבורית
@@ -350,20 +355,28 @@ export default function ReviewAndPublishPage() {
   const handleContinue = () => {
     // Priority 1: Navigate to new distribute route if questionnaire has public_token
     if (data?.questionnaire?.public_token) {
-      console.log('Navigating to new distribute route with public_token:', data.questionnaire.public_token);
-      navigate(`/distribute?token=${data.questionnaire.public_token}`);
+      console.log(
+        "Navigating to new distribute route with public_token:",
+        data.questionnaire.public_token
+      );
+      navigate(
+        `${routes.distributeHub}?token=${data.questionnaire.public_token}`
+      );
       return;
     }
     
     // Fallback: Navigate to distribute route with token
     if (data?.questionnaire?.token) {
-      console.log('Navigating to distribute route for questionnaire setup:', data.questionnaire.token);
-      navigate(`/distribute?token=${data.questionnaire.token}`);
+      console.log(
+        "Navigating to distribute route for questionnaire setup:",
+        data.questionnaire.token
+      );
+      navigate(`${routes.distributeHub}?token=${data.questionnaire.token}`);
       return;
     } else {
       // Final fallback to questionnaires if no token
-      console.warn('No questionnaire token, navigating to questionnaires');
-      navigate('/questionnaires');
+      console.warn("No questionnaire token, navigating to questionnaires");
+      navigate(routes.questionnaires);
     }
   };
 
@@ -413,7 +426,7 @@ export default function ReviewAndPublishPage() {
       if (!ok) throw new Error("publish failed");
       
       // Navigate to questionnaires list
-      navigate("/questionnaires", { replace: true });
+      navigate(routes.questionnaires, { replace: true });
     } catch (err) {
       console.error("finish error", err);
       // Keep existing error handling
@@ -473,8 +486,8 @@ export default function ReviewAndPublishPage() {
           </h2>
           <p className="text-muted-foreground mb-4">{error}</p>
           <div className="flex gap-2 justify-center">
-            <Button onClick={() => navigate('/distribute')}>
-              {language === 'he' ? 'חזרה למסך ההפצה' : 'Back to Distribute'}
+            <Button onClick={() => navigate(routes.distributeHub)}>
+              {language === "he" ? "חזרה למסך ההפצה" : "Back to Distribute"}
             </Button>
           </div>
         </div>
@@ -495,8 +508,10 @@ export default function ReviewAndPublishPage() {
               ? 'לא ניתן היה לטעון את השאלון המבוקש' 
               : "The requested questionnaire could not be loaded."}
           </p>
-          <Button onClick={() => navigate('/distribute')}>
-            <ArrowLeft className={`h-4 w-4 ${language === 'he' ? 'ml-2' : 'mr-2'}`} />
+          <Button onClick={() => navigate(routes.distributeHub)}>
+            <ArrowLeft
+              className={`h-4 w-4 ${language === "he" ? "ml-2" : "mr-2"}`}
+            />
             {language === 'he' ? 'חזרה למסך ההפצה' : 'Back to Distribute'}
           </Button>
         </div>
@@ -541,10 +556,12 @@ export default function ReviewAndPublishPage() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate('/')}
+              onClick={() => navigate(routes.home)}
               className="gap-2"
             >
-              <ArrowLeft className={`h-4 w-4 ${language === 'he' ? 'rotate-180' : ''}`} />
+              <ArrowLeft
+              className={`h-4 w-4 ${language === 'he' ? 'rotate-180' : ''}`}
+            />
               {language === 'he' ? 'חזרה לשאלונים' : 'Back to Questionnaires'}
             </Button>
           </div>

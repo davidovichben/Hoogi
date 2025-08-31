@@ -18,6 +18,7 @@ import { useDemo } from '../contexts/DemoContext';
 import { HoogiMascot } from './HoogiMascot';
 import { TooltipWrapper } from './TooltipWrapper';
 import { Switch } from './ui/switch';
+import { routes } from "@/routes";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -30,15 +31,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
   const location = useLocation();
 
   const navigation = [
-    { name: t('nav.dashboard'), href: '/dashboard', icon: LayoutDashboard },
-    { name: t('nav.questionnaires'), href: '/questionnaires', icon: ClipboardList },
+    { name: t('nav.dashboard'), href: routes.dashboard, icon: LayoutDashboard },
+    { name: t('nav.questionnaires'), href: routes.questionnaires, icon: ClipboardList },
     { name: 'סקירת שאלונים', href: '/questionnaire-review', icon: FileText },
-    { name: 'תגובות', href: '/responses', icon: MessageCircle },
-    { name: t('nav.leads'), href: '/leads', icon: Users },
-    { name: 'הפצה', href: '/distribute', icon: Share2 },
-    { name: 'פרופיל', href: '/profile', icon: User },
-    { name: t('nav.affiliate'), href: '/affiliate', icon: Share2 },
-    { name: t('nav.settings'), href: '/settings', icon: Settings },
+    { name: 'תגובות', href: routes.responses, icon: MessageCircle },
+    { name: t('nav.leads'), href: routes.leads, icon: Users },
+    { name: 'הפצה', href: routes.distributeHub, icon: Share2 },
+    { name: 'פרופיל', href: routes.profile, icon: User },
+    { name: t('nav.affiliate'), href: routes.affiliate, icon: Share2 },
+    { name: t('nav.settings'), href: routes.settings, icon: Settings },
   ];
 
   return (
@@ -91,8 +92,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
           {navigation.map((item) => {
             const Icon = item.icon;
             // בדיקה מיוחדת עבור /distribute - פעיל אם הנתיב מתחיל ב-/distribute
-            const isActive = item.href === '/distribute' 
-              ? location.pathname.startsWith('/distribute')
+            const isActive = item.href === routes.distributeHub 
+              ? location.pathname.startsWith(routes.distributeHub)
               : location.pathname === item.href;
             
             return (

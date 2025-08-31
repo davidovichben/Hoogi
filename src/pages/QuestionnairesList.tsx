@@ -6,6 +6,7 @@ import { TooltipWrapper } from '../components/TooltipWrapper';
 import { toast, announce } from '@/components/ui/Toaster';
 import { supabase } from "@/integrations/supabase/client";
 import { Share2, BarChart3, Edit, Settings, ExternalLink } from 'lucide-react';
+import { routes } from "@/routes";
 
 type Q={
   id:string;
@@ -89,7 +90,9 @@ export default function QuestionnairesList(){
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">השאלונים שלי</h1>
         <Button variant="default" size="lg" asChild>
-          <a href="/onboarding" className="font-semibold">צור את השאלון הראשון שלך</a>
+          <a href="/onboarding" className="font-semibold">
+            צור את השאלון הראשון שלך
+          </a>
         </Button>
       </div>
 

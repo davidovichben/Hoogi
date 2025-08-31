@@ -32,6 +32,7 @@ import DistributionHub from "./pages/DistributionHub";
 import Partners from "./pages/Partners";
 import { UpdatePassword } from "./pages/auth/UpdatePassword";
 import LegacyDistributeRedirect from "./pages/LegacyDistributeRedirect";
+import { routes } from "./routes";
 
 const queryClient = new QueryClient();
 
@@ -46,36 +47,36 @@ const App = () => (
             <Sonner />
             <BrowserRouter>
               <Routes>
-                <Route path="/" element={<Auth />} />
+                <Route path={routes.home} element={<Auth />} />
                 <Route path="/landing" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/auth/update-password" element={<UpdatePassword />} />
                 <Route path="/onboarding" element={<Onboarding />} />
                 <Route path="/onboarding/step2" element={<OnboardingStep2 />} />
                 {/* מסלול לגאסי שמתרגם qid→token */}
-                <Route path="/questionnaires/:id/distribute" element={<LegacyDistributeRedirect />} />
+                <Route path={routes.questionnaireDistributeById(':id')} element={<LegacyDistributeRedirect />} />
                 <Route element={<Layout />}>
-                  <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
-                  <Route path="/questionnaires" element={<RequireAuth><QuestionnairesList /></RequireAuth>} />
+                  <Route path={routes.dashboard} element={<RequireAuth><Dashboard /></RequireAuth>} />
+                  <Route path={routes.questionnaires} element={<RequireAuth><QuestionnairesList /></RequireAuth>} />
                   {/* create-questionnaire route removed to keep only legacy onboarding flow */}
-                  <Route path="/responses" element={<RequireAuth><Responses /></RequireAuth>} />
-                  <Route path="/leads" element={<RequireAuth><Leads /></RequireAuth>} />
-                  <Route path="/affiliate" element={<RequireAuth><Affiliate /></RequireAuth>} />
-                  <Route path="/settings" element={<RequireAuth><Settings /></RequireAuth>} />
-                  <Route path="/profile" element={<RequireAuth><ProfilePage /></RequireAuth>} />
+                  <Route path={routes.responses} element={<RequireAuth><Responses /></RequireAuth>} />
+                  <Route path={routes.leads} element={<RequireAuth><Leads /></RequireAuth>} />
+                  <Route path={routes.affiliate} element={<RequireAuth><Affiliate /></RequireAuth>} />
+                  <Route path={routes.settings} element={<RequireAuth><Settings /></RequireAuth>} />
+                  <Route path={routes.profile} element={<RequireAuth><ProfilePage /></RequireAuth>} />
                   {/* Hidden: Old distribution routes - replaced by /distribute
                   <Route path="/questionnaires/:id/review" element={<RequireAuth><ReviewAndPublishPage /></RequireAuth>} />
                   <Route path="/questionnaires/:id/preview" element={<RequireAuth><QuestionnairePreviewPage /></RequireAuth>} />
                   */}
                   <Route path="/questionnaires/:token/review" element={<RequireAuth><ReviewAndPublishPage /></RequireAuth>} />
-                  <Route path="/distribute" element={<RequireAuth><DistributionHub /></RequireAuth>} />
+                  <Route path={routes.distributeHub} element={<RequireAuth><DistributionHub /></RequireAuth>} />
                   <Route path="/questionnaire-review" element={<RequireAuth><QuestionnaireReviewPage /></RequireAuth>} />
                   <Route path="/partners" element={<RequireAuth><Partners /></RequireAuth>} />
                 </Route>
                 {/* חדש: דף שיתוף ציבורי - לא דורש התחברות */}
-                <Route path="/q/:token" element={<PublicQuestionnaire />} />
+                <Route path={routes.publicQuestionnaire(':token')} element={<PublicQuestionnaire />} />
                 <Route path="*" element={<NotFound />} />
-                <Route path="/auth/callback" element={<AuthCallback />} />
+                <Route path={routes.authCallback} element={<AuthCallback />} />
               </Routes>
             </BrowserRouter>
           </ToastProvider>

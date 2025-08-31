@@ -5,6 +5,7 @@ import { Button } from './ui/button';
 import { Sidebar } from './Sidebar';
 import { TooltipWrapper } from './TooltipWrapper';
 import { useLanguage } from '../contexts/LanguageContext';
+import { routes } from "@/routes";
 
 export const Layout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
