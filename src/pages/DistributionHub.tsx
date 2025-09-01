@@ -13,11 +13,11 @@ import { Badge } from '@/components/ui/badge';
 import {
   Share2, Copy, Eye, Edit, Download, QrCode,
   MessageCircle, Mail, Instagram, Facebook,
-  Linkedin, Globe, Settings, BarChart3
+  Linkedin, Globe, Settings, BarChart3, Zap
 } from 'lucide-react';
 import { rpcGetDistributionLinks, rpcPublishQuestionnaire, safeToast } from "@/lib/rpc";
 import { getBaseUrl } from "@/lib/baseUrl";
-import { ensurePreviewFlow } from "@/lib/preview";
+import { previewAny, publishThen, getPublishState } from "@/lib/preview";
 
 // טיפוסים
 export type QMin = { id: string; public_token: string; title: string };
@@ -49,6 +49,8 @@ export default function DistributionHub() {
   const [userId, setUserId] = useState<string | null>(null);
   const [shareLinks, setShareLinks] = useState<{ web_url: string; whatsapp_url: string; mailto_url: string } | null>(null);
   const [currentToken, setCurrentToken] = useState<string | null>(null);
+  const [publishState, setPublishState] = useState<{ token: string | null; is_published: boolean }>({ token: null, is_published: false });
+
   useEffect(() => {
     let cancel = false;
     supabase.auth.getUser().then(({ data, error }) => {
@@ -157,6 +159,10 @@ export default function DistributionHub() {
 
   // פעולות
   const handleCopy = async () => {
+    if (!publishState.is_published || !shareLinks?.web_url) {
+      safeToast({ title: "לא פורסם", description: "יש לפרסם את השאלון לפני שניתן להעתיק קישור." });
+      return;
+    }
     try {
       const url = shareLinks?.web_url ??
         (currentToken ? new URL(`/q/${currentToken}?lang=he&ref=landing`, getBaseUrl()).toString() : "");
@@ -292,6 +298,12 @@ export default function DistributionHub() {
     const updated: QMin = { id: next.id, title: next.title, public_token: ensuredToken } as QMin;
     setCurrent(updated);
     
+    // Check publish state
+    const state = await getPublishState(id);
+    if (state) {
+      setPublishState(state);
+    }
+
     // Auto-generate links on select
     handleGenerateLinks();
 
@@ -378,11 +390,17 @@ export default function DistributionHub() {
                   aria-label="קישור להפצה"
                   className="flex-1 px-3 py-2 bg-muted border border-border rounded-md text-sm font-mono"
                 />
-                <Button onClick={handleCopy} disabled={!current} variant="outline" size="sm">
+                {!publishState.is_published && current && (
+                  <Button onClick={() => publishThen(current.id, handleGenerateLinks)} variant="secondary" size="sm">
+                    <Zap className="w-4 h-4 ml-1" />
+                    פרסום
+                  </Button>
+                )}
+                <Button onClick={handleCopy} disabled={!current || !publishState.is_published} variant="outline" size="sm">
                   <Copy className="w-4 h-4 ml-1" />
                   העתק
                 </Button>
-                <Button onClick={() => ensurePreviewFlow(current?.id, lang, 'preview')} disabled={!current} variant="outline" size="sm">
+                <Button onClick={() => previewAny(current?.id || '', lang, 'preview')} disabled={!current} variant="outline" size="sm">
                   <Eye className="w-4 h-4 ml-1" />
                   תצוגה מקדימה
                 </Button>
