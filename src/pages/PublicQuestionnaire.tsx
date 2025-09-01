@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
+import { rpcGetPublicQuestionnaire } from "@/lib/rpc";
 
 interface Question {
   id: string;
@@ -64,56 +65,41 @@ export default function PublicQuestionnaire() {
 
   useEffect(() => {
     if (!token) return;
-    
+
     const fetchQuestionnaire = async () => {
       try {
         setLoading(true);
         setError(null);
-        
-        // Fetch questionnaire by public_token (שימוש ב-maybeSingle)
-        const { data: questionnaireData, error: questionnaireError } = await supabase
-          .from("questionnaires")
-          .select("*")
-          .eq("public_token", token)
-          .maybeSingle();
-        
-        if (questionnaireError) {
-          setError(lang === 'he' ? 'שגיאה בטעינת השאלון' : 'Error loading questionnaire');
+
+        const data = await rpcGetPublicQuestionnaire(token);
+
+        if (!data) {
+          setError(
+            lang === "he"
+              ? "השאלון לא נמצא או לא זמין כרגע."
+              : "Questionnaire not found or unavailable."
+          );
           return;
         }
-        
-        if (!questionnaireData) {
-          setError(lang === 'he' ? 'השאלון לא נמצא או לא זמין כרגע.' : 'Questionnaire not found or unavailable.');
-          return;
-        }
-        
-        setQuestionnaire(questionnaireData);
-        
-        // Try to fetch questions if table exists
-        try {
-          const { data: questionsData, error: questionsError } = await supabase
-            .from("questions")
-            .select("*")
-            .eq("questionnaire_id", questionnaireData.id)
-            .order("order");
-          
-          if (!questionsError && questionsData) {
-            setQuestions(questionsData);
-          }
-        } catch (e) {
-          // Questions table might not exist, continue without questions
-          console.log("No questions table found");
-        }
-        
+
+        const { questions, ...questionnaireData } = data;
+        setQuestionnaire(questionnaireData as Questionnaire);
+        setQuestions(questions || []);
       } catch (err: any) {
-        setError(err.message || (lang === 'he' ? "שגיאה בטעינת השאלון" : "Failed to load questionnaire"));
+        console.error("Failed to fetch public questionnaire:", err);
+        setError(
+          err.message ||
+            (lang === "he"
+              ? "שגיאה בטעינת השאלון"
+              : "Failed to load questionnaire")
+        );
       } finally {
         setLoading(false);
       }
     };
-    
+
     fetchQuestionnaire();
-  }, [token]);
+  }, [token, lang]);
 
   const handleAnswerChange = (questionId: string, value: any) => {
     setAnswers(prev => ({ ...prev, [questionId]: value }));
@@ -188,7 +174,7 @@ export default function PublicQuestionnaire() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50" dir={dir}>
         <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
-          {questionnaire?.meta.brand_logo_url && (
+          {questionnaire?.meta?.brand_logo_url && (
             <img 
               src={questionnaire.meta.brand_logo_url} 
               alt="Logo" 
@@ -232,7 +218,7 @@ export default function PublicQuestionnaire() {
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            {questionnaire.meta.brand_logo_url && (
+            {questionnaire?.meta?.brand_logo_url && (
               <img 
                 src={questionnaire.meta.brand_logo_url} 
                 alt="Logo" 
@@ -421,7 +407,7 @@ export default function PublicQuestionnaire() {
               size="lg"
               className="px-8 py-3"
               style={{
-                backgroundColor: questionnaire.meta.brand_primary_color || undefined
+                backgroundColor: questionnaire?.meta?.brand_primary_color || undefined
               }}
             >
               {lang === "he" ? "שלח תשובה" : "Submit Response"}
@@ -432,4 +418,4 @@ export default function PublicQuestionnaire() {
     </div>
   );
 }
-
+ 

@@ -13,7 +13,10 @@ export async function rpcPublishQuestionnaire(p_id: string) {
 }
 
 export async function rpcGetDistributionLinks(p_id: string, baseUrl: string) {
-  const { data, error } = await supabase.rpc("get_distribution_links", { p_id, base_url: baseUrl });
+  const { data, error } = await supabase.rpc("get_distribution_links", {
+    p_id,
+    p_base_url: baseUrl,
+  });
   if (error) throw error;
   return data as { web_url: string; whatsapp_url: string; mailto_url: string };
 }

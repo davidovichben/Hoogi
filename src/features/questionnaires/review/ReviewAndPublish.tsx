@@ -8,15 +8,16 @@ import { Button } from "../../../components/ui/button";
 import { useToast } from "../../../hooks/use-toast";
 import { useLanguage } from "../../../contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
-import { 
-  publishQuestionnaire, 
-  ensurePublicToken, 
+import {
+  // publishQuestionnaire is now replaced by rpcPublishQuestionnaire
+  ensurePublicToken,
   buildPublicUrl,
   generateQRCode,
   getQuestionnaireStats,
   getEmbedCode,
-  fetchQuestionnaireByAnyToken
+  fetchQuestionnaireByAnyToken,
 } from "../../../services/questionnaires";
+import { rpcPublishQuestionnaire } from "@/lib/rpc";
 import { DEFAULT_META } from "../../../models/questionnaire";
 import PublicPreviewModal from '../preview/PublicPreviewModal';
 import AdvancedShare from '@/components/AdvancedShare';
@@ -167,21 +168,19 @@ export default function ReviewAndPublishPage() {
 
   // חדש: פונקציות לשיתוף ציבורי
   const handlePublish = async () => {
+    if (!data?.questionnaire?.id) return;
     try {
       setIsSubmitting(true);
+      const result = await rpcPublishQuestionnaire(data.questionnaire.id);
       
-      // צור טוקן ציבורי אם לא קיים
-      if (!token) {
-        const newToken = await ensurePublicToken(data.questionnaire.id);
-        setPublicToken(newToken);
-        const url = buildPublicUrl(newToken);
-        setPublicUrl(url);
-      }
-      
-      // פרסם את השאלון
-              const success = await publishQuestionnaire(data.questionnaire.id);
-      if (success) {
+      if (result) {
         setIsPublished(true);
+        // אם ה-RPC מחזיר טוקן, נעדכן את ה-state
+        if (result.token) {
+          const url = buildPublicUrl(result.token);
+          setPublicUrl(url);
+          setPublicToken(result.token);
+        }
         toast({
           title: language === 'he' ? 'השאלון פורסם!' : 'Questionnaire published!',
           description: language === 'he' 

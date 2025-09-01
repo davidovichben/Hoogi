@@ -10,10 +10,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Share2, Copy, Eye, Edit, Download, QrCode, 
-  MessageCircle, Mail, Instagram, Facebook, 
-  Linkedin, Globe, Settings, BarChart3 
+import {
+  Share2, Copy, Eye, Edit, Download, QrCode,
+  MessageCircle, Mail, Instagram, Facebook,
+  Linkedin, Globe, Settings, BarChart3
 } from 'lucide-react';
 import { rpcGetDistributionLinks } from "@/lib/rpc";
 import { getBaseUrl } from "@/lib/baseUrl";
@@ -154,7 +154,7 @@ async function onGetLinksClick() {
     // do not modify UI markup; if the screen has placeholder setters, update them:
     // @ts-ignore
     if (typeof setDistributionLinks === "function") setDistributionLinks(links);
-    
+
     // Preserve original copy functionality
     if (links?.web_url) {
         openShare("direct", links.web_url);
@@ -169,8 +169,61 @@ async function onGetLinksClick() {
 
   // פעולות
   const handleCopy = async () => {
-    await onGetLinksClick();
+    await onCopyLinkClick();
   };
+
+  async function onCopyLinkClick() {
+    try {
+      const token = current?.public_token;
+      const source = ref;
+
+      const url =
+        shareLinks?.web_url ??
+        new URL(`/q/${token}?lang=${lang}&ref=${source}`, getBaseUrl()).toString();
+
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url);
+      } else {
+        const ta = document.createElement("textarea");
+        ta.value = url;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+      }
+      toast?.({ title: "הועתק", description: "הקישור הועתק ללוח." });
+    } catch (e) {
+      console.error(e);
+      toast?.({ title: "שגיאה", description: "העתקה נכשלה." });
+    }
+  }
+
+  // Refactor onGetLinksClick to avoid double-copying
+  async function onGetLinksClick(isPreCopy = false) {
+    try {
+      const qid = resolveQid();
+      if (!qid) {
+        if (typeof toast === "function") toast({ title: "Missing questionnaire", description: "Select or open a questionnaire first." });
+        return;
+      }
+      const links = await rpcGetDistributionLinks(qid, getBaseUrl());
+      setShareLinks(links);
+      if (!isPreCopy) {
+        if (typeof toast === "function") toast({ title: "Links ready", description: "Web / WhatsApp / Mail links generated." });
+      }
+    } catch (e) {
+      console.error(e);
+      if (typeof toast === "function") toast({ title: "Error", description: "Failed to generate links." });
+    }
+  }
+
+  // Effect to re-run copy after links are fetched
+  useEffect(() => {
+    if (shareLinks) {
+      onCopyLinkClick();
+    }
+  }, [shareLinks]);
+
 
   const handleWhatsApp = async () => {
     if (!current || !publicUrl) return;
@@ -413,7 +466,7 @@ async function onGetLinksClick() {
                     <MessageCircle className="w-8 h-8 mb-2" />
                     <span>WhatsApp</span>
                   </Button>
-                  
+
                   <Button
                     onClick={handleFacebook}
                     disabled={!publicUrl}
@@ -422,7 +475,7 @@ async function onGetLinksClick() {
                     <Facebook className="w-8 h-8 mb-2" />
                     <span>Facebook</span>
                   </Button>
-                  
+
                   <Button
                     onClick={handleLinkedin}
                     disabled={!publicUrl}
@@ -431,7 +484,7 @@ async function onGetLinksClick() {
                     <Linkedin className="w-8 h-8 mb-2" />
                     <span>LinkedIn</span>
                   </Button>
-                  
+
                   <Button
                     onClick={handleInstagram}
                     disabled={!publicUrl}
@@ -441,7 +494,7 @@ async function onGetLinksClick() {
                     <span>Instagram</span>
                   </Button>
                 </div>
-                
+
                 <div className="mt-4 text-sm text-muted-foreground">
                   <p>💡 <strong>טיפ:</strong> Instagram - הקישור יועתק ותוכל להדביק אותו ב-Stories או בביו</p>
                 </div>
@@ -467,7 +520,7 @@ async function onGetLinksClick() {
                     <Mail className="w-8 h-8 mb-2 text-[#EA4335]" />
                     <span>Gmail</span>
                   </Button>
-                  
+
                   <Button
                     onClick={() => openEmailProvider('outlook')}
                     disabled={!current}
@@ -477,7 +530,7 @@ async function onGetLinksClick() {
                     <Mail className="w-8 h-8 mb-2 text-[#0078D4]" />
                     <span>Outlook</span>
                   </Button>
-                  
+
                   <Button
                     onClick={() => openEmailProvider('default')}
                     disabled={!current}
@@ -488,16 +541,16 @@ async function onGetLinksClick() {
                     <span>אימייל כללי</span>
                   </Button>
                 </div>
-                
+
                 <div className="mt-6 p-4 bg-muted rounded-lg">
                   <h4 className="font-medium mb-2">תבנית אימייל מוכנה:</h4>
                   <div className="text-sm text-muted-foreground bg-background p-3 rounded border font-mono">
                     {shareText}
                   </div>
-                  <Button 
+                  <Button
                     onClick={() => navigator.clipboard.writeText(shareText)}
-                    variant="outline" 
-                    size="sm" 
+                    variant="outline"
+                    size="sm"
                     className="mt-2"
                   >
                     <Copy className="w-4 h-4 ml-1" />
@@ -527,7 +580,7 @@ async function onGetLinksClick() {
                         />
                       </div>
                     </div>
-                    
+
                     <div className="flex justify-center gap-2">
                       <Button
                         onClick={handleSaveQr}
@@ -548,7 +601,7 @@ async function onGetLinksClick() {
                       </Button>
                     </div>
                   </div>
-                  
+
                   <div className="space-y-4">
                     <div>
                       <h4 className="font-medium mb-2">איך להשתמש בקוד QR:</h4>
@@ -559,7 +612,7 @@ async function onGetLinksClick() {
                         <li>• שלח בווטסאפ או אימייל</li>
                       </ul>
                     </div>
-                    
+
                     <div className="p-4 bg-muted rounded-lg">
                       <h5 className="font-medium mb-2">💡 טיפים מקצועיים:</h5>
                       <ul className="text-sm text-muted-foreground space-y-1">
@@ -594,7 +647,7 @@ async function onGetLinksClick() {
                     <Edit className="w-4 h-4 ml-2" />
                     ערוך את השאלון
                   </Button>
-                  
+
                   <Button
                     onClick={handlePreview}
                     disabled={!publicUrl}
@@ -604,7 +657,7 @@ async function onGetLinksClick() {
                     <Eye className="w-4 h-4 ml-2" />
                     תצוגה מקדימה
                   </Button>
-                  
+
                   <Button
                     onClick={handleCopy}
                     disabled={!current}
@@ -616,7 +669,7 @@ async function onGetLinksClick() {
                   </Button>
                 </CardContent>
               </Card>
-              
+
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -647,7 +700,7 @@ async function onGetLinksClick() {
                       </div>
                     </div>
                   )}
-                  
+
                   {!current && (
                     <p className="text-sm text-muted-foreground text-center py-4">
                       בחר שאלון כדי לראות פרטים
@@ -656,7 +709,7 @@ async function onGetLinksClick() {
                 </CardContent>
               </Card>
             </div>
-            
+
             {/* שיתוף מתקדם */}
             {publicUrl && (
               <Card>

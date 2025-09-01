@@ -7,6 +7,7 @@ import { toast, announce } from '@/components/ui/Toaster';
 import { supabase } from "@/integrations/supabase/client";
 import { Share2, BarChart3, Edit, Settings, ExternalLink } from 'lucide-react';
 import { routes } from "@/routes";
+import { useNavigate } from "react-router-dom";
 
 type Q={
   id:string;
@@ -85,6 +86,7 @@ export default function QuestionnairesList(){
   // fetch counts for responses and leads per questionnaire (best-effort)
   useEffect(()=>{(async()=>{ if(!rows.length) return; const nextResp:Record<string,number>={}; const nextLead:Record<string,number>={}; for(const q of rows){ try{ const r=await supabase.from('responses').select('id',{count:'exact', head:true}).eq('questionnaire_id', q.id); nextResp[q.id]=r.count??0; }catch{ nextResp[q.id]=0;} try{ const l=await supabase.from('leads').select('id',{count:'exact', head:true}).eq('questionnaire_id', q.id); nextLead[q.id]=l.count??0; }catch{ nextLead[q.id]=0;} } setRespCount(nextResp); setLeadCount(nextLead); })();},[rows]);
   if(loading) return <div className="p-6">טוען…</div>; if(error) return <div className="p-6 text-red-600">{error}</div>;
+  const navigate = useNavigate();
   return(
     <div className="max-w-6xl mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -143,7 +145,7 @@ export default function QuestionnairesList(){
                     </Button>
                   </TooltipWrapper>
                   <TooltipWrapper content="עריכה">
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" onClick={() => navigate(`/onboarding?id=${q.id}`)}>
                       <Edit className="h-4 w-4 mr-1" /> עריכה
                     </Button>
                   </TooltipWrapper>

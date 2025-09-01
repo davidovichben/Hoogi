@@ -7,6 +7,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui
 import { Textarea } from '../ui/textarea';
 import { TooltipWrapper } from '../TooltipWrapper';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Portal } from "@radix-ui/react-portal";
+import { HexColorPicker } from "react-colorful";
 
 interface BrandingData {
   primaryColor: string;
@@ -47,32 +50,58 @@ export const BrandingSettings: React.FC<BrandingSettingsProps> = ({
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="primaryColor">{t('settings.primaryColor')}</Label>
-              <div className="flex gap-2">
+              <div className="flex gap-2 items-center">
+                <Popover modal={false}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-12 h-10 rounded shrink-0"
+                      style={{ backgroundColor: branding.primaryColor }}
+                    />
+                  </PopoverTrigger>
+                  <Portal>
+                    <PopoverContent side="bottom" align="start" className="z-[1000] w-auto">
+                      <HexColorPicker
+                        color={branding.primaryColor}
+                        onChange={(color) => setBranding({ ...branding, primaryColor: color })}
+                      />
+                    </PopoverContent>
+                  </Portal>
+                </Popover>
                 <Input
                   id="primaryColor"
                   value={branding.primaryColor}
                   onChange={(e) => setBranding({...branding, primaryColor: e.target.value})}
                   className="flex-1"
                 />
-                <div 
-                  className="w-12 h-10 rounded border shrink-0"
-                  style={{ backgroundColor: branding.primaryColor }}
-                />
               </div>
             </div>
             
             <div className="space-y-2">
               <Label htmlFor="secondaryColor">{t('settings.secondaryColor')}</Label>
-              <div className="flex gap-2">
+              <div className="flex gap-2 items-center">
+                <Popover modal={false}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-12 h-10 rounded shrink-0"
+                      style={{ backgroundColor: branding.secondaryColor }}
+                    />
+                  </PopoverTrigger>
+                  <Portal>
+                    <PopoverContent side="bottom" align="start" className="z-[1000] w-auto">
+                      <HexColorPicker
+                        color={branding.secondaryColor}
+                        onChange={(color) => setBranding({ ...branding, secondaryColor: color })}
+                      />
+                    </PopoverContent>
+                  </Portal>
+                </Popover>
                 <Input
                   id="secondaryColor"
                   value={branding.secondaryColor}
                   onChange={(e) => setBranding({...branding, secondaryColor: e.target.value})}
                   className="flex-1"
-                />
-                <div 
-                  className="w-12 h-10 rounded border shrink-0"
-                  style={{ backgroundColor: branding.secondaryColor }}
                 />
               </div>
             </div>
