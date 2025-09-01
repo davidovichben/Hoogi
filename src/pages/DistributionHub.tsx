@@ -15,6 +15,8 @@ import {
   MessageCircle, Mail, Instagram, Facebook, 
   Linkedin, Globe, Settings, BarChart3 
 } from 'lucide-react';
+import { rpcGetDistributionLinks } from "@/lib/rpc";
+import { getBaseUrl } from "@/lib/baseUrl";
 
 // טיפוסים
 export type QMin = { id: string; public_token: string; title: string };
@@ -44,6 +46,7 @@ export default function DistributionHub() {
 
   // --- Guard נגד 400: נטען userId לפני כל שאילתות ---
   const [userId, setUserId] = useState<string | null>(null);
+  const [shareLinks, setShareLinks] = useState<{ web_url: string; whatsapp_url: string; mailto_url: string } | null>(null);
   useEffect(() => {
     let cancel = false;
     supabase.auth.getUser().then(({ data, error }) => {
@@ -115,10 +118,58 @@ export default function DistributionHub() {
     return `${current?.title ?? 'שאלון'} – נשמח לפרט, מלא/י: ${publicUrl}`;
   }, [current?.title, publicUrl]);
 
+  // helper to resolve questionnaire id from the current screen context
+function resolveQid(): string | null {
+  // try common sources; do not break if not found
+  if (current?.id) return current.id;
+  // @ts-ignore
+  if (typeof qid === "string" && qid) return qid;
+  // @ts-ignore
+  if (typeof selectedQuestionnaireId === "string" && selectedQuestionnaireId) return selectedQuestionnaireId;
+  // @ts-ignore
+  if (typeof questionnaireId === "string" && questionnaireId) return questionnaireId;
+  // try URL param: /questionnaires/:id/distribute
+  try {
+    // @ts-ignore
+    const params = typeof useParams === "function" ? useParams() : null;
+    // @ts-ignore
+    if (params?.id) return String(params.id);
+  } catch {}
+  return null;
+}
+
+async function onGetLinksClick() {
+  try {
+    const qid = resolveQid();
+    if (!qid) {
+      console.warn("No questionnaire id found for distribution");
+      // @ts-ignore show toast if available
+      if (typeof toast === "function") toast({ title: "Missing questionnaire", description: "Select or open a questionnaire first." });
+      return;
+    }
+    const links = await rpcGetDistributionLinks(qid, getBaseUrl());
+    setShareLinks(links);
+    // @ts-ignore show toast if available
+    if (typeof toast === "function") toast({ title: "Links ready", description: "Web / WhatsApp / Mail links generated." });
+    // do not modify UI markup; if the screen has placeholder setters, update them:
+    // @ts-ignore
+    if (typeof setDistributionLinks === "function") setDistributionLinks(links);
+    
+    // Preserve original copy functionality
+    if (links?.web_url) {
+        openShare("direct", links.web_url);
+    }
+
+  } catch (e) {
+    console.error(e);
+    // @ts-ignore
+    if (typeof toast === "function") toast({ title: "Error", description: "Failed to generate links." });
+  }
+}
+
   // פעולות
   const handleCopy = async () => {
-    if (!publicUrl) return;
-    openShare("direct", publicUrl);
+    await onGetLinksClick();
   };
 
   const handleWhatsApp = async () => {
@@ -307,7 +358,7 @@ export default function DistributionHub() {
               <div className="flex gap-2">
                 <input
                   readOnly
-                  value={publicUrl}
+                  value={shareLinks?.web_url || publicUrl}
                   aria-label="קישור להפצה"
                   className="flex-1 px-3 py-2 bg-muted border border-border rounded-md text-sm font-mono"
                 />
