@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Share2, BarChart3, Edit, Settings, ExternalLink } from 'lucide-react';
 import { routes } from "@/routes";
 import { useNavigate } from "react-router-dom";
+import { ensurePreviewFlow } from "@/lib/preview";
 
 type Q={
   id:string;
@@ -156,10 +157,8 @@ export default function QuestionnairesList(){
                     </Button>
                   </TooltipWrapper>
                   <TooltipWrapper content="תצוגה מקדימה">
-                    <Button variant="ghost" size="sm" asChild>
-                      <a href={shareUrl} target="_blank" rel="noreferrer">
-                        <ExternalLink className="h-4 w-4 mr-1" /> תצוגה
-                      </a>
+                    <Button variant="ghost" size="sm" onClick={() => ensurePreviewFlow(q.id, 'he', 'show')}>
+                      <ExternalLink className="h-4 w-4 mr-1" /> תצוגה
                     </Button>
                   </TooltipWrapper>
                 </div>

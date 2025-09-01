@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { rpcGetDistributionLinks, rpcPublishQuestionnaire, safeToast } from "@/lib/rpc";
 import { getBaseUrl } from "@/lib/baseUrl";
+import { ensurePreviewFlow } from "@/lib/preview";
 
 // טיפוסים
 export type QMin = { id: string; public_token: string; title: string };
@@ -381,7 +382,7 @@ export default function DistributionHub() {
                   <Copy className="w-4 h-4 ml-1" />
                   העתק
                 </Button>
-                <Button onClick={handlePreview} disabled={!publicUrl} variant="outline" size="sm">
+                <Button onClick={() => ensurePreviewFlow(current?.id, lang, 'preview')} disabled={!current} variant="outline" size="sm">
                   <Eye className="w-4 h-4 ml-1" />
                   תצוגה מקדימה
                 </Button>
