@@ -1,85 +1,103 @@
-import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { corsHeaders } from "../_shared/cors.ts";
+// supabase/functions/on-new-lead/index.ts
+// Deno Edge Function – מופעלת ע"י טריגר DB (HTTP POST) עם חתימה בכותרת.
+// לא לגעת בעיצוב/פרונט—זה צד-שרת בלבד.
 
-console.log("on-new-lead function booting up...");
+import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
+
+type LeadRecord = {
+  id: string;
+  email?: string | null;
+  phone?: string | null;
+  name?: string | null;
+  questionnaire_id?: string | null;
+  created_at?: string;
+  [k: string]: unknown;
+};
+
+type TriggerPayload = {
+  type: "INSERT" | "UPDATE" | "DELETE";
+  table: string;
+  record: LeadRecord;
+};
+
+const WEBHOOK_URL = Deno.env.get("WEBHOOK_URL") ?? ""; // אופציונלי
+const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") ?? ""; // אופציונלי
+const FROM_EMAIL = Deno.env.get("FROM_EMAIL") ?? "noreply@example.com"; // אופציונלי
+const TO_EMAIL = Deno.env.get("TO_EMAIL") ?? ""; // אם רוצים אימייל לכל ליד
+const INCOMING_SECRET = Deno.env.get("INCOMING_WEBHOOK_SECRET") ?? ""; // חובה אם מוודאים חתימה
+
+function assertSignature(req: Request) {
+  if (!INCOMING_SECRET) return true; // אם לא הוגדר, מדלגים על בדיקה (DEV)
+  const sig = req.headers.get("x-webhook-secret") || "";
+  return sig === INCOMING_SECRET;
+}
+
+async function sendWebhook(record: LeadRecord) {
+  if (!WEBHOOK_URL) return;
+  try {
+    await fetch(WEBHOOK_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ event: "lead.created", data: record }),
+    });
+  } catch (err) {
+    console.error("Webhook error:", err);
+  }
+}
+
+async function sendEmail(record: LeadRecord) {
+  if (!RESEND_API_KEY || !TO_EMAIL) return;
+  try {
+    const subject = `ליד חדש: ${record.email ?? record.phone ?? record.name ?? record.id}`;
+    const text = [
+      `Lead ID: ${record.id}`,
+      `Name: ${record.name ?? "-"}`,
+      `Email: ${record.email ?? "-"}`,
+      `Phone: ${record.phone ?? "-"}`,
+      `Questionnaire: ${record.questionnaire_id ?? "-"}`,
+      `Created at: ${record.created_at ?? "-"}`,
+    ].join("\n");
+
+    await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${RESEND_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: FROM_EMAIL,
+        to: [TO_EMAIL],
+        subject,
+        text,
+      }),
+    });
+  } catch (err) {
+    console.error("Email error:", err);
+  }
+}
 
 serve(async (req) => {
-  // This function is called for every request.
-  // It needs to handle OPTIONS pre-flight requests and the actual POST request.
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
-
   try {
-    // The Supabase trigger payload is in the request body.
-    const payload = await req.json();
-    console.log("Received payload:", JSON.stringify(payload, null, 2));
-
-    // The payload contains the new lead record.
-    const newLead = payload.record;
-    
-    // --- TODO: Add your webhook/email logic here ---
-
-    // Example: Send to a generic webhook endpoint (e.g., Zapier, Make.com)
-    /*
-    const WEBHOOK_URL = Deno.env.get("LEAD_WEBHOOK_URL");
-    if (WEBHOOK_URL) {
-      const webhookResponse = await fetch(WEBHOOK_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ lead: newLead }),
-      });
-      if (!webhookResponse.ok) {
-        console.error("Webhook call failed:", await webhookResponse.text());
-      } else {
-        console.log("Successfully sent data to webhook.");
-      }
+    if (req.method !== "POST") {
+      return new Response("Method Not Allowed", { status: 405 });
     }
-    */
 
-    // Example: Send an email using Resend
-    /*
-    const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-    if (RESEND_API_KEY) {
-      const emailResponse = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${RESEND_API_KEY}`,
-        },
-        body: JSON.stringify({
-          from: "noreply@yourdomain.com", // TODO: Replace with your verified domain in Resend
-          to: "your-notification-email@example.com", // TODO: Replace with your email
-          subject: `New Lead Received: ${newLead.name || newLead.email}`,
-          html: `<p>A new lead has been submitted.</p><pre>${JSON.stringify(newLead, null, 2)}</pre>`,
-        }),
-      });
-      if (!emailResponse.ok) {
-        console.error("Resend API call failed:", await emailResponse.text());
-      } else {
-        console.log("Successfully sent lead notification email.");
-      }
+    if (!assertSignature(req)) {
+      return new Response("Forbidden", { status: 403 });
     }
-    */
-    
-    // --- End of TODO section ---
 
-    return new Response(JSON.stringify({ success: true, lead: newLead }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
-    });
-  } catch (error) {
-    console.error("Error processing request:", error.message);
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
-    });
+    const payload = (await req.json()) as TriggerPayload;
+    if (payload?.type !== "INSERT" || payload?.table !== "leads") {
+      return new Response("Ignored", { status: 200 });
+    }
+
+    const lead = payload.record;
+    // הרצה במקביל: webhook + email
+    await Promise.all([sendWebhook(lead), sendEmail(lead)]);
+
+    return new Response("OK", { status: 200 });
+  } catch (err) {
+    console.error(err);
+    return new Response("Internal Error", { status: 500 });
   }
 });
-
-// To deploy this function:
-// 1. Install the Supabase CLI: https://supabase.com/docs/guides/cli
-// 2. Link your project: supabase link --project-ref <your-project-ref>
-// 3. Set up secrets (if any): supabase secrets set LEAD_WEBHOOK_URL="xxx" RESEND_API_KEY="xxx"
-// 4. Deploy the function: supabase functions deploy on-new-lead --no-verify-jwt
-// 5. In the Supabase dashboard (Database > Webhooks), create a new webhook on the 'leads' table for 'INSERT' events, pointing to this function.
