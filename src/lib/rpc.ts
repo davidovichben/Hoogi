@@ -9,13 +9,13 @@ export async function rpcCreateQuestionnaire(p_title: string, p_lang?: string) {
 export async function rpcPublishQuestionnaire(p_id: string) {
   const { data, error } = await supabase.rpc("publish_questionnaire", { p_id });
   if (error) throw error;
-  return data; // may include { token }
+  return data; // { token?, is_published? }
 }
 
 export async function rpcGetDistributionLinks(p_id: string, baseUrl: string) {
   const { data, error } = await supabase.rpc("get_distribution_links", {
     p_id,
-    p_base_url: baseUrl,
+    p_base_url: baseUrl, // שם פרמטר נכון
   });
   if (error) throw error;
   return data as { web_url: string; whatsapp_url: string; mailto_url: string };
@@ -46,7 +46,7 @@ export async function rpcSubmitResponse(params: {
   return data;
 }
 
-// QA (read-only)
+// QA helpers
 export async function rpcQaQuestionnaires(limit = 20) {
   const { data, error } = await supabase.rpc("qa_questionnaires", { p_limit: limit });
   if (error) throw error;
@@ -61,4 +61,18 @@ export async function rpcQaLeads(limit = 20) {
   const { data, error } = await supabase.rpc("qa_leads", { p_limit: limit });
   if (error) throw error;
   return data;
+}
+
+export function safeToast(msg: { title: string; description?: string }) {
+  // נשתמש בטוסט קיים אם יש, אחרת alert/console
+  // @ts-ignore
+  if (typeof window !== "undefined" && typeof window.toast === "function") {
+    // @ts-ignore
+    window.toast(msg);
+    return;
+  }
+  // @ts-ignore (shadcn useToast hook injected?)
+  if (typeof toast === "function") { toast(msg); return; }
+  if (typeof alert === "function") alert(`${msg.title}${msg.description ? "\n" + msg.description : ""}`);
+  console.log("TOAST:", msg.title, msg.description ?? "");
 }

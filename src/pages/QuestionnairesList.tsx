@@ -21,6 +21,7 @@ export default function QuestionnairesList(){
   const [rows,setRows]=useState<Q[]>([]); const [loading,setLoading]=useState(true); const [error,setError]=useState<string|null>(null);
   const [respCount, setRespCount] = useState<Record<string, number>>({});
   const [leadCount, setLeadCount] = useState<Record<string, number>>({});
+  const navigate = useNavigate();
 
   useEffect(()=>{(async()=>{
     try{
@@ -86,7 +87,7 @@ export default function QuestionnairesList(){
   // fetch counts for responses and leads per questionnaire (best-effort)
   useEffect(()=>{(async()=>{ if(!rows.length) return; const nextResp:Record<string,number>={}; const nextLead:Record<string,number>={}; for(const q of rows){ try{ const r=await supabase.from('responses').select('id',{count:'exact', head:true}).eq('questionnaire_id', q.id); nextResp[q.id]=r.count??0; }catch{ nextResp[q.id]=0;} try{ const l=await supabase.from('leads').select('id',{count:'exact', head:true}).eq('questionnaire_id', q.id); nextLead[q.id]=l.count??0; }catch{ nextLead[q.id]=0;} } setRespCount(nextResp); setLeadCount(nextLead); })();},[rows]);
   if(loading) return <div className="p-6">טוען…</div>; if(error) return <div className="p-6 text-red-600">{error}</div>;
-  const navigate = useNavigate();
+  
   return(
     <div className="max-w-6xl mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">

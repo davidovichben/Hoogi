@@ -580,15 +580,37 @@ export const Onboarding: React.FC = () => {
     );
   };
 
-  const saveAsDraft = () => {
-    setFormData({ ...formData, status: 'draft' });
-    safeToast(toast, 
-      language === 'he' ? 'נשמר כטיוטה' : 'Saved as Draft',
-      language === 'he' 
-        ? 'השאלון נשמר כטיוטה וניתן לערוך אותו מאוחר יותר'
-        : 'Questionnaire saved as draft and can be edited later'
-    );
+  const saveAsDraft = async () => {
+    await onSaveDraft(formData.id, {
+      title: formData.title,
+      category: formData.category,
+      design_colors: {
+        primary_color: formData.primaryColor,
+        secondary_color: formData.secondaryColor,
+        company_name: formData.companyName,
+        language: formData.language,
+        status: 'draft'
+      },
+      logo_url: formData.logoUrl
+    });
   };
+
+  async function onSaveDraft(qid: string | undefined, partial?: Record<string, any>) {
+    if (!qid) {
+      safeToast(toast, "שגיאה", "לא ניתן לשמור טיוטה ללא מזהה שאלון.", "destructive");
+      return;
+    }
+    try {
+      // עדכון מינימלי (ללא שבירת DB): סטטוס/כותרת/שדות קיימים בלבד
+      const updates = { status: "draft", ...(partial ?? {}) };
+      const { error } = await supabase.from("questionnaires").update(updates).eq("id", qid);
+      if (error) throw error;
+      safeToast(toast, "נשמר", "הטיוטה נשמרה");
+    } catch (e) {
+      console.error(e);
+      safeToast(toast, "שגיאה", "שמירת טיוטה נכשלה");
+    }
+  }
 
   const lockQuestionnaire = () => {
     setFormData({ ...formData, status: 'locked' });
@@ -1083,7 +1105,7 @@ export const Onboarding: React.FC = () => {
                     <Label htmlFor="primaryColor">
                       {language === 'he' ? 'צבע ראשי' : 'Primary Color'}
                     </Label>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2" style={{ overflow: "visible", position: "relative", zIndex: 1 }}>
                       <Input
                         id="primaryColor"
                         type="color"
@@ -1104,7 +1126,7 @@ export const Onboarding: React.FC = () => {
                     <Label htmlFor="secondaryColor">
                       {language === 'he' ? 'צבע משני' : 'Secondary Color'}
                     </Label>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2" style={{ overflow: "visible", position: "relative", zIndex: 1 }}>
                       <Input
                         id="secondaryColor"
                         type="color"

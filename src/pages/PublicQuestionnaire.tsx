@@ -3,8 +3,7 @@ import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { supabase } from "@/integrations/supabase/client";
-import { rpcGetPublicQuestionnaire } from "@/lib/rpc";
+import { rpcGetPublicBranding, rpcGetPublicQuestionnaire, rpcSubmitResponse, safeToast } from "@/lib/rpc";
 
 interface Question {
   id: string;
@@ -45,17 +44,15 @@ interface LeadSubmission {
 }
 
 export default function PublicQuestionnaire() {
-  const { token } = useParams<{ token: string }>();
-  const [searchParams] = useSearchParams();
+  const { token = "" } = useParams();
   const navigate = useNavigate();
-  
-  const [questionnaire, setQuestionnaire] = useState<Questionnaire | null>(null);
-  const [questions, setQuestions] = useState<Question[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [submitted, setSubmitted] = useState(false);
+  const [searchParams] = useSearchParams();
+  const [branding, setBranding] = useState<any>(null);
+  const [schema, setSchema] = useState<any>(null);
   const [answers, setAnswers] = useState<Record<string, any>>({});
+  const [loading, setLoading] = useState(true);
   const [contact, setContact] = useState({ name: "", email: "", phone: "" });
+  const [submitted, setSubmitted] = useState(false);
   
   const lang = (searchParams.get("lang") as "he" | "en") || "he";
   const ref = searchParams.get("ref") || "";
@@ -64,42 +61,34 @@ export default function PublicQuestionnaire() {
   const dir = isRTL ? "rtl" : "ltr";
 
   useEffect(() => {
-    if (!token) return;
-
-    const fetchQuestionnaire = async () => {
+    if (!token) {
+      setLoading(false);
+      return;
+    };
+    let mounted = true;
+    (async () => {
       try {
         setLoading(true);
-        setError(null);
-
-        const data = await rpcGetPublicQuestionnaire(token);
-
-        if (!data) {
-          setError(
-            lang === "he"
-              ? "השאלון לא נמצא או לא זמין כרגע."
-              : "Questionnaire not found or unavailable."
-          );
-          return;
-        }
-
-        const { questions, ...questionnaireData } = data;
-        setQuestionnaire(questionnaireData as Questionnaire);
-        setQuestions(questions || []);
-      } catch (err: any) {
-        console.error("Failed to fetch public questionnaire:", err);
-        setError(
-          err.message ||
-            (lang === "he"
-              ? "שגיאה בטעינת השאלון"
-              : "Failed to load questionnaire")
-        );
+        const [b, q] = await Promise.all([
+          rpcGetPublicBranding(token),
+          rpcGetPublicQuestionnaire(token),
+        ]);
+        if (!mounted) return;
+        setBranding(b);
+        setSchema(q);
+      } catch (e) {
+        console.error(e);
+        safeToast({ title: "השאלון לא נמצא", description: "ודאי שפורסם ויש טוקן" });
       } finally {
-        setLoading(false);
+        if (mounted) {
+          setLoading(false);
+        }
       }
-    };
-
-    fetchQuestionnaire();
-  }, [token, lang]);
+    })();
+    return () => {
+      mounted = false;
+    }
+  }, [token]);
 
   const handleAnswerChange = (questionId: string, value: any) => {
     setAnswers(prev => ({ ...prev, [questionId]: value }));
@@ -109,36 +98,23 @@ export default function PublicQuestionnaire() {
     setContact(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    
-    if (!questionnaire) return;
-    
     try {
-      const leadData: LeadSubmission = {
-        questionnaire_id: questionnaire.id,
-        lang,
-        details: {
-          ref,
-          contact: Object.values(contact).some(v => v.trim()) ? contact : undefined,
-          answers,
-          meta: {
-            user_agent: navigator.userAgent
-          }
-        }
-      };
-      
-      const { error: submitError } = await supabase
-        .from("leads")
-        .insert([leadData]);
-      
-      if (submitError) throw submitError;
-      
+      await rpcSubmitResponse({ 
+        token_or_uuid: token, 
+        answers, 
+        email: contact.email || undefined, 
+        phone: contact.phone || undefined, 
+        lang, 
+        channel: "landing" 
+      });
       setSubmitted(true);
-    } catch (err: any) {
-      setError(err.message || "Failed to submit");
+    } catch (e) {
+      console.error(e);
+      safeToast({ title: "שגיאה בשליחה", description: "נסי שוב" });
     }
-  };
+  }
 
   const switchLanguage = (newLang: "he" | "en") => {
     const params = new URLSearchParams(searchParams);
@@ -157,26 +133,13 @@ export default function PublicQuestionnaire() {
     );
   }
 
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" dir={dir}>
-        <div className="text-center text-red-600">
-          <h1 className="text-2xl font-bold mb-4">
-            {lang === "he" ? "שגיאה" : "Error"}
-          </h1>
-          <p>{error}</p>
-        </div>
-      </div>
-    );
-  }
-
   if (submitted) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50" dir={dir}>
         <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
-          {questionnaire?.meta?.brand_logo_url && (
+          {branding?.brand_logo_url && (
             <img 
-              src={questionnaire.meta.brand_logo_url} 
+              src={branding.brand_logo_url} 
               alt="Logo" 
               className="h-16 mx-auto mb-6"
             />
@@ -200,7 +163,7 @@ export default function PublicQuestionnaire() {
     );
   }
 
-  if (!questionnaire) {
+  if (!schema) {
     return (
       <div className="min-h-screen flex items-center justify-center" dir={dir}>
         <div className="text-center text-red-600">
@@ -218,17 +181,17 @@ export default function PublicQuestionnaire() {
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            {questionnaire?.meta?.brand_logo_url && (
+            {branding?.brand_logo_url && (
               <img 
-                src={questionnaire.meta.brand_logo_url} 
+                src={branding.brand_logo_url} 
                 alt="Logo" 
                 className="h-12"
               />
             )}
             <div>
-              <h1 className="text-xl font-semibold">{questionnaire.title}</h1>
-              {questionnaire.description && (
-                <p className="text-gray-600 text-sm">{questionnaire.description}</p>
+              <h1 className="text-xl font-semibold">{schema?.title}</h1>
+              {schema?.description && (
+                <p className="text-gray-600 text-sm">{schema.description}</p>
               )}
             </div>
           </div>
@@ -255,7 +218,7 @@ export default function PublicQuestionnaire() {
 
       {/* Form */}
       <div className="max-w-4xl mx-auto px-4 py-8">
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={onSubmit} className="space-y-6">
           {/* Contact Information */}
           <div className="bg-white rounded-lg shadow-sm border p-6">
             <h2 className="text-lg font-semibold mb-4">
@@ -299,13 +262,13 @@ export default function PublicQuestionnaire() {
           </div>
 
           {/* Questions */}
-          {questions.length > 0 && (
+          {schema?.questions?.length > 0 && (
             <div className="bg-white rounded-lg shadow-sm border p-6">
               <h2 className="text-lg font-semibold mb-4">
                 {lang === "he" ? "שאלות" : "Questions"}
               </h2>
               <div className="space-y-6">
-                {questions.map((question) => (
+                {schema.questions.map((question: Question) => (
                   <div key={question.id} className="space-y-3">
                     <label className="block text_sm font-medium text-gray-700">
                       {question.text}
@@ -407,7 +370,7 @@ export default function PublicQuestionnaire() {
               size="lg"
               className="px-8 py-3"
               style={{
-                backgroundColor: questionnaire?.meta?.brand_primary_color || undefined
+                backgroundColor: branding?.brand_primary_color || undefined
               }}
             >
               {lang === "he" ? "שלח תשובה" : "Submit Response"}
