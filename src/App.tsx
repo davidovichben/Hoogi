@@ -33,6 +33,7 @@ import Partners from "./pages/Partners";
 import { UpdatePassword } from "./pages/auth/UpdatePassword";
 import LegacyDistributeRedirect from "./pages/LegacyDistributeRedirect";
 import { routes } from "./routes";
+import ThankYou from "./pages/ThankYou";
 
 const queryClient = new QueryClient();
 
@@ -75,6 +76,7 @@ const App = () => (
                 </Route>
                 {/* חדש: דף שיתוף ציבורי - לא דורש התחברות */}
                 <Route path={routes.publicQuestionnaire(':token')} element={<PublicQuestionnaire />} />
+                <Route path="/thank-you" element={<ThankYou />} />
                 <Route path="*" element={<NotFound />} />
                 <Route path={routes.authCallback} element={<AuthCallback />} />
               </Routes>

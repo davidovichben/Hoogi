@@ -60,7 +60,7 @@ export const BrandingSettings: React.FC<BrandingSettingsProps> = ({
                     />
                   </PopoverTrigger>
                   <Portal>
-                    <PopoverContent side="bottom" align="start" className="z-[1000] w-auto">
+                    <PopoverContent side="bottom" align="start" className="z-[9999] w-auto">
                       <HexColorPicker
                         color={branding.primaryColor}
                         onChange={(color) => setBranding({ ...branding, primaryColor: color })}
@@ -89,7 +89,7 @@ export const BrandingSettings: React.FC<BrandingSettingsProps> = ({
                     />
                   </PopoverTrigger>
                   <Portal>
-                    <PopoverContent side="bottom" align="start" className="z-[1000] w-auto">
+                    <PopoverContent side="bottom" align="start" className="z-[9999] w-auto">
                       <HexColorPicker
                         color={branding.secondaryColor}
                         onChange={(color) => setBranding({ ...branding, secondaryColor: color })}

@@ -162,11 +162,20 @@ export default function DistributionHub() {
   
       if (!url) { safeToast({ title: "אין קישור", description: "לחצי קודם על הפקה" }); return; }
   
-      if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(url);
-      else {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url);
+      } else {
         const ta = document.createElement("textarea");
-        ta.value = url; document.body.appendChild(ta); ta.select();
-        document.execCommand("copy"); document.body.removeChild(ta);
+        ta.value = url; 
+        document.body.appendChild(ta); 
+        ta.focus();
+        ta.select();
+        try {
+          document.execCommand("copy");
+        } catch (err) {
+          console.error('Fallback copy failed', err);
+        }
+        document.body.removeChild(ta);
       }
       safeToast({ title: "הועתק", description: "הקישור הועתק ללוח" });
     } catch (e) {

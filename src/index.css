@@ -18,13 +18,13 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 220 25% 20%;
 
-    /* Primary: Deep Teal */
-    --primary: 186 74% 35%;
+    /* Primary: Deep Teal - with branding override */
+    --primary: var(--brand-primary, 186 74% 35%);
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 186 74% 55%;
+    --primary-glow: var(--brand-primary, 186 74% 55%);
 
-    /* Secondary: Golden Yellow */
-    --secondary: 51 100% 50%;
+    /* Secondary: Golden Yellow - with branding override */
+    --secondary: var(--brand-secondary, 51 100% 50%);
     --secondary-foreground: 220 25% 20%;
 
     /* Muted: Soft teal background */
