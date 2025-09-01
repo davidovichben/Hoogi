@@ -1,7 +1,16 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { rpcGetPublicBranding, rpcGetPublicQuestionnaire, rpcSubmitResponse, safeToast } from "@/lib/rpc";
-import { normalizePublicQuestionnaire, applyBranding, type NormalizedQuestion } from "@/lib/normalizePublicQuestionnaire";
+import {
+  rpcGetPublicQuestionnaire,
+  rpcGetPublicBranding,
+  rpcSubmitResponse,
+  safeToast,
+} from "@/lib/rpc";
+import {
+  normalizePublicQuestionnaire,
+  applyBranding,
+  type NormalizedQuestion,
+} from "@/lib/normalizePublicQuestionnaire";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -31,7 +40,7 @@ export default function PublicQuestionnaire() {
         if (!alive) return;
 
         setBranding(b);
-        applyBranding(b);
+        applyBranding(b); // החלת צבעים כ־CSS variables (בלי שינוי Markup)
 
         const norm = normalizePublicQuestionnaire(raw);
         setTitle(norm.title ?? "");
@@ -40,7 +49,7 @@ export default function PublicQuestionnaire() {
         setRequireContact(Boolean(norm.requireContact));
       } catch (e) {
         console.error(e);
-        safeToast({ title: "השאלון לא נמצא", description: "ודאי שהקישור נכון ושהשאלון פורסם." });
+        safeToast({ title: "השאלון לא מוצג", description: "ודאי שהקישור נכון ושהשאלון פורסם." });
       } finally {
         if (alive) setLoading(false);
       }
@@ -65,7 +74,7 @@ export default function PublicQuestionnaire() {
       safeToast({ title: "שגיאה בשליחה", description: "נסו שוב בעוד רגע." });
     }
   }
-  
+
   const handleContactChange = (field: string, value: string) => {
     setContact(prev => ({ ...prev, [field]: value }));
   };

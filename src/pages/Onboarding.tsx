@@ -18,6 +18,9 @@ import { fetchProfile } from '../lib/profile';
 import { QRModal } from '../components/QRModal';
 import { buildPublicUrl } from '../lib/publicUrl';
 import { routes } from "@/routes";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Portal } from "@radix-ui/react-portal";
+import { HexColorPicker } from "react-colorful";
 
 type ToastApi = ((opts: { title?: string; description?: string, variant?: 'default' | 'destructive' }) => void) | undefined;
 function safeToast(toastApi: ToastApi, title: string, description?: string, variant?: 'default' | 'destructive') {
@@ -1105,18 +1108,28 @@ export const Onboarding: React.FC = () => {
                     <Label htmlFor="primaryColor">
                       {language === 'he' ? 'צבע ראשי' : 'Primary Color'}
                     </Label>
-                    <div className="flex gap-2" style={{ overflow: "visible", position: "relative", zIndex: 1 }}>
+                    <div className="flex gap-2">
+                      <Popover>
+                        <PopoverTrigger asChild>
+                           <Button
+                            variant="outline"
+                            className="w-16 h-10 rounded shrink-0"
+                            style={{ backgroundColor: formData.primaryColor }}
+                          />
+                        </PopoverTrigger>
+                        <Portal>
+                          <PopoverContent side="bottom" align="start" className="z-[9999] w-auto">
+                            <HexColorPicker
+                              color={formData.primaryColor}
+                              onChange={(color) => setFormData({ ...formData, primaryColor: color })}
+                            />
+                          </PopoverContent>
+                        </Portal>
+                      </Popover>
                       <Input
-                        id="primaryColor"
-                        type="color"
-                        value={formData.primaryColor}
-                        onChange={(e) => setFormData({ ...formData, primaryColor: e.target.value })}
-                        className="w-16 h-10 p-1 rounded-md border"
-                      />
-                      <Input
-                        value={formData.primaryColor}
-                        onChange={(e) => setFormData({ ...formData, primaryColor: e.target.value })}
-                        placeholder="#16939B"
+                        value={formData.primaryColor.replace(/^#/, "")}
+                        onChange={(e) => setFormData({ ...formData, primaryColor: `#${e.target.value.replace(/^#/, "").trim()}` })}
+                        placeholder="16939B"
                         className="flex-1"
                       />
                     </div>
@@ -1126,18 +1139,28 @@ export const Onboarding: React.FC = () => {
                     <Label htmlFor="secondaryColor">
                       {language === 'he' ? 'צבע משני' : 'Secondary Color'}
                     </Label>
-                    <div className="flex gap-2" style={{ overflow: "visible", position: "relative", zIndex: 1 }}>
+                    <div className="flex gap-2">
+                       <Popover>
+                        <PopoverTrigger asChild>
+                           <Button
+                            variant="outline"
+                            className="w-16 h-10 rounded shrink-0"
+                            style={{ backgroundColor: formData.secondaryColor }}
+                          />
+                        </PopoverTrigger>
+                        <Portal>
+                          <PopoverContent side="bottom" align="start" className="z-[9999] w-auto">
+                            <HexColorPicker
+                              color={formData.secondaryColor}
+                              onChange={(color) => setFormData({ ...formData, secondaryColor: color })}
+                            />
+                          </PopoverContent>
+                        </Portal>
+                      </Popover>
                       <Input
-                        id="secondaryColor"
-                        type="color"
-                        value={formData.secondaryColor}
-                        onChange={(e) => setFormData({ ...formData, secondaryColor: e.target.value })}
-                        className="w-16 h-10 p-1 rounded-md border"
-                      />
-                      <Input
-                        value={formData.secondaryColor}
-                        onChange={(e) => setFormData({ ...formData, secondaryColor: e.target.value })}
-                        placeholder="#FFD500"
+                        value={formData.secondaryColor.replace(/^#/, "")}
+                        onChange={(e) => setFormData({ ...formData, secondaryColor: `#${e.target.value.replace(/^#/, "").trim()}` })}
+                        placeholder="FFD500"
                         className="flex-1"
                       />
                     </div>
