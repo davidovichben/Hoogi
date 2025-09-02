@@ -80,20 +80,23 @@ export default function QuestionnaireView() {
           setLogoUrl(logoUrl);
         }
 
-        let raw: any[] = [];
-        try {
-            const r1 = await supabase.rpc("qa_questions", { p_qid: qid });
-            if (Array.isArray(r1.data) && r1.data.length) raw = r1.data as any[];
-        } catch {}
-        if (!raw.length) {
-            const { data: q3 } = await supabase.from("questions").select("*").eq("questionnaire_id", qid).order("position", { ascending: true, nullsFirst: false }).order("created_at", { ascending: true });
-            raw = Array.isArray(q3) ? q3 : [];
-        }
-        
-        const norm = normalizePublicQuestionnaire({ ...qData, questions: raw });
-        setTitle(norm.title ?? "שאלון");
-        setQuestions(norm.questions ?? []);
-        setRequireContact(Boolean(norm.requireContact));
+                 // 1) נסי RPC qa_questions (p_qid ואז qid), 2) נפילה לטבלת questions
+         let raw: any[] = [];
+         try { const r1 = await supabase.rpc("qa_questions", { p_qid: qid }); if (Array.isArray(r1.data)) raw = r1.data; } catch{}
+         if (!raw.length) { try { const r2 = await supabase.rpc("qa_questions", { qid }); if (Array.isArray(r2.data)) raw = r2.data; } catch{} }
+         if (!raw.length) {
+           const { data: q3 } = await supabase
+             .from("questions")
+             .select("*")
+             .eq("questionnaire_id", qid)
+             .order("position", { ascending: true })
+             .order("created_at", { ascending: true });
+           raw = Array.isArray(q3) ? q3 : [];
+         }
+         const norm = normalizePublicQuestionnaire({ questions: raw }); // מחזיר type,label,options כנדרש
+         setTitle(norm.title ?? "שאלון");
+         setQuestions(norm.questions ?? []);
+         setRequireContact(Boolean(norm.requireContact));
 
       } catch (e) {
         console.error("Failed to load preview data:", e);
@@ -147,6 +150,10 @@ export default function QuestionnaireView() {
   }
 
   if (loading) return null;
+
+  if (!loading && questions.length === 0) {
+    return <div style={{padding:24}}>אין שאלות להצגה בטיוטה. בדקי שהוספת שאלות ונשמרו.</div>;
+  }
 
   return (
     <div dir="rtl" style={{ padding: 24 }}>

@@ -12,8 +12,8 @@ export default function ProfilePage() {
   const [company, setCompany] = useState("");
   const [phone, setPhone] = useState("");
   const [logoUrl, setLogoUrl] = useState("");
-  const [primaryColor, setPrimaryColor] = useState("#16939B");
-  const [secondaryColor, setSecondaryColor] = useState("#FFD500");
+  const [primaryColor, setPrimaryColor] = useState("");
+  const [secondaryColor, setSecondaryColor] = useState("");
   const [email, setEmail] = useState("");
   const [businessCategory, setBusinessCategory] = useState("");
   const [businessSubCategory, setBusinessSubCategory] = useState("");
@@ -120,16 +120,24 @@ export default function ProfilePage() {
       if (!user) return;
       setEmail(user.email ?? "");
       if (!user.id) return;
-      const p = await fetchProfile(user.id);
-      if (p) {
-        setCompany(p.company ?? "");
-        setPhone(p.phone ?? "");
-        setLogoUrl(p.logo_url ?? "");
-        setPrimaryColor(p.brand_primary ?? "#16939B");
-        setSecondaryColor(p.brand_secondary ?? "#FFD500");
-        setBusinessCategory(p.business_category ?? "");
-        setBusinessSubCategory(p.business_subcategory ?? "");
-        setBusinessOther(p.business_other ?? "");
+      
+      // טעינת נתוני פרופיל פעם אחת
+      const { data } = await supabase.from("profiles")
+        .select("brand_primary,brand_secondary,brand_logo_path,company,phone,business_category,business_subcategory,business_other")
+        .eq("id", user.id)
+        .single();
+      
+      if (data) {
+        setCompany(data.company ?? "");
+        setPhone(data.phone ?? "");
+        setLogoUrl(data.brand_logo_path ?? "");
+        setPrimaryColor((data.brand_primary ?? "").replace(/#/g, "").toLowerCase());
+        setSecondaryColor((data.brand_secondary ?? "").replace(/#/g, "").toLowerCase());
+        setBusinessCategory(data.business_category ?? "");
+        setBusinessSubCategory(data.business_subcategory ?? "");
+        setBusinessOther(data.business_other ?? "");
+        // מחיל צבעים מיד כדי לראות תוצאה גם לפני שמירה
+        applyBrandingVars({ brand_primary: data.brand_primary, brand_secondary: data.brand_secondary });
       }
     })();
   }, []);
@@ -161,10 +169,13 @@ export default function ProfilePage() {
         brand_primary: p_primary,
         brand_secondary: p_secondary,
       });
+      
+      // מחיל צבעים מיד בלי להמתין לטעינה מחדש
+      applyBrandingVars({ brand_primary: p_primary, brand_secondary: p_secondary });
       safeToast({ title: "נשמר", description: "מיתוג עודכן בהצלחה." });
     } catch (e: any) {
       console.error(e);
-      safeToast({ title: "שמירת פרופיל", description: "צבעים חייבים HEX ללא # (3/6 ספרות). בדקי גם את נתיב הלוגו." });
+      safeToast({ title: "שמירת פרופיל", description: "צבעים חייבים HEX בלי # (3/6 ספרות). בדקי גם נתיב לוגו." });
     }
   };
 
@@ -272,7 +283,7 @@ export default function ProfilePage() {
         <div className="grid gap-2">
           <Label>לוגו</Label>
           <div className="flex items-center gap-3">
-            <Input value={logoUrl} onChange={(e)=>setLogoUrl(e.target.value)} placeholder="https://... (אפשר להשאיר ריק ולהעלות קובץ)" />
+            <Input value={logoUrl} onChange={(e)=>setLogoUrl(e.target.value)} placeholder="branding/... או URL מלא" />
             <label className="px-3 py-2 rounded-md border cursor-pointer bg-background hover:bg-muted text-sm">
               {uploadingLogo ? 'מעלה…' : 'בחר קובץ'}
               <input
@@ -296,24 +307,22 @@ export default function ProfilePage() {
             <Label>צבע ראשי</Label>
             <div className="flex items-center gap-3">
               <Input 
-                value={primaryColor.replace(/#/g, "")} 
+                value={primaryColor} 
                 onChange={(e)=>setPrimaryColor(e.target.value.replace(/#/g, "").toLowerCase())} 
-                placeholder="לדוגמה: a1a1a1"
-                pattern="[0-9a-fA-F]{3,6}"
+                placeholder="למשל: ffd500"
               />
-              <input type="color" value={primaryColor} onChange={(e)=>setPrimaryColor(e.target.value)} className="h-10 w-14 rounded border" />
+              <input type="color" value={`#${primaryColor}`} onChange={(e)=>setPrimaryColor(e.target.value.replace(/#/g, "").toLowerCase())} className="h-10 w-14 rounded border" />
             </div>
           </div>
           <div className="grid gap-2">
             <Label>צבע משני</Label>
             <div className="flex items-center gap-3">
               <Input 
-                value={secondaryColor.replace(/#/g, "")} 
+                value={secondaryColor} 
                 onChange={(e)=>setSecondaryColor(e.target.value.replace(/#/g, "").toLowerCase())} 
-                placeholder="לדוגמה: ffd500"
-                pattern="[0-9a-fA-F]{3,6}"
+                placeholder="למשל: a1a1a1"
               />
-              <input type="color" value={secondaryColor} onChange={(e)=>setSecondaryColor(e.target.value)} className="h-10 w-14 rounded border" />
+              <input type="color" value={`#${secondaryColor}`} onChange={(e)=>setSecondaryColor(e.target.value.replace(/#/g, "").toLowerCase())} className="h-10 w-14 rounded border" />
             </div>
           </div>
         </div>
