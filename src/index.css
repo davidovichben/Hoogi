@@ -19,12 +19,12 @@ All colors MUST be HSL.
     --popover-foreground: 220 25% 20%;
 
     /* bridge: theme vars קוראים ל-brand vars אם הוגדרו */
-    --primary:   var(--brand-primary,   #0ea5b7);
+    --primary: 186 74% 35%;
     --primary-foreground: 0 0% 100%;
-    --primary-glow: var(--brand-primary, 186 74% 55%);
+    --primary-glow: 186 74% 55%;
 
     /* Secondary: Golden Yellow - with branding override */
-    --secondary: var(--brand-secondary, #64748b);
+    --secondary: 51 100% 50%;
     --secondary-foreground: 220 25% 20%;
     
     /* Brand color bridge */

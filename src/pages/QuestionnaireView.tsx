@@ -46,7 +46,6 @@ export default function QuestionnaireView() {
         setRequireContact(Boolean(norm.requireContact));
       } catch (e) {
         console.error("Failed to load public questionnaire:", e);
-        safeToast({ title:"תצוגה", description:"לא נטען מיתוג. הטופס יוצג ללא צבעים."});
       }
     }
 
@@ -101,7 +100,6 @@ export default function QuestionnaireView() {
 
        } catch (e) {
          console.error("Failed to load preview data:", e);
-         safeToast({ title:"תצוגה", description:"לא נטען מיתוג. הטופס יוצג ללא צבעים."});
        }
     }
 

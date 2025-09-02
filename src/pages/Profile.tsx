@@ -114,33 +114,67 @@ export default function ProfilePage() {
     { value: 'other', label: 'אחר', subs: []},
   ];
 
-  useEffect(()=>{(async ()=>{
+  useEffect(()=>{(async()=>{
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    setEmail(user.email ?? "");
+    if (!user.id) return;
+    
     const { data } = await supabase.from("profiles")
-      .select("brand_primary,brand_secondary,brand_logo_path").single();
+      .select("brand_primary,brand_secondary,brand_logo_path,company,phone,business_category,business_subcategory,business_other")
+      .eq("id", user.id)
+      .single();
+      
     if (data) {
+      setCompany(data.company ?? "");
+      setPhone(data.phone ?? "");
       setPrimaryColor((data.brand_primary ?? "").replace(/#/g,"").toLowerCase());
       setSecondaryColor((data.brand_secondary ?? "").replace(/#/g,"").toLowerCase());
       setLogoUrl(data.brand_logo_path ?? "");
+      setBusinessCategory(data.business_category ?? "");
+      setBusinessSubCategory(data.business_subcategory ?? "");
+      setBusinessOther(data.business_other ?? "");
+      // החלה נקודתית – לא שובר עיצוב, רק נותן צבעים לדף כשנטען
       applyBrandingVars({ brand_primary: data.brand_primary, brand_secondary: data.brand_secondary });
     }
   })()},[]);
 
   const handleSave = async () => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.id) throw new Error("User not found");
+
+      // primary/secondary/logoPath – ה־state הקיימים אצלך; אל תשנה/י שמות שדות/סטייט
       const p_primary   = sanitizeHex(primaryColor);
       const p_secondary = sanitizeHex(secondaryColor);
       const p_logo_path = normalizeLogoPath(logoUrl);
 
-      const { error } = await supabase.rpc("set_branding", { p_primary, p_secondary, p_logo_path });
-      if (error) throw error;
+      const { error: rpcError } = await supabase.rpc("set_branding", { p_primary, p_secondary, p_logo_path });
+      if (rpcError) throw rpcError;
 
+      // Ensure other profile fields are also saved
+      await upsertProfile(user.id, {
+        company,
+        phone,
+        email,
+        business_category: businessCategory,
+        business_subcategory: businessSubCategory,
+        business_other: businessOther,
+        logo_url: p_logo_path,
+        brand_primary: p_primary,
+        brand_secondary: p_secondary,
+      });
+
+      // מחיל צבעים נקודתית (לא משנה CSS גלובלי)
       applyBrandingVars({ brand_primary: p_primary, brand_secondary: p_secondary });
-      safeToast({ title: "נשמר", description: "מיתוג עודכן בהצלחה" });
-    } catch (e:any) {
+
+      // השאר/י את מנגנון ההודעה שלך; אם אין – alert פשוט:
+      alert("נשמר ✓");
+    } catch(e:any) {
       console.error(e);
-      safeToast({ title: "שמירת פרופיל", description: "HEX בלי # (3/6 ספרות). בדקי גם נתיב לוגו." });
+      alert("שמירת פרופיל נכשלה. צבעים חייבים HEX (3/6) ללא #. בדקי גם נתיב הלוגו.");
     }
-  }
+  };
 
   async function fileToWebpBlob(file: File, maxW = 512, maxH = 512, quality = 0.8): Promise<Blob> {
     const img = await new Promise<HTMLImageElement>((res, rej) => {
