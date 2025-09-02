@@ -3,12 +3,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { TooltipWrapper } from '../components/TooltipWrapper';
-import { toast, announce } from '@/components/ui/Toaster';
 import { supabase } from "@/integrations/supabase/client";
 import { Share2, BarChart3, Edit, Settings, ExternalLink } from 'lucide-react';
-import { routes } from "@/routes";
 import { useNavigate } from "react-router-dom";
 import { previewAny } from "@/lib/preview";
+import { getPublishState } from '@/lib/preview';
+import { getBaseUrl } from '@/lib/baseUrl';
+import { safeToast } from '@/lib/rpc';
 
 type Q={
   id:string;
@@ -114,14 +115,9 @@ export default function QuestionnairesList(){
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {rows.map((q)=>{
-          const token=q.public_token||q.form_token||"";
-          const shareUrl = `${location.origin}/q/${q.id}${token?`?t=${token}`:""}`;
-          announce('הקישור עודכן');
-          // ספירות אמת – במידה ויש טבלאות
-          // נוכל לשפר לשליפה אמיתית; כרגע נשאיר 0 כברירת מחדל
+          const status = q.is_active? 'active' : 'draft';
           const responses = respCount[q.id] ?? 0;
           const leads = leadCount[q.id] ?? 0;
-          const status = q.is_active? 'active' : 'draft';
           const conversion = responses>0 ? Math.round((leads/responses)*100) : 0;
           return (
             <Card key={q.id} className="hover:shadow-lg transition-shadow">
@@ -149,7 +145,20 @@ export default function QuestionnairesList(){
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <TooltipWrapper content="שיתוף">
-                    <Button variant="outline" size="sm" onClick={async()=>{ try { await navigator.clipboard.writeText(shareUrl); toast.success('קישור הועתק'); } catch { toast.error('לא ניתן להעתיק', { description: 'נסי ידנית' }); } }}>
+                    <Button variant="outline" size="sm" onClick={async()=>{ 
+                      const state = await getPublishState(q.id);
+                      if (!state.is_published || !state.token) {
+                        safeToast({ title: "לא פורסם", description: "פרסם את השאלון כדי לקבל קישור שיתוף." });
+                        return;
+                      }
+                      const url = new URL(`/q/${state.token}`, getBaseUrl()).toString();
+                      try { 
+                        await navigator.clipboard.writeText(url); 
+                        safeToast({ title: 'הועתק', description: 'קישור השיתוף הועתק.' }); 
+                      } catch { 
+                        safeToast({ title: 'שגיאה', description: 'לא ניתן היה להעתיק את הקישור.' }); 
+                      } 
+                    }}>
                       <Share2 className="h-4 w-4 mr-1" /> שיתוף
                     </Button>
                   </TooltipWrapper>
