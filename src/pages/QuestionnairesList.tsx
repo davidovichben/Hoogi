@@ -6,7 +6,7 @@ import { TooltipWrapper } from '../components/TooltipWrapper';
 import { supabase } from "@/integrations/supabase/client";
 import { Share2, BarChart3, Edit, Settings, ExternalLink } from 'lucide-react';
 import { useNavigate } from "react-router-dom";
-import { previewAny, getPublishState } from "@/lib/preview";
+import { previewAny, getPublishState, openQuestionnaire } from "@/lib/preview";
 import { getBaseUrl } from '@/lib/baseUrl';
 import { safeToast } from '@/lib/rpc';
 
@@ -65,7 +65,7 @@ export default function QuestionnairesList(){
   useEffect(()=>{(async()=>{ if(!rows.length) return; const nextResp:Record<string,number>={}; const nextLead:Record<string,number>={}; for(const q of rows){ try{ const r=await supabase.from('responses').select('id',{count:'exact', head:true}).eq('questionnaire_id', q.id); nextResp[q.id]=r.count??0; }catch{ nextResp[q.id]=0;} try{ const l=await supabase.from('leads').select('id',{count:'exact', head:true}).eq('questionnaire_id', q.id); nextLead[q.id]=l.count??0; }catch{ nextLead[q.id]=0;} } setRespCount(nextResp); setLeadCount(nextLead); })();},[rows]);
 
   function handleOpen(qid: string) {
-    previewAny(qid, "he", "open");
+    openQuestionnaire(qid, "open", "he");
   }
 
   function handleEdit(qid: string) {
@@ -150,7 +150,7 @@ export default function QuestionnairesList(){
                     </Button>
                   </TooltipWrapper>
                   <TooltipWrapper content="תצוגה מקדימה">
-                    <Button variant="ghost" size="sm" onClick={() => handleOpen(q.id)}>
+                    <Button variant="ghost" size="sm" onClick={() => openQuestionnaire(q.id, "preview", "he")}>
                       <ExternalLink className="h-4 w-4 mr-1" /> תצוגה
                     </Button>
                   </TooltipWrapper>

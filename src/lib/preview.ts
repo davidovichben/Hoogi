@@ -46,3 +46,22 @@ export async function publishThen(qid: string, cb?: () => void) {
     safeToast({ title: "שגיאה", description: "פרסום נכשל." });
   }
 }
+
+/**
+ * Unified opener used by all buttons: open/show/preview
+ * Decides public vs draft and opens a new tab accordingly
+ */
+export async function openQuestionnaire(
+  qid: string,
+  ref: "open" | "preview" | "show" = "open",
+  lang: string = "he"
+) {
+  try {
+    const { token, is_published } = await getPublishState(qid);
+    if (is_published && token) return openPublic(token, lang, ref);
+    return openPrivatePreview(qid, lang);
+  } catch (e) {
+    console.error(e);
+    safeToast({ title: "שגיאה", description: "לא ניתן לפתוח את השאלון כרגע." });
+  }
+}
