@@ -36,7 +36,7 @@ export default function QuestionnaireView() {
 
         const branding = b?.data ?? {};
         applyBrandingVars(branding);
-        const logoUrl = resolveLogoUrl((p) => supabase.storage.from("branding").getPublicUrl(p).data?.publicUrl, branding?.brand_logo_path);
+        const logoUrl = resolveLogoUrl(branding?.brand_logo_path);
         setLogoUrl(logoUrl);
 
         const norm = normalizePublicQuestionnaire(q?.data ?? {});
@@ -76,7 +76,7 @@ export default function QuestionnaireView() {
 
         if (prof) {
           applyBrandingVars(prof);
-          const logoUrl = resolveLogoUrl((p) => supabase.storage.from("branding").getPublicUrl(p).data?.publicUrl, prof.brand_logo_path);
+          const logoUrl = resolveLogoUrl(prof.brand_logo_path);
           setLogoUrl(logoUrl);
         }
 

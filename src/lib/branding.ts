@@ -1,16 +1,6 @@
-export function sanitizeHex(input?: string): string {
-  const v = (input ?? "").toLowerCase().replace(/#/g, "").trim();
-  if (!/^[0-9a-f]{3}([0-9a-f]{3})?$/.test(v)) throw new Error("HEX must be 3 or 6 digits (no #)");
-  return v.length === 3 ? v : v.slice(0, 6);
-}
+import { supabase } from "@/integrations/supabase/client";
 
-export function normalizeLogoPath(input?: string): string | null {
-  const v = (input ?? "").trim();
-  if (!v) return null;
-  if (/^https?:\/\//i.test(v)) return v;         // URL מלא—נאשר
-  return v.replace(/^\/+/, "").replace(/^public\//, "").replace(/^(?!branding\/)/, "branding/");
-}
-
+/** מחיל צבעי מיתוג כ-CSS vars, מבלי לשנות עיצוב גלובלי */
 export function applyBrandingVars(brand?: { brand_primary?: string; brand_secondary?: string }) {
   const root = document.documentElement;
   const pp = (brand?.brand_primary ?? "").replace(/^#/, "");
@@ -19,8 +9,24 @@ export function applyBrandingVars(brand?: { brand_primary?: string; brand_second
   if (ss) root.style.setProperty("--brand-secondary", `#${ss}`);
 }
 
-export function resolveLogoUrl(getPublicUrl: (p: string) => string | undefined, logo_path?: string) {
+/** HEX ללא #, רק 3/6 תווים */
+export function sanitizeHex(input?: string): string {
+  const v = (input ?? "").toLowerCase().replace(/#/g, "").trim();
+  if (!/^[0-9a-f]{3}([0-9a-f]{3})?$/.test(v)) throw new Error("HEX חייב להיות 3 או 6 ספרות (ללא #)");
+  return v.length === 3 ? v : v.slice(0, 6);
+}
+
+/** מחזיר path יחסי תחת branding/ או משאיר URL מלא כמו שהוא */
+export function normalizeLogoPath(input?: string): string | null {
+  const v = (input ?? "").trim();
+  if (!v) return null;
+  if (/^https?:\/\//i.test(v)) return v; // URL מלא
+  return v.replace(/^\/+/, "").replace(/^public\//, "").replace(/^(?!branding\/)/, "branding/");
+}
+
+/** בונה כתובת ציבורית ללוגו מה-bucket 'branding' */
+export function resolveLogoUrl(logo_path?: string) {
   if (!logo_path) return;
   if (/^https?:\/\//i.test(logo_path)) return logo_path;
-  return getPublicUrl(logo_path);
+  return supabase.storage.from("branding").getPublicUrl(logo_path).data?.publicUrl;
 }

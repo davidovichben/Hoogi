@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { upsertProfile, fetchProfile } from "../lib/profile";
 import { toast } from "../hooks/use-toast";
 import { safeToast } from "@/lib/rpc";
-import { sanitizeHex, normalizeLogoPath } from "@/lib/branding";
+import { applyBrandingVars, sanitizeHex, normalizeLogoPath } from "@/lib/branding";
 
 export default function ProfilePage() {
   const [company, setCompany] = useState("");
