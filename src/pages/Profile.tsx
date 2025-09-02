@@ -5,6 +5,24 @@ import { Label } from "../components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { upsertProfile, fetchProfile } from "../lib/profile";
 import { toast } from "../hooks/use-toast";
+import { safeToast } from "@/lib/rpc";
+
+// Utils for sanitizing form data
+function sanitizeHex(input: string | undefined): string {
+  const v = (input ?? "").toLowerCase().replace(/#/g, "").trim();
+  // Allow only 3 or 6 characters
+  if (!/^[0-9a-f]{3}([0-9a-f]{3})?$/.test(v)) throw new Error("צבע חייב להיות HEX ללא סימן # (3 או 6 ספרות)");
+  return v.length === 3 ? v : v.slice(0, 6);
+}
+
+function normalizeLogoPath(input: string | undefined): string | null {
+  const v = (input ?? "").trim();
+  if (!v) return null;
+  // If it's a full URL - allow it
+  if (/^https?:\/\//i.test(v)) return v;
+  // Clean 'public/' and leading '/'; ensure 'branding/...'
+  return v.replace(/^\/+/, "").replace(/^public\//, "").replace(/^(?!branding\/)/, "branding/");
+}
 
 export default function ProfilePage() {
   const [company, setCompany] = useState("");
@@ -137,9 +155,14 @@ export default function ProfilePage() {
     if (!user?.id) return;
     try {
       if (!businessCategory) {
-        toast({ title: "יש לבחור תחום עיקרי", variant: "destructive" });
+        safeToast({ title: "יש לבחור תחום עיקרי", description: "תחום עיקרי הוא שדה חובה" });
         return;
       }
+
+      // Sanitize colors and logo path
+      const p_primary = sanitizeHex(primaryColor);
+      const p_secondary = sanitizeHex(secondaryColor);
+      const p_logo_path = normalizeLogoPath(logoUrl);
 
       await upsertProfile(user.id, {
         company,
@@ -148,13 +171,17 @@ export default function ProfilePage() {
         business_category: businessCategory,
         business_subcategory: businessSubCategory,
         business_other: businessOther,
-        logo_url: logoUrl || null,
-        brand_primary: primaryColor,
-        brand_secondary: secondaryColor,
+        logo_url: p_logo_path,
+        brand_primary: p_primary,
+        brand_secondary: p_secondary,
       });
-      toast({ title: "הפרופיל נשמר" });
+      safeToast({ title: "נשמר", description: "הפרופיל נשמר בהצלחה" });
     } catch (e: any) {
-      toast({ title: e?.message || "שגיאה בשמירת הפרופיל", variant: "destructive" });
+      console.error("Profile save error:", e);
+      const msg = /HEX|color|brand/i.test(e?.message ?? "") 
+        ? "שגיאה: צבע חייב HEX ללא סימן # (3/6 תווים, לדוגמה ffd500)." 
+        : "לא ניתן לשמור פרופיל. בדקי את הערכים ונסי שוב.";
+      safeToast({ title: "שמירת פרופיל", description: msg });
     }
   };
 
@@ -285,14 +312,24 @@ export default function ProfilePage() {
           <div className="grid gap-2">
             <Label>צבע ראשי</Label>
             <div className="flex items-center gap-3">
-              <Input value={primaryColor} onChange={(e)=>setPrimaryColor(e.target.value)} />
+              <Input 
+                value={primaryColor.replace(/#/g, "")} 
+                onChange={(e)=>setPrimaryColor(e.target.value.replace(/#/g, "").toLowerCase())} 
+                placeholder="לדוגמה: a1a1a1"
+                pattern="[0-9a-fA-F]{3,6}"
+              />
               <input type="color" value={primaryColor} onChange={(e)=>setPrimaryColor(e.target.value)} className="h-10 w-14 rounded border" />
             </div>
           </div>
           <div className="grid gap-2">
             <Label>צבע משני</Label>
             <div className="flex items-center gap-3">
-              <Input value={secondaryColor} onChange={(e)=>setSecondaryColor(e.target.value)} />
+              <Input 
+                value={secondaryColor.replace(/#/g, "")} 
+                onChange={(e)=>setSecondaryColor(e.target.value.replace(/#/g, "").toLowerCase())} 
+                placeholder="לדוגמה: ffd500"
+                pattern="[0-9a-fA-F]{3,6}"
+              />
               <input type="color" value={secondaryColor} onChange={(e)=>setSecondaryColor(e.target.value)} className="h-10 w-14 rounded border" />
             </div>
           </div>
