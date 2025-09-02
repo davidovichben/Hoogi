@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { rpcGetDistributionLinks, rpcPublishQuestionnaire, safeToast } from "@/lib/rpc";
 import { getBaseUrl } from "@/lib/baseUrl";
-import { previewAny, publishThen, getPublishState } from "@/lib/preview";
+import { previewAny, publishThenReload, getPublishState } from "@/lib/preview";
 
 // טיפוסים
 export type QMin = { id: string; public_token: string; title: string };
@@ -158,7 +158,7 @@ export default function DistributionHub() {
   }
 
   // פעולות
-  const handleCopy = async () => {
+  const onCopyClick = async () => {
     if (!publishState.is_published || !shareLinks?.web_url) {
       safeToast({ title: "לא פורסם", description: "יש לפרסם את השאלון לפני שניתן להעתיק קישור." });
       return;
@@ -391,12 +391,12 @@ export default function DistributionHub() {
                   className="flex-1 px-3 py-2 bg-muted border border-border rounded-md text-sm font-mono"
                 />
                 {!publishState.is_published && current && (
-                  <Button onClick={() => publishThen(current.id, handleGenerateLinks)} variant="secondary" size="sm">
+                  <Button onClick={() => publishThenReload(current.id, handleGenerateLinks)} variant="secondary" size="sm">
                     <Zap className="w-4 h-4 ml-1" />
                     פרסום
                   </Button>
                 )}
-                <Button onClick={handleCopy} disabled={!current || !publishState.is_published} variant="outline" size="sm">
+                <Button onClick={onCopyClick} disabled={!current || !publishState.is_published} variant="outline" size="sm">
                   <Copy className="w-4 h-4 ml-1" />
                   העתק
                 </Button>
@@ -640,7 +640,7 @@ export default function DistributionHub() {
                   </Button>
 
                   <Button
-                    onClick={handleCopy}
+                    onClick={onCopyClick}
                     disabled={!current}
                     variant="outline"
                     className="w-full justify-start"

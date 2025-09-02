@@ -7,6 +7,8 @@ import { normalizePublicQuestionnaire, applyBranding, type NormalizedQuestion } 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { getPublishState, openPublic } from "@/lib/preview";
+import { useNavigate } from 'react-router-dom';
 
 const renderPreviewQuestion = (q: NormalizedQuestion) => {
   const commonProps = {
@@ -58,6 +60,7 @@ const renderPreviewQuestion = (q: NormalizedQuestion) => {
 
 export default function PreviewQuestionnaire() {
   const { id = "" } = useParams();
+  const navigate = useNavigate();
   const [questions, setQuestions] = useState<NormalizedQuestion[]>([]);
   const [branding, setBranding] = useState<any>(null);
   const [title, setTitle] = useState<string>("");
@@ -67,6 +70,15 @@ export default function PreviewQuestionnaire() {
     let alive = true;
     (async () => {
       try {
+        // First, check if the questionnaire is already published.
+        const state = await getPublishState(id);
+        if (state?.is_published && state.token) {
+          // If so, redirect to the public page instead of showing a draft.
+          openPublic(state.token);
+          if (alive) setLoading(false);
+          return;
+        }
+
         const { data: userRes } = await supabase.auth.getUser();
         const uid = userRes?.user?.id;
         let b: any = {};
