@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { rpcGetDistributionLinks, rpcPublishQuestionnaire, safeToast } from "@/lib/rpc";
 import { getBaseUrl } from "@/lib/baseUrl";
-import { previewAny, publishThenReload, getPublishState } from "@/lib/preview";
+import { previewAny, publishThen, getPublishState } from "@/lib/preview";
 
 // טיפוסים
 export type QMin = { id: string; public_token: string; title: string };
@@ -391,7 +391,7 @@ export default function DistributionHub() {
                   className="flex-1 px-3 py-2 bg-muted border border-border rounded-md text-sm font-mono"
                 />
                 {!publishState.is_published && current && (
-                  <Button onClick={() => publishThenReload(current.id, handleGenerateLinks)} variant="secondary" size="sm">
+                  <Button onClick={() => publishThen(current.id, handleGenerateLinks)} variant="secondary" size="sm">
                     <Zap className="w-4 h-4 ml-1" />
                     פרסום
                   </Button>
