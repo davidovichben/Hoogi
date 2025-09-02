@@ -29,78 +29,79 @@ export default function QuestionnaireView() {
 
     async function loadPublic(tok: string) {
       try {
-        const b = await supabase.rpc("get_public_branding", { p_token: tok });
+        const [b, q] = await Promise.all([
+          supabase.rpc("get_public_branding", { p_token: tok }),
+          supabase.rpc("get_public_questionnaire", { p_token: tok }),
+        ]);
+
         const branding = b?.data ?? {};
         applyBrandingVars(branding);
         setLogoUrl(resolveLogoUrl(branding?.brand_logo_path));
-      } catch {}
-      try {
-        const q = await supabase.rpc("get_public_questionnaire", { p_token: tok });
+
         const norm = normalizePublicQuestionnaire(q?.data ?? {});
         setTitle(norm.title ?? "");
         setQuestions(norm.questions ?? []);
         setRequireContact(Boolean(norm.requireContact));
       } catch (e) {
-        console.error(e);
+        console.error("Failed to load public questionnaire:", e);
+        safeToast({ title: "שגיאה", description: "טעינת השאלון הציבורי נכשלה." });
       }
     }
 
     async function loadPreview(qid: string) {
+      // 1. Redirect if already published
       try {
-        const { data: meta } = await supabase
-          .from("questionnaires")
-          .select("token,is_published")
-          .eq("id", qid)
-          .single();
+        const { data: meta } = await supabase.from("questionnaires").select("token,is_published").eq("id", qid).single();
         if (meta?.is_published && meta?.token) {
           navigate(`/q/${meta.token}?lang=${lang}&ref=preview`, { replace: true });
           return;
         }
-      } catch {}
+      } catch (e) {
+        console.warn("Could not check publish state for redirect", e);
+      }
 
+      // 2. Fetch branding, title, and questions
       try {
         const { data: ures } = await supabase.auth.getUser();
         const uid = ures?.user?.id;
-        if (uid) {
-          const { data: prof } = await supabase
-            .from("profiles")
-            .select("brand_primary,brand_secondary,brand_logo_path")
-            .eq("id", uid)
-            .single();
-          applyBrandingVars(prof ?? {});
-          setLogoUrl(resolveLogoUrl(prof?.brand_logo_path));
+
+        const profilePromise = uid
+          ? supabase.from("profiles").select("brand_primary,brand_secondary,brand_logo_path").eq("id", uid).single()
+          : Promise.resolve({ data: null, error: null });
+        
+        const titlePromise = supabase.from("questionnaires").select("title").eq("id", qid).single();
+        
+        const [{ data: prof }, { data: qData }] = await Promise.all([profilePromise, titlePromise]);
+
+        if (prof) {
+          applyBrandingVars(prof);
+          setLogoUrl(resolveLogoUrl(prof.brand_logo_path));
         }
-      } catch {}
 
-      let raw: any[] = [];
-      try {
-        const r1 = await supabase.rpc("qa_questions", { p_qid: qid });
-        if (Array.isArray(r1.data) && r1.data.length) raw = r1.data as any[];
-      } catch {}
-      if (!raw.length) {
+        let raw: any[] = [];
         try {
-          const r2 = await supabase.rpc("qa_questions", { qid: qid });
-          if (Array.isArray(r2.data) && r2.data.length) raw = r2.data as any[];
+            const r1 = await supabase.rpc("qa_questions", { p_qid: qid });
+            if (Array.isArray(r1.data) && r1.data.length) raw = r1.data as any[];
         } catch {}
-      }
-      if (!raw.length) {
-        const { data: q3 } = await supabase
-          .from("questions")
-          .select("*")
-          .eq("questionnaire_id", qid)
-          .order("position", { ascending: true, nullsFirst: false })
-          .order("created_at", { ascending: true });
-        raw = Array.isArray(q3) ? q3 : [];
-      }
+        if (!raw.length) {
+            const { data: q3 } = await supabase.from("questions").select("*").eq("questionnaire_id", qid).order("position", { ascending: true, nullsFirst: false }).order("created_at", { ascending: true });
+            raw = Array.isArray(q3) ? q3 : [];
+        }
+        
+        const norm = normalizePublicQuestionnaire({ ...qData, questions: raw });
+        setTitle(norm.title ?? "שאלון");
+        setQuestions(norm.questions ?? []);
+        setRequireContact(Boolean(norm.requireContact));
 
-      const norm = normalizePublicQuestionnaire({ questions: raw });
-      setTitle(norm.title ?? "");
-      setQuestions(norm.questions ?? []);
-      setRequireContact(Boolean(norm.requireContact));
+      } catch (e) {
+        console.error("Failed to load preview data:", e);
+        safeToast({ title: "שגיאה", description: "טעינת התצוגה נכשלה." });
+      }
     }
 
     (async () => {
       try {
+        setLoading(true);
         if (token) await loadPublic(token);
         else if (isPreview && id) await loadPreview(id);
         else setQuestions([]);
