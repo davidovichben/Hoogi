@@ -36,6 +36,7 @@ import { routes } from "./routes";
 import ThankYou from "./pages/ThankYou";
 import PreviewQuestionnaire from "./pages/PreviewQuestionnaire";
 import RedirectToOnboarding from "./pages/RedirectToOnboarding";
+import QuestionnaireView from "./pages/QuestionnaireView";
 
 const queryClient = new QueryClient();
 
@@ -78,8 +79,8 @@ const App = () => (
                   <Route path="/partners" element={<RequireAuth><Partners /></RequireAuth>} />
                 </Route>
                 {/* חדש: דף שיתוף ציבורי - לא דורש התחברות */}
-                <Route path={routes.publicQuestionnaire(':token')} element={<PublicQuestionnaire />} />
-                <Route path="/q/preview/:id" element={<PreviewQuestionnaire />} />
+                <Route path="/q/:token" element={<QuestionnaireView />} />
+                <Route path="/q/preview/:id" element={<QuestionnaireView />} />
                 <Route path="/thank-you" element={<ThankYou />} />
                 <Route path="*" element={<NotFound />} />
                 <Route path={routes.authCallback} element={<AuthCallback />} />
