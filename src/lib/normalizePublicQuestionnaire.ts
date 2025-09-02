@@ -1,7 +1,7 @@
 // src/lib/normalizePublicQuestionnaire.ts
 export type NormalizedQuestion = {
   id: string;
-  type: string;
+  type: "text" | "textarea" | "number" | "select" | "radio" | "checkbox" | "date" | "email" | "phone";
   label: string;
   required?: boolean;
   placeholder?: string;
@@ -47,13 +47,24 @@ function findQuestionsContainer(q: any): any[] {
 // מיפוי לסכמה שה-UI שלך מציג כיום
 function normalizeOne(raw: any, idx: number): NormalizedQuestion {
   const id = String(raw.id ?? raw.qid ?? raw.name ?? idx);
-  const type = String(
+  const rawType = String(
     raw.type ??
       raw.kind ??
       raw.input_type ??
       raw.fieldType ??
       "text"
-  ).toLowerCase();
+  ).toLowerCase().trim();
+
+  // נרמול סוגי שדות
+  let type: NormalizedQuestion["type"] = "text";
+  if (["textarea", "text_area", "long_text"].includes(rawType)) type = "textarea";
+  else if (["number", "numeric", "integer"].includes(rawType)) type = "number";
+  else if (["select", "dropdown", "choice"].includes(rawType)) type = "select";
+  else if (["radio", "single_choice"].includes(rawType)) type = "radio";
+  else if (["checkbox", "multi_choice", "multiple"].includes(rawType)) type = "checkbox";
+  else if (["date", "datetime", "date_time"].includes(rawType)) type = "date";
+  else if (["email", "e-mail"].includes(rawType)) type = "email";
+  else if (["phone", "tel", "telephone"].includes(rawType)) type = "phone";
 
   const label =
     raw.label ??

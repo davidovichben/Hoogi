@@ -132,10 +132,11 @@ export default function QuestionnaireView() {
   }
 
   async function onSubmit() {
-    if (!token) {
+    if (!token) { // טיוטה
       safeToast({ title: "טיוטה", description: "שליחה פעילה רק בגרסה הציבורית." });
       return;
     }
+    // שליחה ציבורית (כבר קיימת אצלנו):
     try {
       await rpcSubmitResponse({ token_or_uuid: token, answers, lang, channel: "landing" });
       safeToast({ title: "נשלח", description: "תודה על המענה." });
@@ -156,20 +157,11 @@ export default function QuestionnaireView() {
 
       <div style={{ display: "grid", gap: 16 }}>
         {questions.map((q) => (
-          <div key={q.id} className="qv-field">
+          <div key={q.id}>
             <label style={{ display: "block", marginBottom: 6 }}>
-              {q.label}
-              {q.required ? " *" : ""}
+              {q.label}{q.required ? " *" : ""}
             </label>
-            {ExternalQuestionRenderer ? (
-              <ExternalQuestionRenderer
-                question={q}
-                value={answers[q.id]}
-                onChange={(val: any) => setAnswers((p) => ({ ...p, [q.id]: val }))}
-              />
-            ) : (
-              renderFallbackField(q)
-            )}
+            {renderField(q)}
           </div>
         ))}
       </div>
@@ -182,22 +174,94 @@ export default function QuestionnaireView() {
     </div>
   );
 
-  function renderFallbackField(q: NormalizedQuestion) {
-    const base = { ...inputBaseStyle, ...(q.required ? { borderColor: "hsl(var(--primary))" } : {}) };
+  function renderField(q: NormalizedQuestion) {
+    const base: React.CSSProperties = {
+      width: "100%",
+      padding: "10px 12px",
+      border: "1px solid #E5E7EB",
+      borderRadius: 10,
+      outline: "none",
+      background: "#fff",
+    };
+    const reqProps = q.required ? { required: true } : {};
+
     switch (q.type) {
       case "textarea":
         return (
           <textarea
-            required={q.required}
+            {...reqProps}
             placeholder={q.placeholder ?? ""}
-            {...(bindValue(q) as any)}
-            style={{ ...base, minHeight: 96 }}
+            value={answers[q.id] ?? ""}
+            onChange={(e) => setAnswers((p) => ({ ...p, [q.id]: e.target.value }))}
+            style={{ ...base, minHeight: 110, resize: "vertical" }}
+            dir="rtl"
           />
         );
+
+      case "number":
+        return (
+          <input
+            type="number"
+            inputMode="numeric"
+            placeholder={q.placeholder ?? ""}
+            {...reqProps}
+            value={answers[q.id] ?? ""}
+            onChange={(e) => setAnswers((p) => ({ ...p, [q.id]: e.target.value }))}
+            style={base}
+            dir="rtl"
+          />
+        );
+
+      case "date":
+        return (
+          <input
+            type="date"
+            {...reqProps}
+            value={answers[q.id] ?? ""}
+            onChange={(e) => setAnswers((p) => ({ ...p, [q.id]: e.target.value }))}
+            style={base}
+            dir="rtl"
+          />
+        );
+
+      case "email":
+        return (
+          <input
+            type="email"
+            inputMode="email"
+            placeholder={q.placeholder ?? "name@example.com"}
+            {...reqProps}
+            value={answers[q.id] ?? ""}
+            onChange={(e) => setAnswers((p) => ({ ...p, [q.id]: e.target.value }))}
+            style={base}
+            dir="rtl"
+          />
+        );
+
+      case "phone":
+        return (
+          <input
+            type="tel"
+            inputMode="tel"
+            placeholder={q.placeholder ?? "050-0000000"}
+            {...reqProps}
+            value={answers[q.id] ?? ""}
+            onChange={(e) => setAnswers((p) => ({ ...p, [q.id]: e.target.value }))}
+            style={base}
+            dir="rtl"
+          />
+        );
+
       case "select":
         return (
-          <select required={q.required} {...(bindValue(q) as any)} style={base}>
-            <option value="">{q.placeholder ?? ""}</option>
+          <select
+            {...reqProps}
+            value={answers[q.id] ?? ""}
+            onChange={(e) => setAnswers((p) => ({ ...p, [q.id]: e.target.value }))}
+            style={base}
+            dir="rtl"
+          >
+            <option value="">{q.placeholder ?? "בחרי אפשרות"}</option>
             {(q.options ?? []).map((o) => (
               <option key={o.value} value={o.value}>
                 {o.label}
@@ -205,32 +269,34 @@ export default function QuestionnaireView() {
             ))}
           </select>
         );
+
       case "radio":
         return (
-          <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+          <div style={{ display: "grid", gap: 8 }}>
             {(q.options ?? []).map((o) => (
-              <label key={o.value} style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              <label key={o.value} style={{ display: "flex", gap: 8, alignItems: "center" }}>
                 <input
                   type="radio"
                   name={q.id}
                   value={o.value}
-                  checked={answers[q.id] === o.value}
-                  onChange={() => setAnswers((prev) => ({ ...prev, [q.id]: o.value }))}
-                  required={q.required}
+                  checked={(answers[q.id] ?? "") === o.value}
+                  onChange={() => setAnswers((p) => ({ ...p, [q.id]: o.value }))}
+                  {...reqProps}
                 />
                 {o.label}
               </label>
             ))}
           </div>
         );
+
       case "checkbox":
         return (
-          <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
             {(q.options ?? []).map((o) => {
               const arr: string[] = Array.isArray(answers[q.id]) ? answers[q.id] : [];
               const checked = arr.includes(o.value);
               return (
-                <label key={o.value} style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                <label key={o.value} style={{ display: "flex", gap: 8, alignItems: "center" }}>
                   <input
                     type="checkbox"
                     checked={checked}
@@ -238,7 +304,7 @@ export default function QuestionnaireView() {
                       const next = new Set(arr);
                       if (e.target.checked) next.add(o.value);
                       else next.delete(o.value);
-                      setAnswers((prev) => ({ ...prev, [q.id]: Array.from(next) }));
+                      setAnswers((p) => ({ ...p, [q.id]: Array.from(next) }));
                     }}
                   />
                   {o.label}
@@ -247,37 +313,22 @@ export default function QuestionnaireView() {
             })}
           </div>
         );
-      case "number":
-        return (
-          <input
-            type="number"
-            required={q.required}
-            placeholder={q.placeholder ?? ""}
-            {...(bindValue(q) as any)}
-            style={inputBaseStyle}
-          />
-        );
-      default:
+
+      default: // "text"
         return (
           <input
             type="text"
-            required={q.required}
             placeholder={q.placeholder ?? ""}
-            {...(bindValue(q) as any)}
-            style={inputBaseStyle}
+            {...reqProps}
+            value={answers[q.id] ?? ""}
+            onChange={(e) => setAnswers((p) => ({ ...p, [q.id]: e.target.value }))}
+            style={base}
+            dir="rtl"
           />
         );
     }
   }
 }
-
-const inputBaseStyle: React.CSSProperties = {
-  width: "100%",
-  padding: "10px 12px",
-  border: "1px solid #D1D5DB",
-  borderRadius: 8,
-  outline: "none",
-};
 
 const btnStyle: React.CSSProperties = {
   padding: "10px 16px",
