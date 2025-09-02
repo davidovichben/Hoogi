@@ -87,6 +87,18 @@ export default function QuestionnairesList(){
 
   // fetch counts for responses and leads per questionnaire (best-effort)
   useEffect(()=>{(async()=>{ if(!rows.length) return; const nextResp:Record<string,number>={}; const nextLead:Record<string,number>={}; for(const q of rows){ try{ const r=await supabase.from('responses').select('id',{count:'exact', head:true}).eq('questionnaire_id', q.id); nextResp[q.id]=r.count??0; }catch{ nextResp[q.id]=0;} try{ const l=await supabase.from('leads').select('id',{count:'exact', head:true}).eq('questionnaire_id', q.id); nextLead[q.id]=l.count??0; }catch{ nextLead[q.id]=0;} } setRespCount(nextResp); setLeadCount(nextLead); })();},[rows]);
+
+  // Handlers for questionnaire actions
+  function handleOpen(qid: string) {
+    // Opens a full preview (public if published, otherwise draft)
+    previewAny(qid, "he", "open");
+  }
+
+  function handleEdit(qid: string) {
+    // Navigate to the correct editor path, avoiding 404s
+    navigate(`/onboarding?id=${qid}`);
+  }
+
   if(loading) return <div className="p-6">טוען…</div>; if(error) return <div className="p-6 text-red-600">{error}</div>;
   
   return(
@@ -147,7 +159,7 @@ export default function QuestionnairesList(){
                     </Button>
                   </TooltipWrapper>
                   <TooltipWrapper content="עריכה">
-                    <Button variant="outline" size="sm" onClick={() => navigate(`/onboarding?id=${q.id}`)}>
+                    <Button variant="outline" size="sm" onClick={() => handleEdit(q.id)}>
                       <Edit className="h-4 w-4 mr-1" /> עריכה
                     </Button>
                   </TooltipWrapper>
@@ -157,7 +169,7 @@ export default function QuestionnairesList(){
                     </Button>
                   </TooltipWrapper>
                   <TooltipWrapper content="תצוגה מקדימה">
-                    <Button variant="ghost" size="sm" onClick={() => previewAny(q.id, 'he', 'show')}>
+                    <Button variant="ghost" size="sm" onClick={() => handleOpen(q.id)}>
                       <ExternalLink className="h-4 w-4 mr-1" /> תצוגה
                     </Button>
                   </TooltipWrapper>
