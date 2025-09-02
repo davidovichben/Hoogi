@@ -35,6 +35,7 @@ import LegacyDistributeRedirect from "./pages/LegacyDistributeRedirect";
 import { routes } from "./routes";
 import ThankYou from "./pages/ThankYou";
 import PreviewQuestionnaire from "./pages/PreviewQuestionnaire";
+import RedirectToOnboarding from "./pages/RedirectToOnboarding";
 
 const queryClient = new QueryClient();
 
@@ -57,6 +58,7 @@ const App = () => (
                 <Route path="/onboarding/step2" element={<OnboardingStep2 />} />
                 {/* מסלול לגאסי שמתרגם qid→token */}
                 <Route path={routes.questionnaireDistributeById(':id')} element={<LegacyDistributeRedirect />} />
+                <Route path="/questionnaires/:id/edit" element={<RedirectToOnboarding />} />
                 <Route element={<Layout />}>
                   <Route path={routes.dashboard} element={<RequireAuth><Dashboard /></RequireAuth>} />
                   <Route path={routes.questionnaires} element={<RequireAuth><QuestionnairesList /></RequireAuth>} />
