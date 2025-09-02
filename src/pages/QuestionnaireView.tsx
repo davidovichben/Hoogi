@@ -5,13 +5,9 @@ import { safeToast, rpcSubmitResponse } from "@/lib/rpc";
 import { normalizePublicQuestionnaire, type NormalizedQuestion } from "@/lib/normalizePublicQuestionnaire";
 import { applyBrandingVars, resolveLogoUrl } from "@/lib/theme";
 
-let ExternalQuestionRenderer: any = null;
-try {
-  // Optional external renderer if exists
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore
-  ExternalQuestionRenderer = (await import("@/components/question/Question")).default;
-} catch {}
+// The dynamic import for an optional external renderer was removed as it caused a build error.
+// The local fallback renderer will be used instead.
+const ExternalQuestionRenderer: any = null;
 
 export default function QuestionnaireView() {
   const { token, id } = useParams();
