@@ -6,23 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { upsertProfile, fetchProfile } from "../lib/profile";
 import { toast } from "../hooks/use-toast";
 import { safeToast } from "@/lib/rpc";
-
-// Utils for sanitizing form data
-function sanitizeHex(input: string | undefined): string {
-  const v = (input ?? "").toLowerCase().replace(/#/g, "").trim();
-  // Allow only 3 or 6 characters
-  if (!/^[0-9a-f]{3}([0-9a-f]{3})?$/.test(v)) throw new Error("צבע חייב להיות HEX ללא סימן # (3 או 6 ספרות)");
-  return v.length === 3 ? v : v.slice(0, 6);
-}
-
-function normalizeLogoPath(input: string | undefined): string | null {
-  const v = (input ?? "").trim();
-  if (!v) return null;
-  // If it's a full URL - allow it
-  if (/^https?:\/\//i.test(v)) return v;
-  // Clean 'public/' and leading '/'; ensure 'branding/...'
-  return v.replace(/^\/+/, "").replace(/^public\//, "").replace(/^(?!branding\/)/, "branding/");
-}
+import { sanitizeHex, normalizeLogoPath } from "@/lib/branding";
 
 export default function ProfilePage() {
   const [company, setCompany] = useState("");
@@ -159,11 +143,13 @@ export default function ProfilePage() {
         return;
       }
 
-      // Sanitize colors and logo path
       const p_primary = sanitizeHex(primaryColor);
       const p_secondary = sanitizeHex(secondaryColor);
       const p_logo_path = normalizeLogoPath(logoUrl);
-
+      
+      const { error } = await supabase.rpc("set_branding", { p_primary, p_secondary, p_logo_path });
+      if (error) throw error;
+      
       await upsertProfile(user.id, {
         company,
         phone,
@@ -175,13 +161,10 @@ export default function ProfilePage() {
         brand_primary: p_primary,
         brand_secondary: p_secondary,
       });
-      safeToast({ title: "נשמר", description: "הפרופיל נשמר בהצלחה" });
+      safeToast({ title: "נשמר", description: "מיתוג עודכן בהצלחה." });
     } catch (e: any) {
-      console.error("Profile save error:", e);
-      const msg = /HEX|color|brand/i.test(e?.message ?? "") 
-        ? "שגיאה: צבע חייב HEX ללא סימן # (3/6 תווים, לדוגמה ffd500)." 
-        : "לא ניתן לשמור פרופיל. בדקי את הערכים ונסי שוב.";
-      safeToast({ title: "שמירת פרופיל", description: msg });
+      console.error(e);
+      safeToast({ title: "שמירת פרופיל", description: "צבעים חייבים HEX ללא # (3/6 ספרות). בדקי גם את נתיב הלוגו." });
     }
   };
 

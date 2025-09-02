@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { safeToast, rpcSubmitResponse } from "@/lib/rpc";
 import { normalizePublicQuestionnaire, type NormalizedQuestion } from "@/lib/normalizePublicQuestionnaire";
-import { applyBrandingVars, resolveLogoUrl } from "@/lib/theme";
+import { applyBrandingVars, resolveLogoUrl } from "@/lib/branding";
 
 // The dynamic import for an optional external renderer was removed as it caused a build error.
 // The local fallback renderer will be used instead.
@@ -36,7 +36,8 @@ export default function QuestionnaireView() {
 
         const branding = b?.data ?? {};
         applyBrandingVars(branding);
-        setLogoUrl(resolveLogoUrl(branding?.brand_logo_path));
+        const logoUrl = resolveLogoUrl((p) => supabase.storage.from("branding").getPublicUrl(p).data?.publicUrl, branding?.brand_logo_path);
+        setLogoUrl(logoUrl);
 
         const norm = normalizePublicQuestionnaire(q?.data ?? {});
         setTitle(norm.title ?? "");
@@ -75,7 +76,8 @@ export default function QuestionnaireView() {
 
         if (prof) {
           applyBrandingVars(prof);
-          setLogoUrl(resolveLogoUrl(prof.brand_logo_path));
+          const logoUrl = resolveLogoUrl((p) => supabase.storage.from("branding").getPublicUrl(p).data?.publicUrl, prof.brand_logo_path);
+          setLogoUrl(logoUrl);
         }
 
         let raw: any[] = [];
