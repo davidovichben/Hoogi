@@ -18,6 +18,7 @@ export default function QuestionnaireView() {
   const lang = useMemo(() => new URLSearchParams(search).get("lang") ?? "he", [search]);
 
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [title, setTitle] = useState<string>("");
   const [logoUrl, setLogoUrl] = useState<string | undefined>(undefined);
   const [questions, setQuestions] = useState<NormalizedQuestion[]>([]);
@@ -45,7 +46,8 @@ export default function QuestionnaireView() {
         setRequireContact(Boolean(norm.requireContact));
       } catch (e) {
         console.error("Failed to load public questionnaire:", e);
-        safeToast({ title: "שגיאה", description: "טעינת השאלון הציבורי נכשלה." });
+        setError(true);
+        (safeToast ? safeToast({ title: "תצוגה", description: "לא נטען. נסי לרענן או בדקי פרופיל." }) : void 0);
       }
     }
 
@@ -93,15 +95,16 @@ export default function QuestionnaireView() {
              .order("created_at", { ascending: true });
            raw = Array.isArray(q3) ? q3 : [];
          }
-         const norm = normalizePublicQuestionnaire({ questions: raw }); // מחזיר type,label,options כנדרש
+                  const norm = normalizePublicQuestionnaire({ questions: raw }); // מחזיר type,label,options כנדרש
          setTitle(norm.title ?? "שאלון");
          setQuestions(norm.questions ?? []);
          setRequireContact(Boolean(norm.requireContact));
 
-      } catch (e) {
-        console.error("Failed to load preview data:", e);
-        safeToast({ title: "שגיאה", description: "טעינת התצוגה נכשלה." });
-      }
+       } catch (e) {
+         console.error("Failed to load preview data:", e);
+         setError(true);
+         (safeToast ? safeToast({ title: "תצוגה", description: "לא נטען. נסי לרענן או בדקי פרופיל." }) : void 0);
+       }
     }
 
     (async () => {
@@ -110,12 +113,13 @@ export default function QuestionnaireView() {
         if (token) await loadPublic(token);
         else if (isPreview && id) await loadPreview(id);
         else setQuestions([]);
-      } catch (e) {
-        console.error(e);
-        safeToast({ title: "תצוגה", description: "לא ניתן לטעון את השאלון." });
-      } finally {
-        if (alive) setLoading(false);
-      }
+             } catch (e) {
+         console.error(e);
+         setError(true);
+         (safeToast ? safeToast({ title: "תצוגה", description: "לא נטען. נסי לרענן או בדקי פרופיל." }) : void 0);
+       } finally {
+         if (alive) setLoading(false);
+       }
     })();
 
     return () => {
@@ -151,27 +155,33 @@ export default function QuestionnaireView() {
 
   if (loading) return null;
 
-  if (!loading && questions.length === 0) {
-    return <div style={{padding:24}}>אין שאלות להצגה בטיוטה. בדקי שהוספת שאלות ונשמרו.</div>;
-  }
-
   return (
     <div dir="rtl" style={{ padding: 24 }}>
+      {error && (
+        <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, padding: 12, marginBottom: 16, color: "#dc2626" }}>
+          לא נטען. נסי לרענן או בדקי פרופיל.
+        </div>
+      )}
+      
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
         {logoUrl && <img src={logoUrl} alt="logo" style={{ height: 40, width: "auto" }} />}
         {title && <h2 style={{ margin: 0 }}>{title}</h2>}
       </div>
 
-      <div style={{ display: "grid", gap: 16 }}>
-        {questions.map((q) => (
-          <div key={q.id}>
-            <label style={{ display: "block", marginBottom: 6 }}>
-              {q.label}{q.required ? " *" : ""}
-            </label>
-            {renderField(q)}
-          </div>
-        ))}
-      </div>
+      {!loading && questions.length === 0 ? (
+        <div style={{padding:24}}>אין שאלות להצגה בטיוטה. בדקי שהוספת שאלות ונשמרו.</div>
+      ) : (
+        <div style={{ display: "grid", gap: 16 }}>
+          {questions.map((q) => (
+            <div key={q.id}>
+              <label style={{ display: "block", marginBottom: 6 }}>
+                {q.label}{q.required ? " *" : ""}
+              </label>
+              {renderField(q)}
+            </div>
+          ))}
+        </div>
+      )}
 
       <div style={{ marginTop: 24 }}>
         <button onClick={onSubmit} style={btnStyle}>

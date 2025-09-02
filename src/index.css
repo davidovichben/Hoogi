@@ -26,6 +26,10 @@ All colors MUST be HSL.
     /* Secondary: Golden Yellow - with branding override */
     --secondary: var(--brand-secondary, 51 100% 50%);
     --secondary-foreground: 220 25% 20%;
+    
+    /* Brand color bridge */
+    --brand-primary: var(--brand-primary, #0ea5b7);
+    --brand-secondary: var(--brand-secondary, #64748b);
 
     /* Muted: Soft teal background */
     --muted: 186 30% 96%;

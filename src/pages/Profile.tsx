@@ -147,7 +147,7 @@ export default function ProfilePage() {
     if (!user?.id) return;
     try {
       if (!businessCategory) {
-        safeToast({ title: "יש לבחור תחום עיקרי", description: "תחום עיקרי הוא שדה חובה" });
+        (safeToast ? safeToast({ title: "יש לבחור תחום עיקרי", description: "תחום עיקרי הוא שדה חובה" }) : alert("יש לבחור תחום עיקרי"));
         return;
       }
 
@@ -172,10 +172,10 @@ export default function ProfilePage() {
       
       // מחיל צבעים מיד בלי להמתין לטעינה מחדש
       applyBrandingVars({ brand_primary: p_primary, brand_secondary: p_secondary });
-      safeToast({ title: "נשמר", description: "מיתוג עודכן בהצלחה." });
+      (safeToast ? safeToast({ title: "נשמר", description: "מיתוג עודכן בהצלחה." }) : alert("נשמר"));
     } catch (e: any) {
       console.error(e);
-      safeToast({ title: "שמירת פרופיל", description: "צבעים חייבים HEX בלי # (3/6 ספרות). בדקי גם נתיב לוגו." });
+      (safeToast ? safeToast({ title: "שמירת פרופיל", description: "צבעים חייבים HEX 3/6 ללא #. בדקי גם נתיב לוגו." }) : alert("שמירת פרופיל נכשלה"));
     }
   };
 
