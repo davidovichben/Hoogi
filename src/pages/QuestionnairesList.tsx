@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
@@ -6,19 +6,18 @@ import { TooltipWrapper } from '../components/TooltipWrapper';
 import { supabase } from "@/integrations/supabase/client";
 import { Share2, BarChart3, Edit, Settings, ExternalLink } from 'lucide-react';
 import { useNavigate } from "react-router-dom";
-import { previewAny } from "@/lib/preview";
-import { getPublishState } from '@/lib/preview';
+import { previewAny, getPublishState } from "@/lib/preview";
 import { getBaseUrl } from '@/lib/baseUrl';
 import { safeToast } from '@/lib/rpc';
 
 type Q={
   id:string;
   title:string|null;
-  public_token:string|null;
-  form_token?:string|null;
+  token:string|null;
   created_at:string|null;
   is_active?:boolean|null;
 };
+
 export default function QuestionnairesList(){
   const [rows,setRows]=useState<Q[]>([]); const [loading,setLoading]=useState(true); const [error,setError]=useState<string|null>(null);
   const [respCount, setRespCount] = useState<Record<string, number>>({});
@@ -30,73 +29,46 @@ export default function QuestionnairesList(){
       setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
       if(!user){
-        // Fallback: show locally saved questionnaires
         const local = JSON.parse(localStorage.getItem('hoogiQuestionnaires')||'[]');
         setRows(local);
         return;
       }
 
-      // Attempt 1: סינון ישיר לפי owner_id (עדיף כאשר RLS קיים)
       let res = await supabase
         .from("questionnaires")
-        .select("id,title,category,design_colors,logo_url,created_at,user_id,public_token")
+        .select("id,title,token,created_at,is_active")
         .eq('owner_id', user.id)
         .order("created_at",{ascending:false});
-
-      // אם אין תוצאות – ננסה וריאנט חלופי
-      if(!res.error && (res.data?.length ?? 0) === 0){
+      
+      if (res.error) {
+        // Fallback to user_id if owner_id fails
         res = await supabase
           .from("questionnaires")
-          .select("id,title,category,design_colors,logo_url,created_at,user_id,public_token")
+          .select("id,title,token,created_at,is_active")
           .eq('user_id', user.id)
-          .order("created_at",{ascending:false})
-          .limit(20);
-      }
-
-      if(res.error){
-        // Attempt 2: user_id fallback
-        res = await supabase
-          .from("questionnaires")
-          .select("id,title,category,design_colors,logo_url,created_at,user_id,public_token")
-          .eq("user_id", user.id)
           .order("created_at",{ascending:false});
       }
 
-      if(res.error){
-        // Attempt 3: no filter (show latest to avoid column-mismatch 400)
-        res = await supabase
-          .from("questionnaires")
-          .select("id,title,category,design_colors,logo_url,created_at,user_id,public_token")
-          .order("created_at",{ascending:false})
-          .limit(20);
+      if (res.error) {
+        throw res.error;
       }
 
-      if(res.error){
-        // final fallback to local
-        const local = JSON.parse(localStorage.getItem('hoogiQuestionnaires')||'[]');
-        setRows(local);
-      } else {
-        setRows((res.data||[]) as Q[]);
-      }
+      setRows((res.data||[]) as Q[]);
     }catch(e:any){
-      // on any exception show local cache so the UI isn't empty
       const local = JSON.parse(localStorage.getItem('hoogiQuestionnaires')||'[]');
       setRows(local);
       setError(e.message||String(e));
     }finally{ setLoading(false); }
   })();},[]);
 
-  // fetch counts for responses and leads per questionnaire (best-effort)
+  // fetch counts
   useEffect(()=>{(async()=>{ if(!rows.length) return; const nextResp:Record<string,number>={}; const nextLead:Record<string,number>={}; for(const q of rows){ try{ const r=await supabase.from('responses').select('id',{count:'exact', head:true}).eq('questionnaire_id', q.id); nextResp[q.id]=r.count??0; }catch{ nextResp[q.id]=0;} try{ const l=await supabase.from('leads').select('id',{count:'exact', head:true}).eq('questionnaire_id', q.id); nextLead[q.id]=l.count??0; }catch{ nextLead[q.id]=0;} } setRespCount(nextResp); setLeadCount(nextLead); })();},[rows]);
 
-  // Handlers for questionnaire actions
   function handleOpen(qid: string) {
-    // Opens a full preview (public if published, otherwise draft)
     previewAny(qid, "he", "open");
   }
 
   function handleEdit(qid: string) {
-    // Navigate to the correct editor path, avoiding 404s
     navigate(`/onboarding?id=${qid}`);
   }
 
@@ -108,7 +80,7 @@ export default function QuestionnairesList(){
         <h1 className="text-2xl font-semibold">השאלונים שלי</h1>
         <Button variant="default" size="lg" asChild>
           <a href="/onboarding" className="font-semibold">
-            צור את השאלון הראשון שלך
+            צור שאלון חדש
           </a>
         </Button>
       </div>
