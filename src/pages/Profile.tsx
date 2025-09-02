@@ -2,11 +2,11 @@ import { useEffect, useState } from "react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
+import { toast } from "../hooks/use-toast";
+import { applyBrandingVars, sanitizeHex, normalizeLogoPath } from "@/lib/branding";
+import { safeToast } from "@/lib/toast";
 import { supabase } from "@/integrations/supabase/client";
 import { upsertProfile, fetchProfile } from "../lib/profile";
-import { toast } from "../hooks/use-toast";
-import { safeToast } from "@/lib/rpc";
-import { applyBrandingVars, sanitizeHex, normalizeLogoPath } from "@/lib/branding";
 
 export default function ProfilePage() {
   const [company, setCompany] = useState("");
@@ -114,70 +114,33 @@ export default function ProfilePage() {
     { value: 'other', label: 'אחר', subs: []},
   ];
 
-  useEffect(() => {
-    (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      setEmail(user.email ?? "");
-      if (!user.id) return;
-      
-      // טעינת נתוני פרופיל פעם אחת
-      const { data } = await supabase.from("profiles")
-        .select("brand_primary,brand_secondary,brand_logo_path,company,phone,business_category,business_subcategory,business_other")
-        .eq("id", user.id)
-        .single();
-      
-      if (data) {
-        setCompany(data.company ?? "");
-        setPhone(data.phone ?? "");
-        setLogoUrl(data.brand_logo_path ?? "");
-        setPrimaryColor((data.brand_primary ?? "").replace(/#/g, "").toLowerCase());
-        setSecondaryColor((data.brand_secondary ?? "").replace(/#/g, "").toLowerCase());
-        setBusinessCategory(data.business_category ?? "");
-        setBusinessSubCategory(data.business_subcategory ?? "");
-        setBusinessOther(data.business_other ?? "");
-        // מחיל צבעים מיד כדי לראות תוצאה גם לפני שמירה
-        applyBrandingVars({ brand_primary: data.brand_primary, brand_secondary: data.brand_secondary });
-      }
-    })();
-  }, []);
+  useEffect(()=>{(async ()=>{
+    const { data } = await supabase.from("profiles")
+      .select("brand_primary,brand_secondary,brand_logo_path").single();
+    if (data) {
+      setPrimaryColor((data.brand_primary ?? "").replace(/#/g,"").toLowerCase());
+      setSecondaryColor((data.brand_secondary ?? "").replace(/#/g,"").toLowerCase());
+      setLogoUrl(data.brand_logo_path ?? "");
+      applyBrandingVars({ brand_primary: data.brand_primary, brand_secondary: data.brand_secondary });
+    }
+  })()},[]);
 
   const handleSave = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user?.id) return;
     try {
-      if (!businessCategory) {
-        (safeToast ? safeToast({ title: "יש לבחור תחום עיקרי", description: "תחום עיקרי הוא שדה חובה" }) : alert("יש לבחור תחום עיקרי"));
-        return;
-      }
-
-      const p_primary = sanitizeHex(primaryColor);
+      const p_primary   = sanitizeHex(primaryColor);
       const p_secondary = sanitizeHex(secondaryColor);
       const p_logo_path = normalizeLogoPath(logoUrl);
-      
+
       const { error } = await supabase.rpc("set_branding", { p_primary, p_secondary, p_logo_path });
       if (error) throw error;
-      
-      await upsertProfile(user.id, {
-        company,
-        phone,
-        email,
-        business_category: businessCategory,
-        business_subcategory: businessSubCategory,
-        business_other: businessOther,
-        logo_url: p_logo_path,
-        brand_primary: p_primary,
-        brand_secondary: p_secondary,
-      });
-      
-      // מחיל צבעים מיד בלי להמתין לטעינה מחדש
+
       applyBrandingVars({ brand_primary: p_primary, brand_secondary: p_secondary });
-      (safeToast ? safeToast({ title: "נשמר", description: "מיתוג עודכן בהצלחה." }) : alert("נשמר"));
-    } catch (e: any) {
+      safeToast({ title: "נשמר", description: "מיתוג עודכן בהצלחה" });
+    } catch (e:any) {
       console.error(e);
-      (safeToast ? safeToast({ title: "שמירת פרופיל", description: "צבעים חייבים HEX 3/6 ללא #. בדקי גם נתיב לוגו." }) : alert("שמירת פרופיל נכשלה"));
+      safeToast({ title: "שמירת פרופיל", description: "HEX בלי # (3/6 ספרות). בדקי גם נתיב לוגו." });
     }
-  };
+  }
 
   async function fileToWebpBlob(file: File, maxW = 512, maxH = 512, quality = 0.8): Promise<Blob> {
     const img = await new Promise<HTMLImageElement>((res, rej) => {

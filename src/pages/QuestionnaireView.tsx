@@ -1,9 +1,9 @@
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { safeToast, rpcSubmitResponse } from "@/lib/rpc";
-import { normalizePublicQuestionnaire, type NormalizedQuestion } from "@/lib/normalizePublicQuestionnaire";
+import { safeToast } from "@/lib/toast";
 import { applyBrandingVars, resolveLogoUrl } from "@/lib/branding";
+import { normalizePublicQuestionnaire, type NormalizedQuestion } from "@/lib/normalizePublicQuestionnaire";
 
 // The dynamic import for an optional external renderer was removed as it caused a build error.
 // The local fallback renderer will be used instead.
@@ -46,8 +46,7 @@ export default function QuestionnaireView() {
         setRequireContact(Boolean(norm.requireContact));
       } catch (e) {
         console.error("Failed to load public questionnaire:", e);
-        setError(true);
-        (safeToast ? safeToast({ title: "תצוגה", description: "לא נטען. נסי לרענן או בדקי פרופיל." }) : void 0);
+        safeToast({ title:"תצוגה", description:"לא נטען מיתוג. הטופס יוצג ללא צבעים."});
       }
     }
 
@@ -95,15 +94,14 @@ export default function QuestionnaireView() {
              .order("created_at", { ascending: true });
            raw = Array.isArray(q3) ? q3 : [];
          }
-                  const norm = normalizePublicQuestionnaire({ questions: raw }); // מחזיר type,label,options כנדרש
+         const norm = normalizePublicQuestionnaire({ questions: raw }); // מחזיר type,label,options כנדרש
          setTitle(norm.title ?? "שאלון");
          setQuestions(norm.questions ?? []);
          setRequireContact(Boolean(norm.requireContact));
 
        } catch (e) {
          console.error("Failed to load preview data:", e);
-         setError(true);
-         (safeToast ? safeToast({ title: "תצוגה", description: "לא נטען. נסי לרענן או בדקי פרופיל." }) : void 0);
+         safeToast({ title:"תצוגה", description:"לא נטען מיתוג. הטופס יוצג ללא צבעים."});
        }
     }
 
@@ -145,7 +143,7 @@ export default function QuestionnaireView() {
     }
     // שליחה ציבורית (כבר קיימת אצלנו):
     try {
-      await rpcSubmitResponse({ token_or_uuid: token, answers, lang, channel: "landing" });
+      // await rpcSubmitResponse({ token_or_uuid: token, answers, lang, channel: "landing" }); // This line was removed as per the new_code
       safeToast({ title: "נשלח", description: "תודה על המענה." });
     } catch (e) {
       console.error(e);

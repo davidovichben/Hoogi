@@ -1,6 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
 
-/** מחיל צבעי מיתוג כ-CSS vars, מבלי לשנות עיצוב גלובלי */
 export function applyBrandingVars(brand?: { brand_primary?: string; brand_secondary?: string }) {
   const root = document.documentElement;
   const pp = (brand?.brand_primary ?? "").replace(/^#/, "");
@@ -9,22 +8,19 @@ export function applyBrandingVars(brand?: { brand_primary?: string; brand_second
   if (ss) root.style.setProperty("--brand-secondary", `#${ss}`);
 }
 
-/** HEX ללא #, רק 3/6 תווים */
 export function sanitizeHex(input?: string): string {
   const v = (input ?? "").toLowerCase().replace(/#/g, "").trim();
-  if (!/^[0-9a-f]{3}([0-9a-f]{3})?$/.test(v)) throw new Error("HEX חייב להיות 3 או 6 ספרות (ללא #)");
+  if (!/^[0-9a-f]{3}([0-9a-f]{3})?$/.test(v)) throw new Error("HEX חייב 3/6 ספרות ללא #");
   return v.length === 3 ? v : v.slice(0, 6);
 }
 
-/** מחזיר path יחסי תחת branding/ או משאיר URL מלא כמו שהוא */
 export function normalizeLogoPath(input?: string): string | null {
   const v = (input ?? "").trim();
   if (!v) return null;
-  if (/^https?:\/\//i.test(v)) return v; // URL מלא
+  if (/^https?:\/\//i.test(v)) return v;
   return v.replace(/^\/+/, "").replace(/^public\//, "").replace(/^(?!branding\/)/, "branding/");
 }
 
-/** בונה כתובת ציבורית ללוגו מה-bucket 'branding' */
 export function resolveLogoUrl(logo_path?: string) {
   if (!logo_path) return;
   if (/^https?:\/\//i.test(logo_path)) return logo_path;
