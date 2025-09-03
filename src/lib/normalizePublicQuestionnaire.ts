@@ -45,6 +45,10 @@ function findQuestionsContainer(q: any): any[] {
 }
 
 // מיפוי לסכמה שה-UI שלך מציג כיום
+export function normalizeQuestions(raw: any[]): NormalizedQuestion[] {
+  return raw.map(normalizeOne);
+}
+
 function normalizeOne(raw: any, idx: number): NormalizedQuestion {
   const id = String(raw.id ?? raw.qid ?? raw.name ?? idx);
   const rawType = String(

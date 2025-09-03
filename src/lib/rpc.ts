@@ -33,22 +33,32 @@ export async function rpcGetPublicBranding(token: string) {
   return data;
 }
 
-export async function rpcSubmitResponse(params: {
-  token_or_uuid: string;
-  answers: Record<string, any>;
-  email?: string;
-  phone?: string;
-  lang?: string;
-  channel?: string;
-}) {
-  const { data, error } = await supabase.rpc("submit_response", params);
-  if (error) throw error;
-  return data;
+export async function rpcSubmitResponse(
+  tokenOrUuid: string,
+  answers: any,
+  email?: string,
+  phone?: string,
+  lang?: string,
+  channel?: string
+) {
+  return supabase.rpc("submit_response", {
+    p_token_or_uuid: tokenOrUuid,
+    p_answers: answers,
+    p_email: email ?? null,
+    p_phone: phone ?? null,
+    p_lang: lang ?? "he",
+    p_channel: channel ?? "landing",
+  });
 }
 
 // QA helpers
 export async function rpcQaQuestionnaires(limit = 20) {
   const { data, error } = await supabase.rpc("qa_questionnaires", { p_limit: limit });
+  if (error) throw error;
+  return data;
+}
+export async function rpcQaQuestions(qid: string) {
+  const { data, error } = await supabase.rpc("qa_questions", { p_qid: qid });
   if (error) throw error;
   return data;
 }
@@ -63,16 +73,11 @@ export async function rpcQaLeads(limit = 20) {
   return data;
 }
 
-export function safeToast(msg: { title: string; description?: string }) {
-  // נשתמש בטוסט קיים אם יש, אחרת alert/console
-  // @ts-ignore
-  if (typeof window !== "undefined" && typeof window.toast === "function") {
-    // @ts-ignore
-    window.toast(msg);
-    return;
-  }
-  // @ts-ignore (shadcn useToast hook injected?)
-  if (typeof toast === "function") { toast(msg); return; }
-  if (typeof alert === "function") alert(`${msg.title}${msg.description ? "\n" + msg.description : ""}`);
-  console.log("TOAST:", msg.title, msg.description ?? "");
-}
+/** טוסט בטוח – לא מפיל אם אין ספריית טוסטים */
+export const safeToast = (data: { title: string; description?: string }) => {
+  try {
+    // אם יש ספריית toast גלובלית שלך – קרא אליה כאן (לא חובה)
+    // toast({ title: data.title, description: data.description });
+    console.log("TOAST:", data.title, data.description ?? "");
+  } catch {}
+};

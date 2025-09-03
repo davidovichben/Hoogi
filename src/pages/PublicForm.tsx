@@ -3,6 +3,8 @@ import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import BrandStyles from "@/components/BrandStyles";
 import { toast } from "@/components/ui/Toaster";
+import { validateRequired, toSerializableAnswers } from "@/lib/answers";
+import { rpcSubmitResponse } from "@/lib/rpc";
 type Question={id:string;type:"single_choice"|"multi_choice"|"text"|"long_text"|"number"|"date";label:string;help_text:string|null;required:boolean;order_index:number;};
 type Option={id:string;question_id:string;value:string;label:string;order_index:number;};
 export default function PublicForm(){
@@ -25,14 +27,33 @@ export default function PublicForm(){
       catch(e:any){ setError(e.message||String(e)); } finally{ setLoading(false);} }; load(); },[id]);
   const optionsByQuestion=useMemo(()=>{ const m:Record<string,Option[]>={}; for(const o of options)(m[o.question_id] ||= []).push(o); return m;},[options]);
   const setAnswer=(qid:string,v:any)=>setAnswers(prev=>({...prev,[qid]:v}));
-  const handleSubmit=async()=>{ try{ setError(null); if(!id) throw new Error("חסר מזהה שאלון"); if(!token) throw new Error("חסר טוקן טופס");
-      for(const q of questions){ if(q.required && (answers[q.id]===undefined||answers[q.id]===null||answers[q.id]==="")) throw new Error("נא למלא את כל השדות החיוניים."); }
-      const {data:r,error:re}=await supabase.from("responses").insert({questionnaire_id:id,status:"submitted",respondent_contact:{name,email,phone,form_token:token}}).select("id").single(); if(re) throw re;
-      const items=questions.map((q)=>{ const val=answers[q.id]; const base:any={response_id:r!.id,question_id:q.id}; switch(q.type){case "number": base.answer_number=Number(val);break;case "date": base.answer_date=val;break;case "text":case "long_text": base.answer_text=String(val??"");break;case "single_choice": base.answer_text=String(val??"");break;case "multi_choice": base.answer_json=Array.isArray(val)?val:[];break; default: base.answer_text=String(val??"");} return base;});
-      const {error:ie}=await supabase.from("response_items").insert(items); if(ie) throw ie;
-      if(email){ await supabase.functions.invoke("send-auto-reply",{ body:{ to:email, subject:"תודה! קיבלנו את הטופס", html:`<p>שלום ${name||""},</p><p>קיבלנו את הטופס שלך בהצלחה.</p><p>AI-4biz</p>` } }).catch(()=>{}); }
-      toast.success("התשובה נשלחה בהצלחה. תודה!"); window.location.href="/";
-    }catch(e:any){ setError(e.message||String(e)); } };
+  const handleSubmit=async()=>{ 
+    try{ 
+      if (!token) {
+        toast({ title: "טיוטה", description: "שליחה פעילה רק אחרי פרסום." });
+        return;
+      }
+      const missing = validateRequired(questions, answers);
+      if (missing.length) {
+        toast({ title: "חסרים פרטים", description: `נא השלי: ${missing.slice(0,3).join(", ")}${missing.length>3?" ועוד…":""}` });
+        return;
+      }
+      const payload = toSerializableAnswers(questions, answers);
+
+      // אם יש אצלך שדות אימייל/טלפון במודל – קחי מהם. אם לא, ישלחו undefined (זה בסדר).
+      const email = (answers["contact_email"] ?? undefined) as string | undefined;
+      const phone = (answers["contact_phone"] ?? undefined) as string | undefined;
+
+      const lang = new URLSearchParams(window.location.search).get("lang") ?? "he";
+      await rpcSubmitResponse(token, payload, email, phone, lang, "landing");
+
+      toast({ title: "נשלח", description: "תודה! התשובה נשמרה בהצלחה." });
+      // השאירי ללא ניווט כדי לא לשנות זרימה קיימת
+    } catch (e) {
+      console.error(e);
+      toast({ title: "שגיאה", description: "שליחה נכשלה. נסי שוב." });
+    } 
+  };
   if(loading) return <div className="p-6">טוען…</div>; if(error) return <div className="p-6 text-red-600">{error}</div>;
   return(<BrandStyles primary={brandPrimary} accent={brandAccent} background={brandBackground}>
     <div className="max-w-2xl mx-auto p-4">

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { safeToast } from "@/lib/rpc";
 import { normalizePublicQuestionnaire, applyBranding, type NormalizedQuestion } from "@/lib/normalizePublicQuestionnaire";
+import { applyBrandingVars } from "@/lib/branding";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -81,24 +82,27 @@ export default function PreviewQuestionnaire() {
 
         const { data: userRes } = await supabase.auth.getUser();
         const uid = userRes?.user?.id;
-        let b: any = {};
-        if (uid) {
-          const { data: prof } = await supabase
+        
+        // טעינה במקביל של פרופיל ושאלות
+        const [profileRes, questionnaireRes] = await Promise.all([
+          uid ? supabase
             .from("profiles")
             .select("brand_primary,brand_secondary,brand_logo_url")
             .eq("id", uid)
-            .single();
-          b = prof;
-          setBranding(prof);
-          applyBranding(prof);
-        }
+            .single() : Promise.resolve({ data: null, error: null }),
+          supabase.from("questionnaires").select("*, questions(*)").eq("id", id).single()
+        ]);
 
-        let raw: any[] = [];
-        const res = await supabase.from("questionnaires").select("*, questions(*)").eq("id", id).single();
-        if (res.error) throw res.error;
+        if (questionnaireRes.error) throw questionnaireRes.error;
         
-        setTitle(res.data.title ?? "תצוגה מקדימה");
-        const norm = normalizePublicQuestionnaire({ questions: res.data.questions });
+        // החלת מיתוג
+        if (profileRes.data) {
+          setBranding(profileRes.data);
+          applyBrandingVars(profileRes.data);
+        }
+        
+        setTitle(questionnaireRes.data.title ?? "תצוגה מקדימה");
+        const norm = normalizePublicQuestionnaire({ questions: questionnaireRes.data.questions });
         
         if (!alive) return;
         setQuestions(norm.questions);

@@ -11,6 +11,8 @@ import {
   applyBranding,
   type NormalizedQuestion,
 } from "@/lib/normalizePublicQuestionnaire";
+import { applyBrandingVars } from "@/lib/branding";
+import { validateRequired, toSerializableAnswers } from "@/lib/answers";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -29,49 +31,81 @@ export default function PublicQuestionnaire() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let alive = true;
     (async () => {
       try {
-        const [b, raw] = await Promise.all([
-          rpcGetPublicBranding(token),
-          rpcGetPublicQuestionnaire(token),
+        // חילוץ token מ-URL (למסך ציבורי), או פרמטר preview אם יש מסך תצוגה
+        const sp = new URLSearchParams(window.location.search);
+        const t = (token as string) || sp.get("token") || undefined;
+        // setToken(t); // לא נדרש כי token כבר מגיע מ-useParams
+
+        if (!t) {
+          // במצב תצוגה פנימי (טיוטה) – רק מרנדר שאלות אם כבר נטענו ממקום אחר, לא שולחים
+          console.log("No token (preview). Render only.");
+          return;
+        }
+
+        const [qRes, bRes] = await Promise.all([
+          rpcGetPublicQuestionnaire(t),
+          rpcGetPublicBranding(t),
         ]);
 
-        if (!alive) return;
+        if (qRes.error) throw qRes.error;
+        if (bRes.error) console.warn("Branding RPC error:", bRes.error);
 
-        setBranding(b);
-        applyBranding(b); // החלת צבעים כ־CSS variables (בלי שינוי Markup)
+        // נורמליזציה פשוטה לשאלות לפי השדות שיש אצלך ב-DB/VIEW
+        const raw = (qRes.data?.questions ?? qRes.data?.data ?? qRes.data ?? []) as any[];
+        const mapped: NormalizedQuestion[] = raw.map((q: any) => ({
+          id: String(q.id ?? q.slug ?? crypto.randomUUID()),
+          type: (q.type ?? "text")
+            .toString()
+            .toLowerCase()
+            .replace("text_area","textarea")
+            .replace("long_text","textarea") as NormalizedQuestion["type"],
+          label: q.label ?? q.title ?? q.question ?? "שאלה",
+          placeholder: q.placeholder ?? "",
+          required: !!q.required,
+          options: Array.isArray(q.options)
+            ? q.options.map((o: any) => ({ label: o.label ?? o, value: o.value ?? String(o) }))
+            : undefined,
+        }));
 
-        const norm = normalizePublicQuestionnaire(raw);
-        setTitle(norm.title ?? "");
-        setDescription(norm.description ?? "");
-        setQuestions(norm.questions);
-        setRequireContact(Boolean(norm.requireContact));
+        setQuestions(mapped);
+
+        // החלת צבעים (ללא שינוי עיצוב גלובלי)
+        const brand = bRes.data ?? {};
+        applyBrandingVars({ brand_primary: brand.brand_primary, brand_secondary: brand.brand_secondary });
       } catch (e) {
-        console.error(e);
-        safeToast({ title: "השאלון לא מוצג", description: "ודאי שהקישור נכון ושהשאלון פורסם." });
-      } finally {
-        if (alive) setLoading(false);
+        console.error("Load public questionnaire error:", e);
+        // לא מפילים את הדף
       }
     })();
-    return () => { alive = false; };
   }, [token]);
 
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function onSubmit() {
     try {
-      await rpcSubmitResponse({
-        token_or_uuid: token,
-        answers,
-        email: contact.email || undefined,
-        phone: contact.phone || undefined,
-        lang: "he",
-        channel: "landing",
-      });
-      navigate("/thank-you");
+      if (!token) {
+        safeToast({ title: "טיוטה", description: "שליחה פעילה רק אחרי פרסום." });
+        return;
+      }
+      const missing = validateRequired(questions, answers);
+      if (missing.length) {
+        safeToast({ title: "חסרים פרטים", description: `נא השלי: ${missing.slice(0,3).join(", ")}${missing.length>3?" ועוד…":""}` });
+        return;
+      }
+      const payload = toSerializableAnswers(questions, answers);
+
+      // אם יש אצלך שדות אימייל/טלפון במודל – קחי מהם. אם לא, ישלחו undefined (זה בסדר).
+      const email = (answers["contact_email"] ?? undefined) as string | undefined;
+      const phone = (answers["contact_phone"] ?? undefined) as string | undefined;
+
+      const lang = new URLSearchParams(window.location.search).get("lang") ?? "he";
+      await rpcSubmitResponse(token, payload, email, phone, lang, "landing");
+
+      safeToast({ title: "נשלח", description: "תודה! התשובה נשמרה בהצלחה." });
+      // השאירי ללא ניווט כדי לא לשנות זרימה קיימת
     } catch (e) {
       console.error(e);
-      safeToast({ title: "שגיאה בשליחה", description: "נסו שוב בעוד רגע." });
+      safeToast({ title: "שגיאה", description: "שליחה נכשלה. נסי שוב." });
     }
   }
 

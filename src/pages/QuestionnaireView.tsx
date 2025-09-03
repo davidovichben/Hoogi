@@ -1,127 +1,92 @@
-import { useParams, useLocation, useNavigate } from "react-router-dom";
+import { useParams, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { rpcGetPublicQuestionnaire, rpcGetPublicBranding, rpcQaQuestions, rpcSubmitResponse } from "@/lib/rpc";
+import { normalizePublicQuestionnaire, normalizeQuestions, type NormalizedQuestion } from "@/lib/normalizePublicQuestionnaire";
+import { applyBrandingVars, resolveLogoUrl, sanitizeHex } from "@/lib/branding";
+import { validateRequired, toSerializableAnswers } from "@/lib/answers";
 import { safeToast } from "@/lib/toast";
-import { applyBrandingVars, resolveLogoUrl } from "@/lib/branding";
-import { normalizePublicQuestionnaire, type NormalizedQuestion } from "@/lib/normalizePublicQuestionnaire";
 
 // The dynamic import for an optional external renderer was removed as it caused a build error.
 // The local fallback renderer will be used instead.
 const ExternalQuestionRenderer: any = null;
 
 export default function QuestionnaireView() {
-  const { token, id } = useParams();
-  const isPreview = Boolean(id) && !token;
-  const navigate = useNavigate();
-
-  const search = useLocation().search;
-  const lang = useMemo(() => new URLSearchParams(search).get("lang") ?? "he", [search]);
-
+  const { token, id } = useParams();         // public: /q/:token, preview: /q/preview/:id
+  const [search] = useSearchParams();
+  const lang = (search.get("lang") || "he") as "he" | "en";
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [title, setTitle] = useState<string>("");
-  const [logoUrl, setLogoUrl] = useState<string | undefined>(undefined);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [questions, setQuestions] = useState<NormalizedQuestion[]>([]);
   const [answers, setAnswers] = useState<Record<string, any>>({});
-  const [requireContact, setRequireContact] = useState(true);
 
   useEffect(() => {
     let alive = true;
-
-    async function loadPublic(tok: string) {
-      try {
-        const [b, q] = await Promise.all([
-          supabase.rpc("get_public_branding", { p_token: tok }),
-          supabase.rpc("get_public_questionnaire", { p_token: tok }),
-        ]);
-
-        const branding = b?.data ?? {};
-        applyBrandingVars(branding);
-        const logoUrl = resolveLogoUrl(branding?.brand_logo_path);
-        setLogoUrl(logoUrl);
-
-        const norm = normalizePublicQuestionnaire(q?.data ?? {});
-        setTitle(norm.title ?? "");
-        setQuestions(norm.questions ?? []);
-        setRequireContact(Boolean(norm.requireContact));
-      } catch (e) {
-        console.error("Failed to load public questionnaire:", e);
-      }
-    }
-
-    async function loadPreview(qid: string) {
-      // 1. Redirect if already published
-      try {
-        const { data: meta } = await supabase.from("questionnaires").select("token,is_published").eq("id", qid).single();
-        if (meta?.is_published && meta?.token) {
-          navigate(`/q/${meta.token}?lang=${lang}&ref=preview`, { replace: true });
-          return;
-        }
-      } catch (e) {
-        console.warn("Could not check publish state for redirect", e);
-      }
-
-      // 2. Fetch branding, title, and questions
-      try {
-        const { data: ures } = await supabase.auth.getUser();
-        const uid = ures?.user?.id;
-
-        const profilePromise = uid
-          ? supabase.from("profiles").select("brand_primary,brand_secondary,brand_logo_path").eq("id", uid).single()
-          : Promise.resolve({ data: null, error: null });
-        
-        const titlePromise = supabase.from("questionnaires").select("title").eq("id", qid).single();
-        
-        const [{ data: prof }, { data: qData }] = await Promise.all([profilePromise, titlePromise]);
-
-        if (prof) {
-          applyBrandingVars(prof);
-          const logoUrl = resolveLogoUrl(prof.brand_logo_path);
-          setLogoUrl(logoUrl);
-        }
-
-                 // 1) נסי RPC qa_questions (p_qid ואז qid), 2) נפילה לטבלת questions
-         let raw: any[] = [];
-         try { const r1 = await supabase.rpc("qa_questions", { p_qid: qid }); if (Array.isArray(r1.data)) raw = r1.data; } catch{}
-         if (!raw.length) { try { const r2 = await supabase.rpc("qa_questions", { qid }); if (Array.isArray(r2.data)) raw = r2.data; } catch{} }
-         if (!raw.length) {
-           const { data: q3 } = await supabase
-             .from("questions")
-             .select("*")
-             .eq("questionnaire_id", qid)
-             .order("position", { ascending: true })
-             .order("created_at", { ascending: true });
-           raw = Array.isArray(q3) ? q3 : [];
-         }
-         const norm = normalizePublicQuestionnaire({ questions: raw }); // מחזיר type,label,options כנדרש
-         setTitle(norm.title ?? "שאלון");
-         setQuestions(norm.questions ?? []);
-         setRequireContact(Boolean(norm.requireContact));
-
-       } catch (e) {
-         console.error("Failed to load preview data:", e);
-       }
-    }
-
     (async () => {
+      setLoading(true);
+      setError(null);
       try {
-        setLoading(true);
-        if (token) await loadPublic(token);
-        else if (isPreview && id) await loadPreview(id);
-        else setQuestions([]);
-             } catch (e) {
-         console.error(e);
-         setError(true);
-         (safeToast ? safeToast({ title: "תצוגה", description: "לא נטען. נסי לרענן או בדקי פרופיל." }) : void 0);
-       } finally {
-         if (alive) setLoading(false);
-       }
-    })();
+        // 1) מיתוג
+        if (token) {
+          const b = await rpcGetPublicBranding(token);
+          if (b?.brand_primary || b?.brand_secondary) {
+            applyBrandingVars({
+              primary: sanitizeHex(b.brand_primary || ""),
+              secondary: sanitizeHex(b.brand_secondary || ""),
+            });
+          }
+          if (b?.brand_logo_path) {
+            setLogoUrl(await resolveLogoUrl(b.brand_logo_path));
+          }
+        } else if (id) {
+          // Preview: משוך מיתוג מהפרופיל של המשתמש המחובר – בלי לשנות DB
+          const { data: prof } = await supabase
+            .from("profiles")
+            .select("brand_primary,brand_secondary,brand_logo_path")
+            .limit(1)
+            .single();
+          if (prof) {
+            applyBrandingVars({
+              primary: sanitizeHex(prof.brand_primary || ""),
+              secondary: sanitizeHex(prof.brand_secondary || ""),
+            });
+            if (prof.brand_logo_path) {
+              setLogoUrl(await resolveLogoUrl(prof.brand_logo_path));
+            }
+          }
+        }
 
-    return () => {
-      alive = false;
-    };
-  }, [token, id, isPreview, lang, navigate]);
+        // 2) שאלות
+        if (token) {
+          const pub = await rpcGetPublicQuestionnaire(token);
+          setTitle(pub?.title || "");
+          // pub.questions יכול להיות JSON או שדה טקסט – הנרמול נעשה פה:
+          const list = Array.isArray(pub?.questions)
+            ? pub!.questions
+            : (() => {
+                try { return JSON.parse(pub?.questions || "[]"); }
+                catch { return []; }
+              })();
+          setQuestions(normalizeQuestions(list));
+        } else if (id) {
+          // צידו של Preview – להשתמש ב-qa_questions(qid) שהכנו מראש
+          const rows = await rpcQaQuestions(id);
+          setTitle(rows?.[0]?.questionnaire_title || "");
+          setQuestions(normalizeQuestions(rows || []));
+        } else {
+          setQuestions([]);
+        }
+      } catch (e: any) {
+        console.error(e);
+        setError("טעינת התצוגה נכשלה.");
+      } finally {
+        if (alive) setLoading(false);
+      }
+    })();
+    return () => { alive = false; };
+  }, [token, id]);
 
   function bindValue(q: NormalizedQuestion) {
     const v = answers[q.id] ?? "";
@@ -134,20 +99,30 @@ export default function QuestionnaireView() {
     } as any;
   }
 
-  async function onSubmit() {
-    if (!token) { // טיוטה
-      safeToast({ title: "טיוטה", description: "שליחה פעילה רק בגרסה הציבורית." });
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    // בטיוטה לא שולחים – רק מידע
+    if (!token) {
+      safeToast({ title: "שליחה פעילה רק אחרי פרסום השאלון", description: "" });
       return;
     }
-    // שליחה ציבורית (כבר קיימת אצלנו):
     try {
-      // await rpcSubmitResponse({ token_or_uuid: token, answers, lang, channel: "landing" }); // This line was removed as per the new_code
-      safeToast({ title: "נשלח", description: "תודה על המענה." });
-    } catch (e) {
-      console.error(e);
-      safeToast({ title: "שגיאה", description: "שליחה נכשלה." });
+      const missing = validateRequired(questions, answers);
+      if (missing.length) {
+        safeToast({ title: "יש למלא את כל השדות החובה", description: "" });
+        return;
+      }
+      const payload = toSerializableAnswers(questions, answers);
+      // חילוץ אימייל/טלפון אם קיימים בשאלון
+      const email = payload.contact_email || null;
+      const phone = payload.contact_phone || null;
+      await rpcSubmitResponse(token, payload, email, phone, lang, "landing");
+      safeToast({ title: "נשלח בהצלחה", description: "" });
+    } catch (err) {
+      console.error(err);
+      safeToast({ title: "שליחה נכשלה", description: "" });
     }
-  }
+  };
 
   if (loading) return null;
 
@@ -161,7 +136,7 @@ export default function QuestionnaireView() {
       
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
         {logoUrl && <img src={logoUrl} alt="logo" style={{ height: 40, width: "auto" }} />}
-        {title && <h2 style={{ margin: 0 }}>{title}</h2>}
+        {title && <h2 style={{ margin: 0, color: "hsl(var(--brand-primary))" }}>{title}</h2>}
       </div>
 
       {!loading && questions.length === 0 ? (
@@ -180,7 +155,11 @@ export default function QuestionnaireView() {
       )}
 
       <div style={{ marginTop: 24 }}>
-        <button onClick={onSubmit} style={btnStyle}>
+        <button
+          className="btn"
+          style={{ background: "hsl(var(--brand-primary))", color: "white" }}
+          onClick={onSubmit}
+        >
           שלח תשובה
         </button>
       </div>
@@ -195,6 +174,7 @@ export default function QuestionnaireView() {
       borderRadius: 10,
       outline: "none",
       background: "#fff",
+      borderColor: "hsl(var(--brand-primary))",
     };
     const reqProps = q.required ? { required: true } : {};
 
@@ -294,6 +274,7 @@ export default function QuestionnaireView() {
                   value={o.value}
                   checked={(answers[q.id] ?? "") === o.value}
                   onChange={() => setAnswers((p) => ({ ...p, [q.id]: o.value }))}
+                  style={{ accentColor: "hsl(var(--brand-primary))" }}
                   {...reqProps}
                 />
                 {o.label}
@@ -319,6 +300,7 @@ export default function QuestionnaireView() {
                       else next.delete(o.value);
                       setAnswers((p) => ({ ...p, [q.id]: Array.from(next) }));
                     }}
+                    style={{ accentColor: "hsl(var(--brand-primary))" }}
                   />
                   {o.label}
                 </label>
@@ -347,7 +329,7 @@ const btnStyle: React.CSSProperties = {
   padding: "10px 16px",
   borderRadius: 10,
   border: "none",
-  background: "hsl(var(--primary))",
+  background: "hsl(var(--brand-primary))",
   color: "white",
   cursor: "pointer",
 };
