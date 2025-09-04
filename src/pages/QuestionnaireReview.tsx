@@ -315,6 +315,10 @@ export default function QuestionnaireReviewPage() {
               <ArrowLeft className={`h-4 w-4 ${language === 'he' ? 'rotate-180' : ''}`} />
               {language === 'he' ? 'חזרה לשאלונים' : 'Back to Questionnaires'}
             </Button>
+            
+            <a href="/dashboard" className="text-sm text-teal-700 underline">
+              {language === 'he' ? 'חזרה לדשבורד' : 'Back to Dashboard'}
+            </a>
           </div>
 
           <Card className="border-2 border-primary/20 bg-gradient-to-r from-primary/5 to-secondary/5">

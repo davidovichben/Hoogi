@@ -5,6 +5,7 @@ export async function upsertProfile(
   data: Partial<{
     full_name: string; company: string; phone: string; email: string; locale: string; business_category: string; business_subcategory: string; business_other: string;
     brand_primary: string; brand_secondary: string; brand_bg: string; logo_url: string;
+    occupation: string; suboccupation: string;
   }>
 ) {
   const { error } = await supabase

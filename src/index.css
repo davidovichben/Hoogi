@@ -11,6 +11,7 @@ All colors MUST be HSL.
     /* Hoogi Brand Colors */
     --background: 0 0% 100%;
     --foreground: 220 25% 20%;
+    --app-bg: #ffffff;
 
     --card: 0 0% 100%;
     --card-foreground: 220 25% 20%;
@@ -94,6 +95,10 @@ All colors MUST be HSL.
     --sidebar-border: 220 13% 91%;
 
     --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  body {
+    background: var(--app-bg);
   }
 
   .dark {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { ArrowRight, ArrowLeft, Upload, Plus, Trash2, Copy, GripVertical, Star, Calendar, Mic, Zap, Save, Lock, Eye, Settings, Users, Palette, RotateCcw, QrCode, Globe } from 'lucide-react';
@@ -14,13 +14,16 @@ import { HoogiMessage } from '../components/HoogiMascot';
 import { TooltipWrapper } from '../components/TooltipWrapper';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useToast as useShadcnToast } from '@/hooks/use-toast';
-import { fetchProfile } from '../lib/profile';
+import { getUserId, fetchProfileByUserId, upsertProfile } from '@/lib/rpc';
+import { applyBrandingVars } from '@/lib/branding';
+import { OCCUPATIONS } from '@/utils/occupations';
 import { QRModal } from '../components/QRModal';
 import { buildPublicUrl } from '../lib/publicUrl';
 import { routes } from "@/routes";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Portal } from "@radix-ui/react-portal";
 import { HexColorPicker } from "react-colorful";
+import ProfileForm, { ProfileFormHandle } from "@/components/ProfileForm";
 
 type ToastApi = ((opts: { title?: string; description?: string, variant?: 'default' | 'destructive' }) => void) | undefined;
 function safeToast(toastApi: ToastApi, title: string, description?: string, variant?: 'default' | 'destructive') {
@@ -48,11 +51,6 @@ interface Question {
 interface QuestionnaireState {
   id?: string;
   title: string;
-  category: string;
-  companyName: string;
-  logoUrl: string;
-  primaryColor: string;
-  secondaryColor: string;
   questions: Question[];
   status: 'draft' | 'locked' | 'pending';
   language: string;
@@ -71,6 +69,23 @@ export const Onboarding: React.FC = () => {
   const location = useLocation();
   const { t, language } = useLanguage();
   const { toast } = useShadcnToast();
+  const profileRef = useRef<ProfileFormHandle>(null);
+  const [canProceed, setCanProceed] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  
+  // Load user on component mount
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        setUser(user);
+      } catch (error) {
+        console.error('Failed to load user:', error);
+      }
+    };
+    loadUser();
+  }, []);
   
   // Get step and questionnaire ID from URL params using URLSearchParams
   const urlParams = new URLSearchParams(location.search);
@@ -83,6 +98,18 @@ export const Onboarding: React.FC = () => {
   
   const [currentStep, setCurrentStep] = useState(urlStep ? parseInt(urlStep) : 1);
   const [isGeneratingOptions, setIsGeneratingOptions] = useState<string | null>(null);
+
+  function goNextStep() {
+    // העדפה: פונקציה קיימת אם יש
+    // @ts-ignore
+    if (typeof goToStep === "function") return goToStep(2);
+    // @ts-ignore
+    if (typeof setStep === "function") return setStep(2);
+    // fallback: ניווט לשלב 2
+    const url = new URL(window.location.href);
+    url.searchParams.set("step", "2");
+    window.location.assign(url.toString());
+  }
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [isEditingExisting, setIsEditingExisting] = useState(false);
   
@@ -98,11 +125,6 @@ export const Onboarding: React.FC = () => {
   const [formData, setFormData] = useState<QuestionnaireState>({
     id: urlQuestionnaireId || undefined,
     title: '',
-    category: '',
-    companyName: '',
-    logoUrl: '',
-    primaryColor: '#16939B',
-    secondaryColor: '#FFD500',
     questions: [],
     status: 'draft',
     language: language
@@ -122,23 +144,17 @@ export const Onboarding: React.FC = () => {
     if (savedProfile) {
       const profile = JSON.parse(savedProfile);
       setProfileData(profile);
-      setFormData(prev => ({
-        ...prev,
-        companyName: profile.companyName,
-        logoUrl: profile.logoUrl,
-        primaryColor: profile.primaryColor,
-        secondaryColor: profile.secondaryColor
-      }));
     }
   }, []);
 
   // Prefill from Supabase profiles (מעדכן את הנתונים מפרופיל אמיתי)
   useEffect(() => {
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user?.id) return;
       try {
-        const profile = await fetchProfile(user.id);
+        const userId = await getUserId();
+        if (!userId) return;
+        
+        const profile = await fetchProfileByUserId(userId);
         if (profile) {
           setProfileData(prev => ({
             ...prev,
@@ -147,16 +163,15 @@ export const Onboarding: React.FC = () => {
             primaryColor: profile.brand_primary ?? prev.primaryColor,
             secondaryColor: profile.brand_secondary ?? prev.secondaryColor,
           }));
-          setFormData(prev => ({
-            ...prev,
-            companyName: profile.company ?? prev.companyName,
-            logoUrl: profile.logo_url ?? prev.logoUrl,
-            primaryColor: profile.brand_primary ?? prev.primaryColor,
-            secondaryColor: profile.brand_secondary ?? prev.secondaryColor,
-            category: profile.business_category ?? prev.category,
-          }));
+          
+          // החלת מיתוג מלא
+          applyBrandingVars({
+            brand_primary: profile.brand_primary,
+            brand_secondary: profile.brand_secondary,
+            background_color: profile.background_color || "#ffffff"
+          });
         }
-      } catch (e:any) {
+      } catch (e: any) {
         console.warn('fetchProfile failed:', e?.message || e);
       }
     })();
@@ -311,11 +326,6 @@ export const Onboarding: React.FC = () => {
         const newFormData = {
           id: questionnaire.id,
           title: questionnaire.title || '',
-          category: questionnaire.category || '',
-          companyName: designColors.company_name || '',
-          logoUrl: questionnaire.logo_url || '',
-          primaryColor: designColors.primary_color || '#16939B',
-          secondaryColor: designColors.secondary_color || '#FFD500',
           questions: convertedQuestions,
           status: designColors.status || 'draft',
           language: designColors.language || language
@@ -352,26 +362,16 @@ export const Onboarding: React.FC = () => {
     navigate(newUrl, { replace: true });
   };
 
-  // התאמה לערכי הפרופיל (אותם values כמו בדף הפרופיל)
-  const categories = [
-    { value: 'real_estate', label: language === 'he' ? 'נדל"ן' : 'Real Estate', icon: '🏠' },
-    { value: 'law', label: language === 'he' ? 'משפטים' : 'Law', icon: '⚖️' },
-    { value: 'insurance', label: language === 'he' ? 'ביטוח' : 'Insurance', icon: '🛡️' },
-    { value: 'coaching', label: language === 'he' ? 'אימון/ייעוץ' : 'Coaching', icon: '🚀' },
-    { value: 'medical', label: language === 'he' ? 'רפואה/בריאות' : 'Medical', icon: '🧠' },
-    { value: 'fitness', label: language === 'he' ? 'כושר/רווחה' : 'Fitness', icon: '💪' },
-    { value: 'education', label: language === 'he' ? 'חינוך/הדרכה' : 'Education', icon: '🎓' },
-    { value: 'home_services', label: language === 'he' ? 'שירותי בית' : 'Home Services', icon: '🛠️' },
-    { value: 'finance', label: language === 'he' ? 'כספים/חשבונאות' : 'Finance', icon: '💰' },
-    { value: 'technology', label: language === 'he' ? 'טכנולוגיה/IT' : 'Technology', icon: '💻' },
-    { value: 'marketing', label: language === 'he' ? 'שיווק/עיצוב' : 'Marketing', icon: '🎯' },
-    { value: 'events', label: language === 'he' ? 'אירועים' : 'Events', icon: '🎉' },
-    { value: 'food', label: language === 'he' ? 'מסעדנות/קייטרינג' : 'Food', icon: '🍽️' },
-    { value: 'retail', label: language === 'he' ? 'קמעונאות/איקומרס' : 'Retail', icon: '🛍️' },
-    { value: 'construction', label: language === 'he' ? 'בנייה/הנדסה' : 'Construction', icon: '🏗️' },
-    { value: 'creative', label: language === 'he' ? 'צילום/קריאייטיב' : 'Creative', icon: '🎨' },
-    { value: 'other', label: language === 'he' ? 'אחר' : 'Other', icon: '📋' }
-  ];
+  const handleNextFromProfile = async () => {
+    if (!profileRef.current) return;
+    setSavingProfile(true);
+    const ok = await profileRef.current.save();
+    setSavingProfile(false);
+    if (!ok) return;       // לא מתקדם בלי שמירה מוצלחת
+    updateStep(2);
+  };
+
+  // שימוש בטבלת התחומים המרכזית
 
   const supportedLanguages = [
     { value: 'he', label: 'עברית', flag: '🇮🇱' },
@@ -525,76 +525,44 @@ export const Onboarding: React.FC = () => {
   };
 
   const loadSuggestedQuestions = () => {
-    if (!formData.category) {
-      safeToast(toast, 
-        language === 'he' ? 'יש לבחור קטגוריה' : 'Please Select a Category',
-        language === 'he' 
-          ? 'יש לבחור תחום עסקי תחילה כדי לטעון שאלות מוצעות'
-          : 'Please select a business category first to load suggested questions',
-        'destructive'
-      );
-      return;
-    }
-
-    if (suggestedQuestions[formData.category as keyof typeof suggestedQuestions]) {
-      const suggested = suggestedQuestions[formData.category as keyof typeof suggestedQuestions];
-      const questions: Question[] = suggested.map((item, index) => ({
-        id: `suggested-${Date.now()}-${index}`,
-        text: item.text,
-        type: item.type as QuestionType,
-        options: item.options || undefined,
+    // For now, we'll load generic questions since profile data is handled separately
+    const genericQuestions: Question[] = [
+      {
+        id: `suggested-${Date.now()}-1`,
+        text: language === 'he' ? 'מה השם שלך?' : 'What is your name?',
+        type: 'text',
+        isRequired: true
+      },
+      {
+        id: `suggested-${Date.now()}-2`,
+        text: language === 'he' ? 'מה המייל שלך?' : 'What is your email?',
+        type: 'email',
+        isRequired: true
+      },
+      {
+        id: `suggested-${Date.now()}-3`,
+        text: language === 'he' ? 'מה הטלפון שלך?' : 'What is your phone number?',
+        type: 'phone',
         isRequired: false
-      }));
-      setFormData({ ...formData, questions });
-      safeToast(toast, 
-        language === 'he' ? 'שאלות נטענו בהצלחה' : 'Questions Loaded Successfully',
-        language === 'he' 
-          ? `נוספו ${suggested.length} שאלות מוצעות עבור תחום ${categories.find(c => c.value === formData.category)?.label}.`
-          : `Added ${suggested.length} suggested questions for ${categories.find(c => c.value === formData.category)?.label}.`
-      );
-    } else {
-      safeToast(toast, 
-        language === 'he' ? 'אין שאלות זמינות' : 'No Questions Available',
-        language === 'he' 
-          ? 'אין שאלות מוצעות זמינות עבור התחום הנבחר'
-          : 'No suggested questions available for the selected category',
-        'destructive'
-      );
-    }
-  };
-
-  const saveProfileData = () => {
-    const profile: ProfileData = {
-      companyName: formData.companyName,
-      logoUrl: formData.logoUrl,
-      primaryColor: formData.primaryColor,
-      secondaryColor: formData.secondaryColor,
-      savedCategories: profileData.savedCategories.includes(formData.category) 
-        ? profileData.savedCategories 
-        : [...profileData.savedCategories, formData.category]
-    };
-    localStorage.setItem('hoogiProfile', JSON.stringify(profile));
-    setProfileData(profile);
+      }
+    ];
+    
+    setFormData({ ...formData, questions: genericQuestions });
     safeToast(toast, 
-      language === 'he' ? 'פרופיל נשמר' : 'Profile Saved',
+      language === 'he' ? 'שאלות נטענו בהצלחה' : 'Questions Loaded Successfully',
       language === 'he' 
-        ? 'הפרטים נשמרו ויועברו לשאלונים עתידיים'
-        : 'Your details have been saved for future questionnaires'
+        ? 'נוספו שאלות בסיסיות לשאלון'
+        : 'Added basic questions to the questionnaire'
     );
   };
+
+  // Profile saving is now handled by ProfileForm component
 
   const saveAsDraft = async () => {
     await onSaveDraft(formData.id, {
       title: formData.title,
-      category: formData.category,
-      design_colors: {
-        primary_color: formData.primaryColor,
-        secondary_color: formData.secondaryColor,
-        company_name: formData.companyName,
-        language: formData.language,
-        status: 'draft'
-      },
-      logo_url: formData.logoUrl
+      language: formData.language,
+      status: 'draft'
     });
   };
 
@@ -698,11 +666,6 @@ export const Onboarding: React.FC = () => {
       title: `${formData.title} (${languageLabel})`
     };
     
-    // Save the duplicated questionnaire to localStorage for demo purposes
-    const existingQuestionnaires = JSON.parse(localStorage.getItem('hoogiQuestionnaires') || '[]');
-    existingQuestionnaires.push(duplicatedQuestionnaire);
-    localStorage.setItem('hoogiQuestionnaires', JSON.stringify(existingQuestionnaires));
-    
     safeToast(toast, 
       language === 'he' ? 'שכפול בוצע' : 'Duplication Complete',
       language === 'he' 
@@ -737,10 +700,9 @@ export const Onboarding: React.FC = () => {
   };
 
   const handleFinish = async () => {
-    if (!formData.title.trim() || !formData.companyName.trim() || formData.questions.length === 0) {
+    if (!formData.title.trim() || formData.questions.length === 0) {
       const missing: string[] = [];
       if (!formData.title.trim()) missing.push(language==='he'?'כותרת השאלון':'Title');
-      if (!formData.companyName.trim()) missing.push(language==='he'?'שם החברה':'Company');
       if (formData.questions.length === 0) missing.push(language==='he'?'לפחות שאלה אחת':'At least one question');
       safeToast(toast,
         language === 'he' ? 'שגיאה' : 'Error',
@@ -754,16 +716,9 @@ export const Onboarding: React.FC = () => {
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      // התאמה מלאה לסכמה: questionnaires (title, category, design_colors, logo_url, user_id)
+      // התאמה מלאה לסכמה: questionnaires (title, user_id)
       const insertPayload:any = {
         title: formData.title,
-        category: formData.category || null,
-        design_colors: {
-          primary: formData.primaryColor,
-          secondary: formData.secondaryColor,
-          background: formData.secondaryColor // אם אין שדה רקע בסכמה נכליל כחלק מה-JSON
-        },
-        logo_url: formData.logoUrl || null,
         user_id: user?.id || null,
       };
       let { data: qRow, error: qErr } = await supabase
@@ -858,15 +813,8 @@ export const Onboarding: React.FC = () => {
       // Save questionnaire first
       const questionnaireData = {
         title: formData.title || 'שאלון ללא כותרת',
-        category: formData.category,
-        logo_url: formData.logoUrl,
-        design_colors: {
-          primary_color: formData.primaryColor,
-          secondary_color: formData.secondaryColor,
-          company_name: formData.companyName,
-          language: formData.language,
-          status: 'draft'
-        },
+        language: formData.language,
+        status: 'draft',
         user_id: user.id
       };
 
@@ -1027,148 +975,16 @@ export const Onboarding: React.FC = () => {
           {/* Step 1: Profile & Business Setup */}
           {currentStep === 1 && (
             <div className="space-y-6">
-              {/* Company Profile Section */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 text-lg font-semibold text-primary">
-                  <Settings className="h-5 w-5" />
-                  {language === 'he' ? 'פרטי החברה' : 'Company Profile'}
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="companyName">
-                      {language === 'he' ? 'שם החברה' : 'Company Name'} *
-                    </Label>
-                    <Input
-                      id="companyName"
-                      value={formData.companyName || profileData.companyName}
-                      onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
-                      placeholder={language === 'he' ? 'הזן שם החברה' : 'Enter company name'}
-                      className="w-full"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="category">
-                      {language === 'he' ? 'תחום עסקי' : 'Business Category'} *
-                    </Label>
-                    <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
-                      <SelectTrigger>
-                        <SelectValue placeholder={language === 'he' ? 'בחר תחום עסקי' : 'Select business category'} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {categories.map((category) => (
-                          <SelectItem key={category.value} value={category.value}>
-                            <div className="flex items-center gap-2">
-                              <span>{category.icon}</span>
-                              <span>{category.label}</span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="logoUrl">
-                      {language === 'he' ? 'לוגו החברה (URL)' : 'Company Logo (URL)'}
-                    </Label>
-                    <div className="flex gap-2">
-                      <Input
-                        id="logoUrl"
-                        value={formData.logoUrl}
-                        onChange={(e) => setFormData({ ...formData, logoUrl: e.target.value })}
-                        placeholder={language === 'he' ? 'הזן URL של הלוגו' : 'Enter logo URL'}
-                        className="flex-1"
-                      />
-                      {formData.logoUrl && (
-                        <img src={formData.logoUrl} alt="logo" className="h-10 w-10 object-contain rounded border" />
-                      )}
-                      <TooltipWrapper content={language === 'he' ? 'העלה לוגו' : 'Upload logo'}>
-                        <Button variant="outline" size="icon">
-                          <Upload className="h-4 w-4" />
-                        </Button>
-                      </TooltipWrapper>
-                    </div>
-                  </div>
-
-                  {/* duplicate title field removed to avoid confusion */}
-                </div>
-              </div>
-
-              {/* Branding Section */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 text-lg font-semibold text-primary">
-                  <Palette className="h-5 w-5" />
-                  {language === 'he' ? 'מיתוג ועיצוב' : 'Branding & Design'}
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="primaryColor">
-                      {language === 'he' ? 'צבע ראשי' : 'Primary Color'}
-                    </Label>
-                    <div className="flex gap-2">
-                      <Popover>
-                        <PopoverTrigger asChild>
-                           <Button
-                            variant="outline"
-                            className="w-16 h-10 rounded shrink-0"
-                            style={{ backgroundColor: formData.primaryColor }}
-                          />
-                        </PopoverTrigger>
-                        <Portal>
-                          <PopoverContent side="bottom" align="start" className="z-[9999] w-auto">
-                            <HexColorPicker
-                              color={formData.primaryColor}
-                              onChange={(color) => setFormData({ ...formData, primaryColor: color })}
-                            />
-                          </PopoverContent>
-                        </Portal>
-                      </Popover>
-                      <Input
-                        value={formData.primaryColor.replace(/^#/, "")}
-                        onChange={(e) => setFormData({ ...formData, primaryColor: `#${e.target.value.replace(/^#/, "").trim()}` })}
-                        placeholder="16939B"
-                        className="flex-1"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="secondaryColor">
-                      {language === 'he' ? 'צבע משני' : 'Secondary Color'}
-                    </Label>
-                    <div className="flex gap-2">
-                       <Popover>
-                        <PopoverTrigger asChild>
-                           <Button
-                            variant="outline"
-                            className="w-16 h-10 rounded shrink-0"
-                            style={{ backgroundColor: formData.secondaryColor }}
-                          />
-                        </PopoverTrigger>
-                        <Portal>
-                          <PopoverContent side="bottom" align="start" className="z-[9999] w-auto">
-                            <HexColorPicker
-                              color={formData.secondaryColor}
-                              onChange={(color) => setFormData({ ...formData, secondaryColor: color })}
-                            />
-                          </PopoverContent>
-                        </Portal>
-                      </Popover>
-                      <Input
-                        value={formData.secondaryColor.replace(/^#/, "")}
-                        onChange={(e) => setFormData({ ...formData, secondaryColor: `#${e.target.value.replace(/^#/, "").trim()}` })}
-                        placeholder="FFD500"
-                        className="flex-1"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Save Profile Button removed per request (profile is loaded automatically) */}
+              <ProfileForm 
+                ref={profileRef} 
+                mode="onboarding" 
+                onSaved={(success) => {
+                  console.log("Profile save result:", success);
+                  if (success) {
+                    console.log("Moving to step 2...");
+                  }
+                }} 
+              />
             </div>
           )}
 
@@ -1910,7 +1726,8 @@ export const Onboarding: React.FC = () => {
 
           {currentStep < 4 ? (
             <Button
-              onClick={() => updateStep(Math.min(4, currentStep + 1))}
+              onClick={currentStep === 1 ? handleNextFromProfile : () => updateStep(Math.min(4, currentStep + 1))}
+              disabled={savingProfile}
               className="gap-2"
             >
               {language === 'he' ? 'הבא' : 'Next'}

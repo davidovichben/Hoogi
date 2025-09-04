@@ -1,12 +1,11 @@
 import { supabase } from "@/integrations/supabase/client";
 
 /** החלת צבעים נקודתית (לא משנה CSS גלובלי) */
-export function applyBrandingVars(brand?: { brand_primary?: string; brand_secondary?: string }) {
+export function applyBrandingVars(opts: { brand_primary?: string; brand_secondary?: string; background_color?: string }) {
   const root = document.documentElement;
-  const pp = (brand?.brand_primary ?? "").replace(/^#/, "");
-  const ss = (brand?.brand_secondary ?? "").replace(/^#/, "");
-  if (pp) root.style.setProperty("--brand-primary", `#${pp}`);
-  if (ss) root.style.setProperty("--brand-secondary", `#${ss}`);
+  if (opts.brand_primary)   root.style.setProperty('--brand-primary', opts.brand_primary);
+  if (opts.brand_secondary) root.style.setProperty('--brand-secondary', opts.brand_secondary);
+  root.style.setProperty('--app-bg', opts.background_color || '#ffffff');
 }
 
 /** HEX ללא #, 3/6 תווים */

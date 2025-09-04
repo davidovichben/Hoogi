@@ -1,5 +1,23 @@
 import { supabase } from "@/integrations/supabase/client";
 
+// סניטציה לצבעים כדי לא לשבור CHECK CONSTRAINT במסד
+function toHexOrNull(v: unknown, fb?: string): string | null {
+  try {
+    const raw = String(v ?? "").trim().toLowerCase();
+    if (!raw) return fb ? fb.toLowerCase() : null;
+    // מסירים כל תו שאינו הקס, ואז נגזור 6 תווים
+    const only = raw.replace(/[^0-9a-f#]/g, "");
+    let h = only.startsWith("#") ? only.slice(1) : only;
+    // מקרים של 3 ספרות – נכפיל
+    if (/^[0-9a-f]{3}$/.test(h)) h = h.split("").map(c => c + c).join("");
+    h = h.slice(0, 6);
+    if (/^[0-9a-f]{6}$/.test(h)) return `#${h}`;
+    return fb ? fb.toLowerCase() : null;
+  } catch {
+    return fb ? fb.toLowerCase() : null;
+  }
+}
+
 export async function rpcCreateQuestionnaire(p_title: string, p_lang?: string) {
   const { data, error } = await supabase.rpc("create_questionnaire", { p_title, p_lang });
   if (error) throw error;
@@ -81,3 +99,63 @@ export const safeToast = (data: { title: string; description?: string }) => {
     console.log("TOAST:", data.title, data.description ?? "");
   } catch {}
 };
+
+/** קבלת User ID פשוטה */
+export async function getUserId(): Promise<string | null> {
+  const { data, error } = await supabase.auth.getUser();
+  if (error || !data?.user) return null;
+  return data.user.id;
+}
+
+/** טעינת פרופיל לפי User ID */
+export async function fetchProfileByUserId(userId: string) {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", userId)
+    .single();
+
+  if (error && error.code !== "PGRST116") throw error;
+  return data;
+}
+
+export type UpsertProfileInput = {
+  userId: string;
+  businessName: string;
+  phone: string;
+  email: string;
+  website?: string;
+  locale?: string;
+  brandPrimary?: string | null;
+  brandSecondary?: string | null;
+  backgroundColor?: string | null;
+  brandLogoPath?: string | null;
+  occupation?: string | null;
+  suboccupation?: string | null;
+};
+
+export async function upsertProfile(input: UpsertProfileInput) {
+  const row = {
+    id: input.userId,
+    business_name: String(input.businessName ?? "").trim(),
+    phone: String(input.phone ?? "").trim(),
+    email: String(input.email ?? "").trim(),
+    website: String(input.website ?? "").trim(),
+    locale: String(input.locale ?? "he-IL").trim(),
+    brand_primary: toHexOrNull(input.brandPrimary, "#000000"),
+    brand_secondary: toHexOrNull(input.brandSecondary, "#000000"),
+    background_color: toHexOrNull(input.backgroundColor, "#ffffff"),
+    brand_logo_path: input.brandLogoPath ?? null,
+    occupation: (input.occupation ?? "").trim() || null,
+    suboccupation: (input.suboccupation ?? "").trim() || null,
+  };
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .upsert(row, { onConflict: "id" })
+    .select("*")
+    .single();
+
+  if (error) { console.error("upsert profile error:", error); throw error; }
+  return data;
+}
