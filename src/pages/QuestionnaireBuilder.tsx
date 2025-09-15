@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { fetchProfile, type Profile } from "@/services/profileService";
 import {
   DndContext,
   closestCenter,
@@ -225,6 +226,42 @@ export const QuestionnaireBuilder: React.FC = () => {
   const [isAutosaveEnabled, setIsAutosaveEnabled] = useState(true);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [showCategoryDialog, setShowCategoryDialog] = useState(false);
+
+  // פרופיל ובדיקת תקפות
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [loadingProfile, setLoadingProfile] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const p = await fetchProfile();
+        setProfile(p);
+      } finally {
+        setLoadingProfile(false);
+      }
+    })();
+  }, []);
+
+  function hasValidCategory(p?: Profile | null) {
+    if (!p) return false;
+    if (!p.occupation) return false;
+
+    // תיעדוף שדות "אחר" שיש בטבלה שלך:
+    const otherText =
+      (p as any).business_other   // אם בשימוש
+      || (p as any).domain_text   // או השדה הזה אם קיים אצלך
+      || p.other_text             // אם כבר הטמענו
+      || (p as any).suboccupationFree
+      || "";
+
+    if (p.occupation === "other" || p.suboccupation === "other") {
+      return otherText.trim().length > 1;
+    }
+    // כשלא "אחר" – נדרוש תת־תחום
+    return Boolean(p.suboccupation || p.business_subcategory || p.sub_category);
+  }
+
+  const canSuggestAI = useMemo(() => hasValidCategory(profile) && !loadingProfile, [profile, loadingProfile]);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -613,12 +650,34 @@ export const QuestionnaireBuilder: React.FC = () => {
         <TabsContent value="builder" className="space-y-6">
           {/* Quick Actions */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setShowCategoryDialog(true)}>
+            <Card 
+              className={`cursor-pointer transition-shadow ${
+                canSuggestAI 
+                  ? 'hover:shadow-md' 
+                  : 'opacity-50 cursor-not-allowed'
+              }`} 
+              onClick={() => {
+                if (canSuggestAI) {
+                  setShowCategoryDialog(true);
+                } else {
+                  toast({
+                    title: "שגיאה",
+                    description: "יש לבחור קטגוריה עסקית תחילה",
+                    variant: "destructive"
+                  });
+                }
+              }}
+            >
               <CardContent className="flex items-center justify-center p-6">
                 <div className="text-center">
                   <Sparkles className="h-8 w-8 mx-auto mb-2 text-purple-600" />
                   <h3 className="font-medium">{t('builder.suggestedQuestions')}</h3>
-                  <p className="text-sm text-muted-foreground">{t('builder.selectCategoryDesc')}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {canSuggestAI 
+                      ? t('builder.selectCategoryDesc')
+                      : "יש לבחור קטגוריה עסקית תחילה"
+                    }
+                  </p>
                 </div>
               </CardContent>
             </Card>

@@ -1,11 +1,16 @@
-import React, { useEffect, useState, forwardRef, useImperativeHandle } from "react";
+import React, { useEffect, useState, forwardRef, useImperativeHandle, useRef } from "react";
 import { fetchProfileByUserId, upsertProfile, getUserId } from "@/lib/rpc";
 import { OCCUPATIONS } from "@/utils/occupations";
-import { safeToast } from "@/utils/safeToast";
+import { showSuccess, showError } from "@/lib/toast";
 import { applyBrandingVars } from "@/lib/branding";
+import { supabase } from "@/integrations/supabase/client";
 
-export type ProfileFormHandle = { save: () => Promise<boolean>; isValid: () => boolean; };
-type Props = { mode?: "manage" | "onboarding"; onSaved?: (ok: boolean) => void; };
+export type ProfileFormHandle = {
+  save: () => Promise<boolean>;
+  isValid: () => boolean;
+  isDirty: () => boolean;
+};
+type Props = { mode?: "manage" | "onboarding"; onSaved?: (ok: boolean) => void; toast?: any; };
 
 const OTHER = "__other__";
 const normHex = (v?: string, fb = "#ffffff") => {
@@ -42,7 +47,7 @@ const normHex = (v?: string, fb = "#ffffff") => {
   return fb;
 };
 
-const ProfileForm = forwardRef<ProfileFormHandle, Props>(function ProfileForm({ mode = "manage", onSaved }, ref) {
+const ProfileForm = forwardRef<ProfileFormHandle, Props>(function ProfileForm({ mode = "manage", onSaved, toast }, ref) {
   const [form, setForm] = useState({
     businessName: "",
     phone: "",
@@ -60,6 +65,46 @@ const ProfileForm = forwardRef<ProfileFormHandle, Props>(function ProfileForm({ 
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [logoUrl, setLogoUrl] = useState<string>("");
+  const [links, setLinks] = useState<{title: string; url: string}[]>([]);
+  const initialSnap = useRef<string>("");
+
+  function snapshot() {
+    const pick = {
+      businessName: form.businessName,
+      phone: form.phone,
+      email: form.email,
+      website: form.website,
+      locale: form.locale,
+      occupation: form.occupation,
+      suboccupation: form.suboccupation,
+      occupationFree: form.occupationFree,
+      suboccupationFree: form.suboccupationFree,
+      brandPrimary: form.brandPrimary,
+      brandSecondary: form.brandSecondary,
+      backgroundColor: form.backgroundColor,
+      brandLogoPath: form.brandLogoPath,
+      links: links,
+    };
+    return JSON.stringify(pick);
+  }
+
+  async function resolveLogoUrl(path?: string | null) {
+    if (!path) return setLogoUrl("");
+    const bucket = "branding";
+    try {
+      // נסי קודם publicUrl
+      const { data: pub } = supabase.storage.from(bucket).getPublicUrl(path);
+      if (pub?.publicUrl) return setLogoUrl(pub.publicUrl);
+      
+      // אחרת חתום זמנית ל-60 דקות
+      const { data: signed, error } = await supabase.storage.from(bucket).createSignedUrl(path, 60 * 60);
+      if (!error && signed?.signedUrl) setLogoUrl(signed.signedUrl);
+    } catch (e) {
+      console.warn("Failed to resolve logo URL:", e);
+    }
+  }
 
   // טעינת פרופיל קיים
   useEffect(() => {
@@ -107,6 +152,9 @@ const ProfileForm = forwardRef<ProfileFormHandle, Props>(function ProfileForm({ 
         brandLogoPath: p.brand_logo_path ?? "",
       }));
 
+      // טעינת קישורים
+      setLinks(Array.isArray(p.links) ? p.links : []);
+
       applyBrandingVars({
         brand_primary: normHex(p.brand_primary, "#000000"),
         brand_secondary: normHex(p.brand_secondary, "#000000"),
@@ -114,6 +162,7 @@ const ProfileForm = forwardRef<ProfileFormHandle, Props>(function ProfileForm({ 
       });
 
       setLoading(false);
+      initialSnap.current = snapshot();
     })();
     return () => { alive = false; };
   }, []);
@@ -126,13 +175,19 @@ const ProfileForm = forwardRef<ProfileFormHandle, Props>(function ProfileForm({ 
     });
   }, [form.brandPrimary, form.brandSecondary, form.backgroundColor]);
 
+  // טעינת לוגו כשמתעדכן ה-path
+  useEffect(() => {
+    void resolveLogoUrl(form.brandLogoPath);
+  }, [form.brandLogoPath]);
+
   function isValidForm() {
     const baseOk =
       (form.businessName || "").trim() &&
       (form.phone || "").trim() &&
-      (form.email || "").trim();
+      (form.email || "").trim() &&
+      (form.occupation || "").trim(); // תחום חובה
 
-    // לוגיקת "אחר": אם נבחר – חייבים טקסט חופשי
+    // "אחר": אם נבחר ברמת תחום או תת־תחום — חייבים טקסט חופשי
     const occOtherOk = form.occupation !== "__other__" || (form.suboccupationFree || "").trim();
     const subOtherOk =
       form.occupation === "__other__" ||
@@ -144,10 +199,10 @@ const ProfileForm = forwardRef<ProfileFormHandle, Props>(function ProfileForm({ 
 
     async function handleSave(): Promise<boolean> {
     const userId = await getUserId();
-    if (!userId) { safeToast("warning","לא נמצאה התחברות"); return false; }
+    if (!userId) { showError("לא נמצאה התחברות"); return false; }
 
     if (!isValidForm()) {
-      safeToast("warning","חובה למלא: שם עסק, נייד, מייל, ושדות 'אחר' אם נבחרו");
+      showError("חובה למלא: שם עסק, נייד, מייל, תחום, ושדה טקסט כשנבחר 'אחר'");
       return false;
     }
 
@@ -173,15 +228,32 @@ const ProfileForm = forwardRef<ProfileFormHandle, Props>(function ProfileForm({ 
         brandLogoPath: form.brandLogoPath || null,
         occupation: form.occupation === OTHER ? free : (form.occupation || null),
         suboccupation: subFinal || null,
+        links: links.length > 0 ? links : null,
       });
 
-      safeToast("success","פרופיל נשמר");
+      if (toast) {
+        toast({
+          title: "הצלחה",
+          description: "פרופיל נשמר בהצלחה",
+        });
+      } else {
+        showSuccess("פרופיל נשמר");
+      }
       onSaved?.(true);
+      initialSnap.current = snapshot();
       return true;
     } catch (e: any) {
       console.error(e);
       const msg = e?.message || e?.details || "שגיאה";
-      safeToast("error", `שמירה נכשלה: ${msg}`);
+      if (toast) {
+        toast({
+          title: "שגיאה",
+          description: `שמירה נכשלה: ${msg}`,
+          variant: "destructive"
+        });
+      } else {
+        showError(`שמירה נכשלה: ${msg}`);
+      }
       onSaved?.(false);
       return false;
     } finally {
@@ -189,7 +261,47 @@ const ProfileForm = forwardRef<ProfileFormHandle, Props>(function ProfileForm({ 
     }
   }
 
-  useImperativeHandle(ref, () => ({ save: handleSave, isValid: () => isValidForm() }));
+  async function handleLogoFile(file?: File | null) {
+    if (!file) return;
+    try {
+      setUploadingLogo(true);
+      const userId = await getUserId();
+      if (!userId) { showError("לא נמצאה התחברות"); return; }
+      const ext = (file.name?.split(".").pop() || "png").toLowerCase();
+      const path = `users/${userId}/logo.${ext}`; // בתוך bucket "branding"
+      const { error } = await supabase.storage.from("branding").upload(path, file, {
+        upsert: true,
+        contentType: file.type || "image/png",
+      });
+      if (error) throw error;
+      setForm(prev => ({ ...prev, brandLogoPath: path }));
+      showSuccess("הלוגו הועלה ונשמר בהגדרות");
+    } catch (e: any) {
+      console.error(e);
+      showError(e?.message || "העלאת לוגו נכשלה");
+    } finally {
+      setUploadingLogo(false);
+    }
+  }
+
+  // פונקציות לניהול קישורים
+  function addLink() {
+    setLinks(prev => [...prev, { title: "", url: "" }]);
+  }
+
+  function updateLink(i: number, key: "title" | "url", val: string) {
+    setLinks(prev => prev.map((x, idx) => idx === i ? { ...x, [key]: val } : x));
+  }
+
+  function removeLink(i: number) {
+    setLinks(prev => prev.filter((_, idx) => idx !== i));
+  }
+
+  useImperativeHandle(ref, () => ({
+    save: handleSave,
+    isValid: () => isValidForm(),
+    isDirty: () => initialSnap.current !== snapshot(),
+  }));
 
   if (loading) return <div className="p-6 text-center">טוען…</div>;
 
@@ -317,13 +429,75 @@ const ProfileForm = forwardRef<ProfileFormHandle, Props>(function ProfileForm({ 
         </div>
       </div>
 
-      {/* לוגו (URL) */}
+      {/* לוגו (קובץ או URL) */}
       <div>
-        <label className="block text-sm mb-1">לוגו (URL)</label>
-        <input className="w-full rounded border px-3 py-2"
+        <label className="block text-sm mb-1">לוגו</label>
+
+        {/* תצוגת לוגו קיים */}
+        {logoUrl && (
+          <div className="mb-3 p-2 border rounded bg-gray-50">
+            <img 
+              src={logoUrl} 
+              alt="לוגו" 
+              className="h-12 w-auto object-contain"
+              onError={() => setLogoUrl("")}
+            />
+          </div>
+        )}
+
+        <div className="flex items-center gap-3 mb-2">
+          <input
+            type="file"
+            accept="image/*"
+            onChange={e => void handleLogoFile(e.target.files?.[0] || null)}
+            disabled={uploadingLogo}
+          />
+          {uploadingLogo && <span className="text-xs text-slate-500">מעלה…</span>}
+        </div>
+
+        <label className="block text-xs mb-1 text-slate-600">או הזיני כתובת URL</label>
+        <input
+          className="w-full rounded border px-3 py-2"
           value={form.brandLogoPath}
           onChange={e=> setForm({...form, brandLogoPath: e.target.value})}
-          placeholder="/branding/xxx/logo.webp" />
+          placeholder="users/<user_id>/logo.png או https://..."
+        />
+      </div>
+
+      {/* קישורים */}
+      <div style={{ marginTop: 16 }}>
+        <div className="flex items-center justify-between mb-2">
+          <label className="block text-sm">קישורים (אתר/רשתות/דפי נחיתה)</label>
+          <button type="button" onClick={addLink} className="text-sm text-teal-600 hover:text-teal-800">
+            + הוספת קישור
+          </button>
+        </div>
+
+        {links.map((l, i) => (
+          <div key={i} className="grid gap-2 md:grid-cols-2 items-center mb-2">
+            <input
+              className="rounded border px-3 py-2"
+              placeholder="כותרת (לדוגמה: אתר, פייסבוק, לינקדאין)"
+              value={l.title}
+              onChange={e => updateLink(i, "title", e.target.value)}
+            />
+            <div className="flex items-center gap-2">
+              <input
+                className="flex-1 rounded border px-3 py-2"
+                placeholder="https://example.com"
+                value={l.url}
+                onChange={e => updateLink(i, "url", e.target.value)}
+              />
+              <button 
+                type="button" 
+                onClick={() => removeLink(i)}
+                className="text-red-600 hover:text-red-800 text-sm px-2 py-1"
+              >
+                מחק
+              </button>
+            </div>
+          </div>
+        ))}
       </div>
 
       <div className="pt-4">

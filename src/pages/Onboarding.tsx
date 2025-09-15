@@ -24,6 +24,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Portal } from "@radix-ui/react-portal";
 import { HexColorPicker } from "react-colorful";
 import ProfileForm, { ProfileFormHandle } from "@/components/ProfileForm";
+import { showSuccess, showError, showInfo } from "@/lib/toast";
+import { fetchSuggestedQuestions } from "@/lib/suggestQuestions";
 
 type ToastApi = ((opts: { title?: string; description?: string, variant?: 'default' | 'destructive' }) => void) | undefined;
 function safeToast(toastApi: ToastApi, title: string, description?: string, variant?: 'default' | 'destructive') {
@@ -92,9 +94,12 @@ export const Onboarding: React.FC = () => {
   const urlStep = urlParams.get('step');
   const urlQuestionnaireId = urlParams.get('id');
   
-  console.log('Onboarding component - URL params:', { urlStep, urlQuestionnaireId });
-  console.log('Current location:', location.pathname + location.search);
-  console.log('Full URL:', window.location.href);
+  // לוגים בטוחים
+  try {
+    console.log("Onboarding component - URL", location?.search);
+    console.log("params:", { urlStep: urlStep, urlQuestionnaireId: urlQuestionnaireId });
+    console.log("Full URL:", window?.location?.href);
+  } catch {}
   
   const [currentStep, setCurrentStep] = useState(urlStep ? parseInt(urlStep) : 1);
   const [isGeneratingOptions, setIsGeneratingOptions] = useState<string | null>(null);
@@ -138,6 +143,16 @@ export const Onboarding: React.FC = () => {
     savedCategories: []
   });
 
+  // פונקציה לבדיקת קטגוריה תקינה
+  function hasValidCategory() {
+    if (!formData.category) return false;
+    // אם הקטגוריה היא "אחר" - צריך לבדוק אם יש טקסט חופשי
+    if (formData.category === "__other__") {
+      return Boolean(formData.category && formData.category.trim().length > 1);
+    }
+    return Boolean(formData.category);
+  }
+
   // Load saved profile data on component mount
   useEffect(() => {
     const savedProfile = localStorage.getItem('hoogiProfile');
@@ -158,11 +173,19 @@ export const Onboarding: React.FC = () => {
         if (profile) {
           setProfileData(prev => ({
             ...prev,
-            companyName: profile.company ?? prev.companyName,
-            logoUrl: profile.logo_url ?? prev.logoUrl,
+            companyName: profile.business_name ?? prev.companyName,
+            logoUrl: profile.brand_logo_path ?? prev.logoUrl,
             primaryColor: profile.brand_primary ?? prev.primaryColor,
             secondaryColor: profile.brand_secondary ?? prev.secondaryColor,
           }));
+          
+          // עדכון קטגוריה מהפרופיל
+          if (profile.occupation) {
+            setFormData(prev => ({
+              ...prev,
+              category: profile.occupation
+            }));
+          }
           
           // החלת מיתוג מלא
           applyBrandingVars({
@@ -179,9 +202,13 @@ export const Onboarding: React.FC = () => {
 
   // Load existing questionnaire data if editing
   useEffect(() => {
+    try {
     console.log('🔍 useEffect triggered - urlQuestionnaireId:', urlQuestionnaireId, 'urlStep:', urlStep);
+    } catch {}
     if (urlQuestionnaireId) {
+      try {
       console.log('📥 Loading existing questionnaire for ID:', urlQuestionnaireId);
+      } catch {}
       loadExistingQuestionnaire(urlQuestionnaireId);
     }
   }, [urlQuestionnaireId, urlStep]); // הוספתי urlStep כדי שיטען גם כשמשתנה השלב
@@ -190,7 +217,9 @@ export const Onboarding: React.FC = () => {
   useEffect(() => {
     if (urlStep) {
       const newStep = parseInt(urlStep);
+      try {
       console.log('URL step changed, updating currentStep from', currentStep, 'to', newStep);
+      } catch {}
       setCurrentStep(newStep);
     }
   }, [urlStep, currentStep]);
@@ -231,7 +260,9 @@ export const Onboarding: React.FC = () => {
 
   const loadExistingQuestionnaire = async (questionnaireId: string) => {
     try {
+    try {
       console.log('🚀 loadExistingQuestionnaire called with ID:', questionnaireId);
+      } catch {}
       
       // Load questionnaire data
       const { data: questionnaire, error: qError } = await supabase
@@ -245,7 +276,9 @@ export const Onboarding: React.FC = () => {
         return;
       }
 
+      try {
       console.log('✅ Questionnaire loaded:', questionnaire);
+      } catch {}
 
       if (questionnaire) {
         // Load public link data
@@ -273,14 +306,18 @@ export const Onboarding: React.FC = () => {
             .order('created_at', { ascending: true });
           
           if (!fallbackError && fallbackQuestions) {
+            try {
             console.log('✅ Questions loaded with fallback order:', fallbackQuestions);
+            } catch {}
             finalQuestions = fallbackQuestions;
           } else {
             console.error('❌ Error loading questions with created_at fallback:', fallbackError);
             finalQuestions = [];
           }
         } else {
+          try {
           console.log('✅ Questions loaded with question_order:', questions);
+          } catch {}
           finalQuestions = questions || [];
         }
 
@@ -297,7 +334,9 @@ export const Onboarding: React.FC = () => {
           if (optionsError) {
             console.error('❌ Error loading options:', optionsError);
           } else {
+            try {
             console.log('✅ Options loaded:', options);
+            } catch {}
             allOptions = options || [];
           }
         }
@@ -331,11 +370,15 @@ export const Onboarding: React.FC = () => {
           language: designColors.language || language
         };
 
+        try {
         console.log('🔄 Setting new form data:', newFormData);
+        } catch {}
         setFormData(newFormData);
 
         setIsEditingExisting(true);
+        try {
         console.log('✅ Loaded existing questionnaire data:', { questionnaire, questions });
+        } catch {}
       }
     } catch (err) {
       console.error('❌ Error loading existing questionnaire:', err);
@@ -343,8 +386,10 @@ export const Onboarding: React.FC = () => {
   };
 
   const updateStep = (newStep: number) => {
+    try {
     console.log('updateStep called with:', newStep);
     console.log('Current step before update:', currentStep);
+    } catch {}
     
     setCurrentStep(newStep);
     
@@ -357,17 +402,30 @@ export const Onboarding: React.FC = () => {
     }
     
     const newUrl = `${location.pathname}?${newSearchParams.toString()}`;
+    try {
     console.log('Navigating to new URL:', newUrl);
+    } catch {}
     
     navigate(newUrl, { replace: true });
   };
 
   const handleNextFromProfile = async () => {
     if (!profileRef.current) return;
+
+    // אם הטופס תקין ואין שינוי – מדלגים בלי לשמור
+    const valid = profileRef.current.isValid();
+    const dirty = profileRef.current.isDirty ? profileRef.current.isDirty() : true;
+
+    if (valid && !dirty) {
+      updateStep(2);
+      return;
+    }
+
+    // אחרת – נשמור ורק אם הצליח נתקדם
     setSavingProfile(true);
     const ok = await profileRef.current.save();
     setSavingProfile(false);
-    if (!ok) return;       // לא מתקדם בלי שמירה מוצלחת
+    if (!ok) return;
     updateStep(2);
   };
 
@@ -524,37 +582,147 @@ export const Onboarding: React.FC = () => {
     }, 2000);
   };
 
-  const loadSuggestedQuestions = () => {
-    // For now, we'll load generic questions since profile data is handled separately
-    const genericQuestions: Question[] = [
-      {
-        id: `suggested-${Date.now()}-1`,
-        text: language === 'he' ? 'מה השם שלך?' : 'What is your name?',
-        type: 'text',
-        isRequired: true
-      },
-      {
-        id: `suggested-${Date.now()}-2`,
-        text: language === 'he' ? 'מה המייל שלך?' : 'What is your email?',
-        type: 'email',
-        isRequired: true
-      },
-      {
-        id: `suggested-${Date.now()}-3`,
-        text: language === 'he' ? 'מה הטלפון שלך?' : 'What is your phone number?',
-        type: 'phone',
-        isRequired: false
-      }
-    ];
-    
-    setFormData({ ...formData, questions: genericQuestions });
-    safeToast(toast, 
-      language === 'he' ? 'שאלות נטענו בהצלחה' : 'Questions Loaded Successfully',
-      language === 'he' 
-        ? 'נוספו שאלות בסיסיות לשאלון'
-        : 'Added basic questions to the questionnaire'
-    );
+  // הוסיפי למעלה בסקופ הקומפוננטה:
+  const safeProfile =
+    (typeof profile !== "undefined" && profile) || // אם יש משתנה כזה
+    (typeof profileData !== "undefined" && profileData) ||
+    (typeof currentProfile !== "undefined" && currentProfile) ||
+    null;
+
+  // helpers קטנים שנשים ליד שאר הפונקציות בקומפוננטה
+  const makeId = () =>
+    (globalThis.crypto && typeof globalThis.crypto.randomUUID === 'function')
+      ? globalThis.crypto.randomUUID()
+      : Math.random().toString(36).slice(2);
+
+  // ודאי שיש כותרת כלשהי כדי לא ליפול על ולידציה פנימית
+  function ensureQuestionnaireTitle() {
+    setFormData(prev => ({
+      ...prev,
+      title: (prev.title?.trim() || 'שאלון ללא כותרת'),
+    }));
+  }
+
+  // אם אין אצלך safeProfile או שהוא ריק — נטען פרופיל מסופבייס ישירות
+  type ProfileRow = {
+    business_name?: string | null;
+    occupation?: string | null;
+    suboccupation?: string | null;
+    other_text?: string | null;
+    links?: { title?: string | null; url?: string | null }[] | null;
   };
+
+  async function loadProfileFromSupabase(): Promise<ProfileRow | null> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('business_name, occupation, suboccupation, other_text, links')
+        .eq('id', user.id)
+        .single();
+      if (error) return null;
+      return data as ProfileRow;
+    } catch {
+      return null;
+    }
+  }
+
+  async function onSuggestClick() {
+    try {
+      // לא ליפול על כותרת חסרה:
+      ensureQuestionnaireTitle();
+
+      // קחי פרופיל קיים אם יש, אחרת מה-DB
+      const p: ProfileRow | null =
+        (typeof safeProfile !== 'undefined' && safeProfile) || (await loadProfileFromSupabase());
+
+      const businessName = p?.business_name || formData?.title || 'עסק';
+      const occupation = p?.occupation || formData?.category || 'כללי';
+      const suboccupation = p?.suboccupation || 'כללי';
+      const otherText = p?.other_text || '—';
+      const linksStr = Array.isArray(p?.links)
+        ? p!.links
+            .map(l => [l?.title, l?.url].filter(Boolean).join(' '))
+            .filter(Boolean)
+            .join(' | ')
+        : '';
+
+      const promptForCustomer = (occupation: string, sub: string, extra: string, links: string) => `
+את/ה יועץ/ת UX וכתיבת שאלונים שיווקיים.
+השאלון מוצג ללקוח הקצה (לא לבעל העסק). שאלות קצרות, ידידותיות, שמטרתן לאסוף צורך, דחיפות והעדפות — כדי שנוכל להתאים שירות ולהמיר לפנייה.
+
+קלט:
+- תחום תעסוקה: ${occupation || "כללי"}
+- תת תחום/התמחות: ${sub || "כללי"}
+- לינקים/מידע נוסף: ${extra || "—"}${links ? " | " + links : ""}
+
+מטרה:
+לבנות 5–7 שאלות ממוקדות ללקוח הקצה, שמקדמות התאמת שירות והמרה (ללא מסרים שיווקיים מוגזמים).
+
+כללים:
+1) לכל שאלה החזר אובייקט:
+   - "text": ניסוח השאלה ללקוח.
+   - "type": אחד מ["בחירה יחידה","בחירה מרובה","שדה טקסט חופשי","כן/לא"].
+   - "options": אם type הוא בחירה—לפחות 3 אופציות קצרות וברורות; אחרת [].
+2) ניסוח תכליתי, מותאם למובייל.
+3) ללא הבטחות/סופרלטיבים; רק איסוף צרכים והעדפות שמקדמים התאמת שירות.
+4) אם חסר מידע בקלט—ניסוח כללי אך רלוונטי לתחום.
+
+פורמט פלט (חובה):
+החזר אך ורק JSON תקין: מערך אובייקטים לפי הסכימה הבאה:
+[
+  {"text": "...", "type": "בחירה יחידה", "options": ["...", "...", "..."]},
+  ...
+]
+`;
+
+      const prompt = promptForCustomer(occupation, suboccupation, otherText, linksStr);
+
+      console.log("[AI] prompt_override:", prompt.slice(0, 160));
+
+      // קריאה לפונקציה בענן
+      const suggestions = await fetchSuggestedQuestions({
+        businessName,
+        occupation,
+        suboccupation,
+        other_text: otherText,
+        links: linksStr,
+        language: 'he',
+        max: 7,
+        prompt_override: prompt,
+        __debug: true, // לצורך בדיקה
+      });
+
+      // הזרקה ל-formData.questions (לא משתמשים ב-setQuestions שלא קיים)
+      setFormData(prev => {
+        const onlyDefaults =
+          prev.questions.length <= 3 &&
+          prev.questions.every((q: any) =>
+            typeof q?.text === 'string' && /(שם|טלפון|נייד|מייל)/.test(q.text)
+          );
+
+        // תומך גם במערך מחרוזות וגם במערך אובייקטים {text,type,options}
+        const aiBlocks = suggestions.map((q: any) => {
+          const text = typeof q === 'string' ? q : (q?.text || '').toString();
+          return {
+            id: makeId(),
+            type: 'text' as const,   // אם זמנית תומכים רק בשדה חופשי
+            text,
+            isRequired: false,
+          };
+        }).filter(block => block.text.trim());
+
+        return {
+          ...prev,
+          questions: onlyDefaults ? aiBlocks : [...prev.questions, ...aiBlocks],
+        };
+      });
+    } catch (e: any) {
+      console.error('AI suggest failed:', e);
+      alert('שגיאה בטעינת שאלות AI: ' + (e?.message || ''));
+    }
+  }
 
   // Profile saving is now handled by ProfileForm component
 
@@ -622,19 +790,25 @@ export const Onboarding: React.FC = () => {
 
   const handlePublishAndGoReview = async () => {
     try {
+    try {
       console.log('handlePublishAndGoReview called, formData:', formData);
+      } catch {}
       
       // שמירת השאלון כמוכן לפרסום
       setFormData({ ...formData, status: 'ready' });
       
       // אם יש ID, עבור ישירות לסקירה
       if (formData.id) {
+        try {
         console.log('Questionnaire has ID, navigating to review:', formData.id);
+        } catch {}
         // עדיפות ל-public_token אם קיים
         const qid = formData.id;
         navigate(routes.distributeHub);
       } else {
+        try {
         console.log('No ID, using handleSaveAndNavigate...');
+        } catch {}
         // השתמש בפונקציה הקיימת שעובדת
         await handleSaveAndNavigate();
       }
@@ -884,7 +1058,9 @@ export const Onboarding: React.FC = () => {
       // Navigate to review page
       setTimeout(() => {
         const reviewUrl = routes.questionnaireReviewById(questionnaire.token || questionnaire.id);
+        try {
         console.log('Navigating to review after save:', reviewUrl);
+        } catch {}
         navigate(reviewUrl);
       }, 1000);
 
@@ -978,10 +1154,15 @@ export const Onboarding: React.FC = () => {
               <ProfileForm 
                 ref={profileRef} 
                 mode="onboarding" 
+                toast={toast}
                 onSaved={(success) => {
+                  try {
                   console.log("Profile save result:", success);
+                  } catch {}
                   if (success) {
+                    try {
                     console.log("Moving to step 2...");
+                    } catch {}
                   }
                 }} 
               />
@@ -1004,8 +1185,8 @@ export const Onboarding: React.FC = () => {
                   <TooltipWrapper content={language === 'he' ? 'טען שאלות מוצעות לקטגוריה' : 'Load suggested questions for category'}>
                     <Button
                       variant="secondary"
-                      onClick={loadSuggestedQuestions}
-                      disabled={!formData.category}
+                      onClick={onSuggestClick}
+                      disabled={!hasValidCategory()}
                       className="gap-2"
                     >
                       <Zap className="h-4 w-4" />
@@ -1038,7 +1219,7 @@ export const Onboarding: React.FC = () => {
               </div>
 
               {/* Category reminder */}
-              {!formData.category && (
+              {!hasValidCategory() && (
                 <div className="bg-secondary/20 border border-secondary/40 rounded-lg p-4">
                   <div className="flex items-center gap-2 text-secondary-foreground">
                     <span className="text-lg">⚠️</span>

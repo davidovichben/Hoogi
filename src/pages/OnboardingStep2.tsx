@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { upsertDraft } from "@/services/questionnaires";
+import { fetchProfile, type Profile } from "@/services/profileService";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/Toaster";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Save, ArrowRight, ArrowLeft, Eye, Settings } from "lucide-react";
+import { Save, ArrowRight, ArrowLeft, Eye, Settings, Zap } from "lucide-react";
 
 export default function OnboardingStep2() {
   const navigate = useNavigate();
@@ -21,6 +22,42 @@ export default function OnboardingStep2() {
     }
   ]);
   const [saving, setSaving] = useState(false);
+  
+  // פרופיל ובדיקת תקפות
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [loadingProfile, setLoadingProfile] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const p = await fetchProfile();
+        setProfile(p);
+      } finally {
+        setLoadingProfile(false);
+      }
+    })();
+  }, []);
+
+  function hasValidCategory(p?: Profile | null) {
+    if (!p) return false;
+    if (!p.occupation) return false;
+
+    // תיעדוף שדות "אחר" שיש בטבלה שלך:
+    const otherText =
+      (p as any).business_other   // אם בשימוש
+      || (p as any).domain_text   // או השדה הזה אם קיים אצלך
+      || p.other_text             // אם כבר הטמענו
+      || (p as any).suboccupationFree
+      || "";
+
+    if (p.occupation === "other" || p.suboccupation === "other") {
+      return otherText.trim().length > 1;
+    }
+    // כשלא "אחר" – נדרוש תת־תחום
+    return Boolean(p.suboccupation || p.business_subcategory || p.sub_category);
+  }
+
+  const canSuggestAI = useMemo(() => hasValidCategory(profile) && !loadingProfile, [profile, loadingProfile]);
 
   useEffect(() => {
     if (!qid) navigate("/onboarding", { replace: true });
@@ -140,6 +177,22 @@ export default function OnboardingStep2() {
           {/* כפתורי פעולה */}
           <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
             <div className="flex gap-2">
+              <Button 
+                variant="secondary"
+                disabled={!canSuggestAI}
+                className="flex items-center gap-2"
+                onClick={() => {
+                  if (canSuggestAI) {
+                    toast.success("טוען שאלות מוצעות...");
+                    // TODO: הוסף לוגיקה לטעינת שאלות מוצעות
+                  } else {
+                    toast.error("יש לבחור קטגוריה עסקית תחילה");
+                  }
+                }}
+              >
+                <Zap className="w-4 h-4" />
+                שאלות מוצעות ⚡
+              </Button>
               <Button 
                 variant="outline" 
                 onClick={handleGoBack}

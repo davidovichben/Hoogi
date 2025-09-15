@@ -132,6 +132,7 @@ export type UpsertProfileInput = {
   brandLogoPath?: string | null;
   occupation?: string | null;
   suboccupation?: string | null;
+  links?: {title: string; url: string}[] | null;
 };
 
 export async function upsertProfile(input: UpsertProfileInput) {
@@ -148,6 +149,7 @@ export async function upsertProfile(input: UpsertProfileInput) {
     brand_logo_path: input.brandLogoPath ?? null,
     occupation: (input.occupation ?? "").trim() || null,
     suboccupation: (input.suboccupation ?? "").trim() || null,
+    links: input.links ?? null,
   };
 
   const { data, error } = await supabase
