@@ -987,7 +987,7 @@ export const QuestionnaireBuilder: React.FC = () => {
                     type: value
                   })}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="question-type">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
