@@ -308,9 +308,13 @@ export const Onboarding: React.FC = () => {
                      (prof.brand_logo_path ?? "")?.toString().trim() ||
                      "";
 
+        console.log('Raw logo from profile:', logoRaw);
+
         // 4) פתרון לוגו ל-URL ציבורי אם צריך
         if (logoRaw) {
-          logoRaw = (await resolveLogoUrl(supabaseClient, logoRaw)) || logoRaw;
+          const resolvedLogo = await resolveLogoUrl(supabaseClient, logoRaw);
+          console.log('Resolved logo URL:', resolvedLogo);
+          logoRaw = resolvedLogo || logoRaw;
         }
 
         if (cancelled) return;
@@ -1302,6 +1306,25 @@ export const Onboarding: React.FC = () => {
                     onChat={() => setPreviewMode('preview')}
                   />
 
+                  {/* כפתור טופס וצ'אט */}
+                  <Button
+                    variant="outline"
+                    className="gap-2 px-4 py-2 border-2 hover:scale-105 transition-transform duration-200"
+                    style={{
+                      borderColor: formData?.secondaryColor || '#FFD500',
+                      color: formData?.secondaryColor || '#FFD500',
+                      background: `linear-gradient(135deg, rgba(255,255,255,0.9), rgba(255,255,255,0.7))`
+                    }}
+                    onClick={() => {
+                      // פתיחת שני החלונות - טופס וצ'אט
+                      setPreviewMode('preview');
+                      // אפשר להוסיף כאן לוגיקה נוספת לפתיחת צ'אט
+                    }}
+                  >
+                    <Eye className="h-4 w-4" />
+                    {language === 'he' ? 'טופס וצ\'אט' : 'Form & Chat'}
+                  </Button>
+
                   {/* Questionnaire Title field (placed to the right of the buttons) */}
                   <div className="flex items-center gap-2 ms-2">
                     <Label htmlFor="questionnaireTitle" className="whitespace-nowrap text-sm">
@@ -1365,7 +1388,7 @@ export const Onboarding: React.FC = () => {
                     </div>
 
                     <div>
-                      <label className="block font-medium">{language === 'he' ? 'צבע מותג' : 'Brand Color'}</label>
+                      <label className="block font-medium">{language === 'he' ? 'צבע רקע' : 'Background Color'}</label>
                       <input
                         className="w-full border rounded-md p-2"
                         placeholder="#16939B"
@@ -1382,16 +1405,30 @@ export const Onboarding: React.FC = () => {
 
                   <div>
                     <label className="block font-medium">{language === 'he' ? 'לוגו (URL)' : 'Logo (URL)'}</label>
-                    <input
-                      className="w-full border rounded-md p-2"
-                      placeholder="https://…/logo.png"
-                      value={formData.logoUrl || ""}
-                      onChange={(e) => {
-                        const v = e.target.value;
-                        setFormData(prev => ({ ...prev, logoUrl: v }));
-                        if (typeof window !== "undefined") localStorage.setItem("logoUrl", v);
-                      }}
-                    />
+                    <div className="flex gap-3">
+                      <input
+                        className="flex-1 border rounded-md p-2"
+                        placeholder="https://…/logo.png"
+                        value={formData.logoUrl || ""}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          setFormData(prev => ({ ...prev, logoUrl: v }));
+                          if (typeof window !== "undefined") localStorage.setItem("logoUrl", v);
+                        }}
+                      />
+                      {formData.logoUrl && (
+                        <div className="w-16 h-16 border rounded-md overflow-hidden bg-gray-50 flex items-center justify-center">
+                          <img
+                            src={formData.logoUrl}
+                            alt="Logo Preview"
+                            className="max-w-full max-h-full object-contain"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -1870,7 +1907,12 @@ export const Onboarding: React.FC = () => {
                     <div className="space-y-2">
                       <h1 
                         className="text-3xl font-bold tracking-tight" 
-                        style={{ color: formData.primaryColor }}
+                        style={{ 
+                          background: `linear-gradient(135deg, ${formData.primaryColor || '#4f46e5'}, ${formData.secondaryColor || '#FFD500'})`,
+                          WebkitBackgroundClip: 'text',
+                          WebkitTextFillColor: 'transparent',
+                          backgroundClip: 'text'
+                        }}
                       >
                         {formData.title || (language === 'he' ? 'כותרת השאלון' : 'Questionnaire Title')}
                       </h1>
@@ -1907,10 +1949,11 @@ export const Onboarding: React.FC = () => {
                     {formData.questions.map((question, index) => (
                       <Card 
                         key={question.id} 
-                        className="border-0 shadow-md hover:shadow-lg transition-shadow duration-200 overflow-hidden"
+                        className="border-0 shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden"
                         style={{ 
-                          borderLeft: `4px solid ${formData.primaryColor}`,
-                          backgroundColor: 'white'
+                          borderLeft: `4px solid ${formData.primaryColor || '#4f46e5'}`,
+                          background: `linear-gradient(135deg, rgba(255,255,255,0.9), rgba(255,255,255,0.7))`,
+                          backdropFilter: 'blur(10px)'
                         }}
                       >
                         <CardContent className="p-6 space-y-4">
