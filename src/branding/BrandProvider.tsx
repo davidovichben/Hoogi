@@ -2,10 +2,10 @@ import React, { createContext, useContext, useEffect, useMemo, useState } from "
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 export type Branding = {
-  primary?: string;   // brand_primary | brand_color | brand_accent
-  secondary?: string; // brand_secondary | brand_accent
-  background?: string;// brand_bg | background_color
-  logoUrl?: string;   // logo_url | brand_logo_path (כ-URL מלא)
+  primary?: string;
+  secondary?: string;
+  background?: string;
+  logoUrl?: string;
 };
 
 const BrandCtx = createContext<Branding>({});
@@ -15,15 +15,15 @@ function toPublicUrl(s: SupabaseClient, raw?: string) {
   if (!raw) return undefined;
   const v = raw.trim();
   if (!v) return undefined;
-  if (/^https?:\/\//i.test(v)) return v;      // כבר URL מלא
-  const i = v.indexOf("/");                    // bucket/path
+  if (/^https?:\/\//i.test(v)) return v;
+  const i = v.indexOf("/");
   if (i > 0) {
     const bucket = v.slice(0, i);
     const path = v.slice(i + 1);
     const { data } = s.storage.from(bucket).getPublicUrl(path);
     return data?.publicUrl || v;
   }
-  return v;                                    // שם קובץ/נכס סטטי
+  return v;
 }
 
 export default function BrandProvider({ children }: { children: React.ReactNode }) {
@@ -35,68 +35,81 @@ export default function BrandProvider({ children }: { children: React.ReactNode 
 
   useEffect(() => {
     let cancelled = false;
+    let sub: ReturnType<SupabaseClient["channel"]> | undefined;
 
-    (async () => {
+    async function loadAndSet() {
       try {
         const { data: u } = await supabase.auth.getUser();
         const uid = u?.user?.id;
         if (!uid) return;
 
-        // בוחרים לפי id או user_id (מה שיש אצלך בשורה)
-        const { data: prof, error } = await supabase
+        const { data: p } = await supabase
           .from("profiles")
-          .select("id,user_id,brand_primary,brand_secondary,brand_bg,brand_color,brand_accent,background_color,logo_url,brand_logo_path")
+          .select("id,user_id,brand_primary,brand_secondary,brand_bg,background_color,brand_color,brand_accent,logo_url,brand_logo_path,updated_at")
           .or(`id.eq.${uid},user_id.eq.${uid}`)
           .limit(1)
           .single();
 
-        if (error || !prof || cancelled) return;
+        if (!p || cancelled) return;
 
         const primary =
-          (prof.brand_primary?.toString().trim()) ||
-          (prof.brand_color?.toString().trim())   ||
-          (prof.brand_accent?.toString().trim())  ||
-          undefined;
-
+          (p.brand_primary ?? p.brand_color ?? p.brand_accent ?? "")?.toString().trim() || undefined;
         const secondary =
-          (prof.brand_secondary?.toString().trim()) ||
-          (prof.brand_accent?.toString().trim())    ||
-          undefined;
-
+          (p.brand_secondary ?? p.brand_accent ?? "")?.toString().trim() || undefined;
         const background =
-          (prof.brand_bg?.toString().trim()) ||
-          (prof.background_color?.toString().trim()) ||
-          undefined;
-
+          (p.brand_bg ?? p.background_color ?? "")?.toString().trim() || undefined;
         const logoRaw =
-          (prof.logo_url?.toString().trim()) ||
-          (prof.brand_logo_path?.toString().trim()) ||
-          undefined;
+          (p.logo_url ?? p.brand_logo_path ?? "")?.toString().trim() || undefined;
 
-        const b: Branding = {
+        const next: Branding = {
           primary,
           secondary,
           background,
           logoUrl: toPublicUrl(supabase, logoRaw),
         };
 
-        if (cancelled) return;
-        setBranding(b);
+        setBranding(next);
 
-        // הזרקת CSS variables גלובליים כדי שכל המסכים "יירשו" צבעים
+        // הזרקת CSS Vars גלובליים (ללא שימוש ב-localStorage)
         const root = document.documentElement;
-        if (b.primary)   root.style.setProperty("--brand-primary", b.primary);
-        if (b.secondary) root.style.setProperty("--brand-secondary", b.secondary);
-        if (b.background)root.style.setProperty("--brand-bg", b.background);
-
-        // גיבוי לסשן (לא חובה)
-        Object.entries(b).forEach(([k, v]) => v && localStorage.setItem(`branding:${k}`, v as string));
+        root.style.removeProperty("--brand-primary");
+        root.style.removeProperty("--brand-secondary");
+        root.style.removeProperty("--brand-bg");
+        if (next.primary)   root.style.setProperty("--brand-primary", next.primary);
+        if (next.secondary) root.style.setProperty("--brand-secondary", next.secondary);
+        if (next.background)root.style.setProperty("--brand-bg", next.background);
       } catch {
-        /* לא מפיל את האפליקציה */
+        /* no-op */
       }
+    }
+
+    loadAndSet();
+
+    // realtime – נרשמים לעדכונים על השורה של המשתמש
+    (async () => {
+      const { data: u } = await supabase.auth.getUser();
+      const uid = u?.user?.id;
+      if (!uid) return;
+
+      sub = supabase
+        .channel("profiles_branding")
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "profiles",
+            filter: `id=eq.${uid}`,
+          },
+          () => loadAndSet()
+        )
+        .subscribe();
     })();
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      if (sub) supabase.removeChannel(sub);
+    };
   }, [supabase]);
 
   return (

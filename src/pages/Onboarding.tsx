@@ -31,7 +31,7 @@ import { nanoid } from "nanoid";
 import PreviewMenuButton from "@/components/PreviewMenuButton";
 import PreviewPanel from "@/components/PreviewPanel";
 import { useBranding } from "@/branding/BrandProvider";
-import { useProfileLogo } from "@/hooks/useProfileLogo";
+import { useRef } from "react";
 
 type ToastApi = ((opts: { title?: string; description?: string, variant?: 'default' | 'destructive' }) => void) | undefined;
 function safeToast(toastApi: ToastApi, title: string, description?: string, variant?: 'default' | 'destructive') {
@@ -124,7 +124,7 @@ export const Onboarding: React.FC = () => {
   const { toast } = useShadcnToast();
   const profileRef = useRef<ProfileFormHandle>(null);
   const branding = useBranding();
-  const profileLogoUrl = useProfileLogo();
+  const logoTouchedRef = useRef(false);
   const [canProceed, setCanProceed] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
   const [user, setUser] = useState<any>(null);
@@ -352,14 +352,19 @@ export const Onboarding: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profileData]);
 
-  // עדכון לוגו מהפרופיל אם formData.logoUrl ריק
+  // סנכרון חד-כיווני מה־profile → למסך (רק אם השדה ריק/לא נגעו)
   useEffect(() => {
-    if (!profileLogoUrl) return;
-    setFormData(prev => ({
-      ...prev,
-      logoUrl: prev.logoUrl?.trim() ? prev.logoUrl : profileLogoUrl
-    }));
-  }, [profileLogoUrl]);
+    if (!branding.logoUrl) return;
+    setFormData(prev => {
+      const curr = (prev.logoUrl ?? "").trim();
+      const fromProfile = branding.logoUrl!;
+      // אם המשתמש לא נגע בשדה, או שהשדה ריק/ישן, נעדכן
+      if (!logoTouchedRef.current && (!curr || curr === "about:blank")) {
+        return { ...prev, logoUrl: fromProfile };
+      }
+      return prev;
+    });
+  }, [branding.logoUrl, setFormData]);
 
   // Load existing questionnaire data if editing
   useEffect(() => {
@@ -1425,12 +1430,11 @@ export const Onboarding: React.FC = () => {
                     <div className="flex gap-3">
                       <input
                         className="flex-1 border rounded-md p-2"
-                        placeholder={profileLogoUrl || "https://…/logo.png"}
-                        value={formData.logoUrl || ""}
+                        placeholder={branding.logoUrl || "https://…/logo.png"}
+                        value={formData.logoUrl ?? ""}
                         onChange={(e) => {
-                          const v = e.target.value;
-                          setFormData(prev => ({ ...prev, logoUrl: v }));
-                          if (typeof window !== "undefined") localStorage.setItem("logoUrl", v);
+                          logoTouchedRef.current = true;
+                          setFormData(prev => ({ ...prev, logoUrl: e.target.value }));
                         }}
                       />
                       {formData.logoUrl && (
