@@ -39,7 +39,7 @@ export default function PreviewMenuButton({
             className="block w-full px-3 py-2 text-right hover:bg-gray-50"
             onClick={() => { setOpen(false); onForm(); }}
           >
-            כתופס
+            טופס
           </button>
           <button
             type="button"

@@ -99,6 +99,8 @@ interface QuestionnaireState {
   title: string;
   description?: string;
   brandColor?: string;
+  primaryColor?: string;
+  secondaryColor?: string;
   logoUrl?: string;
   questions: Question[];
   status: 'draft' | 'locked' | 'pending';
@@ -268,55 +270,67 @@ export const Onboarding: React.FC = () => {
 
     async function loadBrandingFromProfile() {
       try {
-        // אם כבר יש צבע/לוגו ב-formData – לא דורסים
-        const hasBrand = !!(formData?.brandColor && formData.brandColor.trim());
-        const hasLogo  = !!(formData?.logoUrl && formData.logoUrl.trim());
-        if (hasBrand && hasLogo) return;
-
         // 1) זיהוי משתמש נוכחי
         const { data: userRes } = await supabaseClient.auth.getUser();
         const userId = userRes?.user?.id;
         if (!userId) return;
 
-        // 2) שליפת שדות המיתוג מהפרופיל
+        // 2) שליפת שדות המיתוג מהפרופיל של המשתמש הנוכחי
         const { data: prof, error } = await supabaseClient
           .from("profiles")
-          .select("brand_color, logo_url, brand_primary, brand_logo_path")
+          .select("brand_color, logo_url, brand_primary, brand_secondary, brand_logo_path")
           .eq("id", userId)
           .single();
 
-        if (error) return;
-        if (!prof) return;
+        if (error) {
+          console.log('Error loading profile:', error);
+          return;
+        }
+        if (!prof) {
+          console.log('No profile found for user:', userId);
+          return;
+        }
 
-        let brand = formData?.brandColor?.trim() || 
-                   (prof.brand_color ?? "")?.toString().trim() ||
-                   (prof.brand_primary ?? "")?.toString().trim() ||
-                   "";
+        console.log('Loaded profile for user:', userId, prof);
+
+        // 3) עדכון הלוגו והצבעים מהפרופיל (דורס את הקיים)
+        let brandColor = (prof.brand_color ?? "")?.toString().trim() ||
+                        (prof.brand_primary ?? "")?.toString().trim() ||
+                        "";
         
-        let logoRaw = formData?.logoUrl?.trim() || 
-                     (prof.logo_url ?? "")?.toString().trim() ||
+        let primaryColor = (prof.brand_primary ?? "")?.toString().trim() ||
+                          (prof.brand_color ?? "")?.toString().trim() ||
+                          "";
+        
+        let secondaryColor = (prof.brand_secondary ?? "")?.toString().trim() || "";
+        
+        let logoRaw = (prof.logo_url ?? "")?.toString().trim() ||
                      (prof.brand_logo_path ?? "")?.toString().trim() ||
                      "";
 
-        // 3) פתרון לוגו ל-URL ציבורי אם צריך
+        // 4) פתרון לוגו ל-URL ציבורי אם צריך
         if (logoRaw) {
           logoRaw = (await resolveLogoUrl(supabaseClient, logoRaw)) || logoRaw;
         }
 
         if (cancelled) return;
 
-        // 4) עדכון עדין של formData (רק אם חסרים)
+        // 5) עדכון formData עם הנתונים מהפרופיל
         setFormData(prev => ({
           ...prev,
-          brandColor: prev.brandColor?.trim() ? prev.brandColor : (brand || ""),
-          logoUrl:    prev.logoUrl?.trim()    ? prev.logoUrl    : (logoRaw  || ""),
+          brandColor: brandColor || prev.brandColor || "",
+          primaryColor: primaryColor || prev.primaryColor || "",
+          secondaryColor: secondaryColor || prev.secondaryColor || "",
+          logoUrl: logoRaw || prev.logoUrl || "",
         }));
 
-        // 5) שמירה קלה גם ב-localStorage (לא חובה)
-        if (brand) localStorage.setItem("brandColor", brand);
+        // 6) שמירה ב-localStorage
+        if (brandColor) localStorage.setItem("brandColor", brandColor);
+        if (primaryColor) localStorage.setItem("primaryColor", primaryColor);
+        if (secondaryColor) localStorage.setItem("secondaryColor", secondaryColor);
         if (logoRaw) localStorage.setItem("logoUrl", logoRaw);
-      } catch {
-        // לא מפילים שום דבר במקרה תקלה
+      } catch (error) {
+        console.error('Error in loadBrandingFromProfile:', error);
       }
     }
 
@@ -1283,7 +1297,7 @@ export const Onboarding: React.FC = () => {
                   
                   {/* כפתור תצוגה עם תפריט */}
                   <PreviewMenuButton
-                    brandColor={formData?.brandColor || "#4f46e5"}
+                    brandColor={formData?.primaryColor || formData?.brandColor || "#4f46e5"}
                     onForm={() => setPreviewMode('preview')}
                     onChat={() => setPreviewMode('preview')}
                   />
@@ -1317,37 +1331,69 @@ export const Onboarding: React.FC = () => {
                 />
               </div>
 
-              {/* צבע מותג ולוגו */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                <div>
-                  <label className="block font-medium">{language === 'he' ? 'צבע מותג' : 'Brand Color'}</label>
-                  <input
-                    className="w-full border rounded-md p-2"
-                    placeholder="#4f46e5 או var(--primary) או rgb(…)"
-                    value={formData.brandColor || ""}
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      setFormData(prev => ({ ...prev, brandColor: v }));
-                      if (typeof window !== "undefined") localStorage.setItem("brandColor", v);
-                    }}
-                  />
-                  <div className="h-8 w-full rounded mt-2 border" style={{ background: formData.brandColor || "#4f46e5" }} />
-                </div>
+                {/* צבעי מותג ולוגו */}
+                <div className="space-y-4 mb-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block font-medium">{language === 'he' ? 'צבע ראשי' : 'Primary Color'}</label>
+                      <input
+                        className="w-full border rounded-md p-2"
+                        placeholder="#4f46e5"
+                        value={formData.primaryColor || ""}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          setFormData(prev => ({ ...prev, primaryColor: v }));
+                          if (typeof window !== "undefined") localStorage.setItem("primaryColor", v);
+                        }}
+                      />
+                      <div className="h-8 w-full rounded mt-2 border" style={{ background: formData.primaryColor || "#4f46e5" }} />
+                    </div>
 
-                <div>
-                  <label className="block font-medium">{language === 'he' ? 'לוגו (URL)' : 'Logo (URL)'}</label>
-                  <input
-                    className="w-full border rounded-md p-2"
-                    placeholder="https://…/logo.png"
-                    value={formData.logoUrl || ""}
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      setFormData(prev => ({ ...prev, logoUrl: v }));
-                      if (typeof window !== "undefined") localStorage.setItem("logoUrl", v);
-                    }}
-                  />
+                    <div>
+                      <label className="block font-medium">{language === 'he' ? 'צבע משני' : 'Secondary Color'}</label>
+                      <input
+                        className="w-full border rounded-md p-2"
+                        placeholder="#FFD500"
+                        value={formData.secondaryColor || ""}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          setFormData(prev => ({ ...prev, secondaryColor: v }));
+                          if (typeof window !== "undefined") localStorage.setItem("secondaryColor", v);
+                        }}
+                      />
+                      <div className="h-8 w-full rounded mt-2 border" style={{ background: formData.secondaryColor || "#FFD500" }} />
+                    </div>
+
+                    <div>
+                      <label className="block font-medium">{language === 'he' ? 'צבע מותג' : 'Brand Color'}</label>
+                      <input
+                        className="w-full border rounded-md p-2"
+                        placeholder="#16939B"
+                        value={formData.brandColor || ""}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          setFormData(prev => ({ ...prev, brandColor: v }));
+                          if (typeof window !== "undefined") localStorage.setItem("brandColor", v);
+                        }}
+                      />
+                      <div className="h-8 w-full rounded mt-2 border" style={{ background: formData.brandColor || "#16939B" }} />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block font-medium">{language === 'he' ? 'לוגו (URL)' : 'Logo (URL)'}</label>
+                    <input
+                      className="w-full border rounded-md p-2"
+                      placeholder="https://…/logo.png"
+                      value={formData.logoUrl || ""}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        setFormData(prev => ({ ...prev, logoUrl: v }));
+                        if (typeof window !== "undefined") localStorage.setItem("logoUrl", v);
+                      }}
+                    />
+                  </div>
                 </div>
-              </div>
 
               {/* Category reminder */}
               {!canShowSuggestedQuestions() && (
