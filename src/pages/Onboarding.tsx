@@ -1126,16 +1126,16 @@ export const Onboarding: React.FC = () => {
       
       safeToast(toast, 
         language === 'he' ? 'השאלון נשמר בהצלחה' : 'Questionnaire saved successfully',
-        language === 'he' ? 'מעביר לדף הסקירה...' : 'Redirecting to review...'
+        language === 'he' ? 'מעביר לדף ההפצה...' : 'Redirecting to distribution...'
       );
 
-      // Navigate to review page
+      // Navigate to distribution hub
       setTimeout(() => {
-        const reviewUrl = routes.questionnaireReviewById(questionnaire.token || questionnaire.id);
+        const distributeUrl = `${routes.distributeHub}?token=${questionnaire.token || questionnaire.id}`;
         try {
-        console.log('Navigating to review after save:', reviewUrl);
+        console.log('Navigating to distribution after save:', distributeUrl);
         } catch {}
-        navigate(reviewUrl);
+        navigate(distributeUrl);
       }, 1000);
 
     } catch (error: any) {
