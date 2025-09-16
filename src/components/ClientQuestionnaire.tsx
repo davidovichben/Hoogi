@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 
 interface Question {
   id: string;
@@ -8,18 +8,44 @@ interface Question {
   isRequired: boolean;
 }
 
+export type QuestionnaireModel = {
+  title: string;
+  description?: string;
+  logoUrl?: string;
+  brandColor?: string;        // primary
+  brandSecondary?: string;    // optional
+  bgColor?: string;           // optional
+  questions: Question[];
+};
+
 interface ClientQuestionnaireProps {
   mode: 'form' | 'chat';
-  data: {
-    title: string;
-    description?: string;
-    brandColor?: string;
-    logoUrl?: string;
-    questions: Question[];
-  };
+  data: QuestionnaireModel;
   rtl?: boolean;
   enableUploads?: boolean;
   onSubmit: (answers: any) => void;
+}
+
+type Theme = {
+  primary: string;
+  secondary: string;
+  bg: string;
+  bubbleQ: string;
+  bubbleA: string;
+  bubbleAText: string;
+};
+
+function cssVar(name: string): string | undefined {
+  if (typeof window === "undefined") return undefined;
+  const v = getComputedStyle(document.documentElement).getPropertyValue(name);
+  return v && v.trim() ? v.trim() : undefined;
+}
+
+function computeTheme(primaryIn?: string, secondaryIn?: string, bgIn?: string): Theme {
+  const primary = (primaryIn?.trim() || cssVar("--brand-primary") || "#4f46e5") as string;
+  const secondary = (secondaryIn?.trim() || cssVar("--brand-secondary") || primary) as string;
+  const bg = (bgIn?.trim() || cssVar("--brand-bg") || "#ffffff") as string;
+  return { primary, secondary, bg, bubbleQ: "#f3f4f6", bubbleA: primary, bubbleAText: "#ffffff" };
 }
 
 export default function ClientQuestionnaire({
@@ -31,6 +57,11 @@ export default function ClientQuestionnaire({
 }: ClientQuestionnaireProps) {
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+
+  const theme = useMemo(
+    () => computeTheme(data.brandColor, data.brandSecondary, data.bgColor),
+    [data.brandColor, data.brandSecondary, data.bgColor]
+  );
 
   const handleAnswerChange = (questionId: string, value: any) => {
     setAnswers(prev => ({
@@ -217,7 +248,7 @@ export default function ClientQuestionnaire({
           <div>
             <h1 
               className="text-2xl font-bold mb-2"
-              style={{ color: data.brandColor || '#4f46e5' }}
+              style={{ color: theme.primary }}
             >
               {data.title}
             </h1>
@@ -271,7 +302,7 @@ export default function ClientQuestionnaire({
           <div>
             <h1 
               className="text-2xl font-bold mb-2"
-              style={{ color: data.brandColor || '#4f46e5' }}
+              style={{ color: theme.primary }}
             >
               {data.title}
             </h1>
@@ -299,8 +330,8 @@ export default function ClientQuestionnaire({
               type="submit"
               className="px-6 py-2 text-white rounded-lg hover:opacity-90 transition-opacity"
               style={{ 
-                backgroundColor: data.brandColor || '#4f46e5',
-                '--hover-color': data.brandColor || '#4f46e5'
+                backgroundColor: theme.primary,
+                '--hover-color': theme.primary
               } as React.CSSProperties}
             >
               שלח תשובות

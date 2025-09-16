@@ -30,6 +30,7 @@ import { fetchSuggestedQuestions, type ProfileForAI, type AiQuestion } from "@/l
 import { nanoid } from "nanoid";
 import PreviewMenuButton from "@/components/PreviewMenuButton";
 import PreviewPanel from "@/components/PreviewPanel";
+import { useBranding } from "@/branding/BrandProvider";
 
 type ToastApi = ((opts: { title?: string; description?: string, variant?: 'default' | 'destructive' }) => void) | undefined;
 function safeToast(toastApi: ToastApi, title: string, description?: string, variant?: 'default' | 'destructive') {
@@ -121,6 +122,7 @@ export const Onboarding: React.FC = () => {
   const { t, language } = useLanguage();
   const { toast } = useShadcnToast();
   const profileRef = useRef<ProfileFormHandle>(null);
+  const branding = useBranding();
   const [canProceed, setCanProceed] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
   const [user, setUser] = useState<any>(null);
@@ -1365,7 +1367,7 @@ export const Onboarding: React.FC = () => {
                       <label className="block font-medium">{language === 'he' ? 'צבע ראשי' : 'Primary Color'}</label>
                       <input
                         className="w-full border rounded-md p-2"
-                        placeholder="#4f46e5"
+                        placeholder={branding.primary || "#4f46e5"}
                         value={formData.primaryColor || ""}
                         onChange={(e) => {
                           const v = e.target.value;
@@ -1380,7 +1382,7 @@ export const Onboarding: React.FC = () => {
                       <label className="block font-medium">{language === 'he' ? 'צבע משני' : 'Secondary Color'}</label>
                       <input
                         className="w-full border rounded-md p-2"
-                        placeholder="#FFD500"
+                        placeholder={branding.secondary || "#FFD500"}
                         value={formData.secondaryColor || ""}
                         onChange={(e) => {
                           const v = e.target.value;
@@ -1395,7 +1397,7 @@ export const Onboarding: React.FC = () => {
                       <label className="block font-medium">{language === 'he' ? 'צבע רקע' : 'Background Color'}</label>
                       <input
                         className="w-full border rounded-md p-2"
-                        placeholder="#16939B"
+                        placeholder={branding.background || "#16939B"}
                         value={formData.brandColor || ""}
                         onChange={(e) => {
                           const v = e.target.value;
@@ -1412,7 +1414,7 @@ export const Onboarding: React.FC = () => {
                     <div className="flex gap-3">
                       <input
                         className="flex-1 border rounded-md p-2"
-                        placeholder="https://…/logo.png"
+                        placeholder={branding.logoUrl || "https://…/logo.png"}
                         value={formData.logoUrl || ""}
                         onChange={(e) => {
                           const v = e.target.value;

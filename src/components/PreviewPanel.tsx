@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import ClientQuestionnaire from './ClientQuestionnaire';
+import { useBranding } from '@/branding/BrandProvider';
 
 interface Question {
   id: string;
@@ -22,11 +23,22 @@ interface PreviewPanelProps {
 
 export default function PreviewPanel({ formData, onBackToEdit }: PreviewPanelProps) {
   const [mode, setMode] = useState<'form' | 'chat'>('form');
+  const branding = useBranding();
 
   const handleSubmit = (answers: any) => {
     console.log('Preview answers:', answers);
     // כאן תהיה שמירה אמיתית של התשובות
   };
+
+  const data = useMemo(() => ({
+    title: (formData?.title ?? "").trim() || "— חייב כותרת —",
+    description: formData?.description ?? "",
+    logoUrl: (formData?.logoUrl || branding.logoUrl || "").trim() || undefined,
+    brandColor: (formData?.brandColor || branding.primary || "").trim() || undefined,
+    brandSecondary: (((formData as any)?.brandSecondary || branding.secondary || "") as string).trim() || undefined,
+    bgColor: (((formData as any)?.brandBg || branding.background || "") as string).trim() || undefined,
+    questions: formData?.questions ?? [],
+  }), [formData, branding]);
 
   return (
     <div className="max-w-4xl mx-auto p-4">
@@ -70,7 +82,7 @@ export default function PreviewPanel({ formData, onBackToEdit }: PreviewPanelPro
       <div className="bg-white rounded-lg shadow-sm border">
         <ClientQuestionnaire
           mode={mode}
-          data={formData}
+          data={data}
           rtl={true}
           enableUploads={false} // בפריוויו – לא מעלים ל-Storage
           onSubmit={handleSubmit}
