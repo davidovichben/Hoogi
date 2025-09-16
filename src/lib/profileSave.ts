@@ -1,129 +1,133 @@
 // src/lib/profileSave.ts
-import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { createClient } from "@supabase/supabase-js";
 
-export type ProfileBrandingInput = {
-  full_name?: string;
-  company?: string;
-  email?: string;
-  phone?: string;
-
+type Patch = {
+  full_name?: string | null;
+  company?: string | null;
+  email?: string | null;
+  phone?: string | null;
   // מיתוג
-  brand_primary?: string;   // צבע ראשי
-  brand_secondary?: string; // צבע משני
-  brand_bg?: string;        // צבע רקע
-
-  // לוגו (אחד מהשניים): או קובץ להעלאה או URL מוכן
-  logoFile?: File | null;
+  brand_primary?: string | null;
+  brand_secondary?: string | null;
+  brand_bg?: string | null;
   logo_url?: string | null;
-
-  // אופציונלי: שדות נוספים קיימים אצלך
+  // נוספים
   business_category?: string | null;
   business_subcategory?: string | null;
   business_other?: string | null;
   default_locale?: string | null;
 };
 
-function getClient(): SupabaseClient {
-  return createClient(
-    import.meta.env.VITE_SUPABASE_URL as string,
-    import.meta.env.VITE_SUPABASE_ANON_KEY as string
-  );
+const supabase = createClient(
+  import.meta.env.VITE_SUPABASE_URL!,
+  import.meta.env.VITE_SUPABASE_ANON_KEY!
+);
+
+/** מאתר את שורת הפרופיל: קודם id==uid, אם אין – user_id==uid, ואם אין – יוצר חדשה */
+async function getOrCreateProfileRow(uid: string) {
+  // 1) חיפוש לפי id
+  let { data: row, error } = await supabase
+    .from("profiles")
+    .select("id,user_id")
+    .eq("id", uid)
+    .maybeSingle();
+  if (error) throw error;
+  if (row) return row;
+
+  // 2) חיפוש לפי user_id
+  let r2 = await supabase
+    .from("profiles")
+    .select("id,user_id")
+    .eq("user_id", uid)
+    .maybeSingle();
+  if (r2.error) throw r2.error;
+  if (r2.data) return r2.data;
+
+  // 3) אין רשומה – ניצור חדשה
+  const insertRow = { id: uid, user_id: uid };
+  const ins = await supabase
+    .from("profiles")
+    .insert(insertRow)
+    .select("id,user_id")
+    .single();
+  if (ins.error) throw ins.error;
+  return ins.data!;
 }
 
-async function ensureBrandingBucket(supabase: SupabaseClient) {
-  // אין create_bucket במופעים מסוימים, לכן נשתמש בהכנסת רשומה ל-buckets.
-  // אם קיים — on conflict לא יזרוק.
-  // נבצע רק ניסיון שקט; אין צורך לעצור את הזרימה אם נכשל.
-  try {
-    await supabase.rpc("noop"); // ייצור roundtrip קטנטן
-  } catch { /* לא קריטי */ }
-  try {
-    // ננסה להכניס כמעטפת (עובד ב-Supabase PG מסוים דרך SQL, כאן נשאיר כהערה):
-    // את ה-bucket נוודא דרך ה-SQL למטה. כאן לא נשבור כלום.
-  } catch { /* לא קריטי */ }
-}
-
-function extFromFilename(name: string) {
-  const i = name.lastIndexOf(".");
-  return i >= 0 ? name.slice(i + 1).toLowerCase() : "png";
-}
-
-export async function saveProfile(input: ProfileBrandingInput) {
-  const supabase = getClient();
-
-  // 1) זהות משתמש
+/** שמירת פרופיל – מעדכן תמיד את השורה הנכונה ומחזיר את השורה המעודכנת לבדיקה */
+export async function saveProfileStrict(patchIn: Patch) {
   const { data: auth } = await supabase.auth.getUser();
   const uid = auth?.user?.id;
   if (!uid) throw new Error("לא נמצא משתמש מחובר");
 
-  // 2) טיפול בלוגו: upload לקובץ אם ניתן, אחרת URL מוכן
-  let logoUrl: string | undefined;
+  // ננקה רווחים; ריק => null (לא נכתוב מחרוזת ריקה לדאטה)
+  const trimOrNull = (v?: string | null) =>
+    v && v.trim() ? v.trim() : null;
 
-  if (input.logoFile && input.logoFile instanceof File) {
-    await ensureBrandingBucket(supabase);
-    const bucket = "branding";
-    const ext = extFromFilename(input.logoFile.name || "logo.png");
-    const objectPath = `users/${uid}/logo-${Date.now()}.${ext}`;
+  const patch: Patch = {
+    full_name: trimOrNull(patchIn.full_name ?? null),
+    company: trimOrNull(patchIn.company ?? null),
+    email: trimOrNull(patchIn.email ?? null),
+    phone: trimOrNull(patchIn.phone ?? null),
+    brand_primary: trimOrNull(patchIn.brand_primary ?? null),
+    brand_secondary: trimOrNull(patchIn.brand_secondary ?? null),
+    brand_bg: trimOrNull(patchIn.brand_bg ?? null),
+    logo_url: trimOrNull(patchIn.logo_url ?? null),
+    business_category: trimOrNull(patchIn.business_category ?? null),
+    business_subcategory: trimOrNull(patchIn.business_subcategory ?? null),
+    business_other: trimOrNull(patchIn.business_other ?? null),
+    default_locale: trimOrNull(patchIn.default_locale ?? null),
+  };
 
-    // העלאה
-    const { error: upErr } = await supabase.storage.from(bucket).upload(objectPath, input.logoFile, {
-      cacheControl: "3600",
-      upsert: true,
-      contentType: input.logoFile.type || `image/${ext === "jpg" ? "jpeg" : ext}`
-    });
-    if (upErr) throw upErr;
+  // מאתרים/יוצרים את שורת הפרופיל הנכונה
+  const row = await getOrCreateProfileRow(uid);
 
-    // public URL
-    const { data } = supabase.storage.from(bucket).getPublicUrl(objectPath);
-    logoUrl = data?.publicUrl;
-  } else if (typeof input.logo_url === "string" && input.logo_url.trim()) {
-    // אם כבר יש URL מוכן
-    logoUrl = input.logo_url.trim();
-  }
-
-  // 3) בניית payload לעדכון בטבלת profiles
-  //   נעדכן רק שדות שיש להם ערך (לא נדרוס בטעות ל-null)
-  const patch: Record<string, any> = {};
-
-  if (input.full_name !== undefined) patch.full_name = input.full_name;
-  if (input.company !== undefined) patch.company = input.company;
-  if (input.email !== undefined) patch.email = input.email;
-  if (input.phone !== undefined) patch.phone = input.phone;
-
-  if (input.brand_primary !== undefined)   patch.brand_primary = (input.brand_primary || "").trim() || null;
-  if (input.brand_secondary !== undefined) patch.brand_secondary = (input.brand_secondary || "").trim() || null;
-  if (input.brand_bg !== undefined)        patch.brand_bg = (input.brand_bg || "").trim() || null;
-
-  if (logoUrl !== undefined) patch.logo_url = logoUrl;
-
-  if (input.business_category !== undefined)   patch.business_category = input.business_category;
-  if (input.business_subcategory !== undefined)patch.business_subcategory = input.business_subcategory;
-  if (input.business_other !== undefined)      patch.business_other = input.business_other;
-  if (input.default_locale !== undefined)      patch.default_locale = input.default_locale;
-
-  // 4) upsert לפי id או user_id — אצלך קיימים שניהם; נעדיף id=uid, ואם אין — ניצור
-  //    הערה: אם RLS פעיל, צריך מדיניות שמאפשרת עדכון הרשומה של המשתמש (ראה SQL בהמשך)
-  const { data: existing, error: selErr } = await supabase
-    .from("profiles")
-    .select("id,user_id")
-    .or(`id.eq.${uid},user_id.eq.${uid}`)
-    .limit(1)
-    .maybeSingle();
-
-  if (selErr) throw selErr;
-
-  let upsertRow: any;
-  if (existing) {
-    upsertRow = { ...patch, id: existing.id || uid, user_id: existing.user_id || uid };
+  // קודם ננסה לעדכן לפי id (אם יש), אחרת לפי user_id
+  let upd;
+  if (row.id === uid) {
+    upd = await supabase
+      .from("profiles")
+      .update(patch)
+      .eq("id", uid)
+      .select("*")
+      .single();
   } else {
-    upsertRow = { ...patch, id: uid, user_id: uid };
+    upd = await supabase
+      .from("profiles")
+      .update(patch)
+      .eq("user_id", uid)
+      .select("*")
+      .single();
+  }
+  if (upd.error) throw upd.error;
+
+  // אימות: נבצע fetch טרי כדי לוודא שהערכים נשמרו (לוכד קאש/שכפולים)
+  const verify = await supabase
+    .from("profiles")
+    .select("id,user_id,brand_primary,brand_secondary,brand_bg,logo_url,full_name,company,email,phone,updated_at")
+    .or(`id.eq.${uid},user_id.eq.${uid}`)
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .single();
+
+  if (verify.error) throw verify.error;
+
+  // בדיקות קצרות – אם משהו קריטי לא השתנה, נציף שגיאה עם פירוט
+  const out = verify.data!;
+  const mismatches: string[] = [];
+  const check = (k: keyof Patch) => {
+    // אם patch ביקש ערך (לא undefined), נוודא שהערך נשמר
+    if (patchIn[k] !== undefined) {
+      const want = trimOrNull(patchIn[k] as any);
+      const got = trimOrNull((out as any)[k]);
+      if ((want || null) !== (got || null)) mismatches.push(`${k}: expected "${want}", got "${got}"`);
+    }
+  };
+  ["brand_primary","brand_secondary","brand_bg","logo_url","full_name","company","email","phone"].forEach(k => check(k as keyof Patch));
+
+  if (mismatches.length) {
+    throw new Error("עדכון פרופיל לא הוחל במלואו: " + mismatches.join(" | "));
   }
 
-  const { error: upErr } = await supabase.from("profiles").upsert(upsertRow, {
-    onConflict: "id",
-    ignoreDuplicates: false,
-  });
-  if (upErr) throw upErr;
-
-  return { ok: true, logoUrl };
+  return out; // השורה המעודכנת
 }
