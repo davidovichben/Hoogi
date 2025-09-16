@@ -13,6 +13,8 @@ interface ClientQuestionnaireProps {
   data: {
     title: string;
     description?: string;
+    brandColor?: string;
+    logoUrl?: string;
     questions: Question[];
   };
   rtl?: boolean;
@@ -195,6 +197,36 @@ export default function ClientQuestionnaire({
   if (mode === 'chat') {
     return (
       <div className="max-w-2xl mx-auto p-4" dir={rtl ? 'rtl' : 'ltr'}>
+        {/* Header with Logo, Title and Description */}
+        <div className="text-center space-y-4 pb-6 border-b border-gray-200 mb-6">
+          {data.logoUrl && (
+            <div className="flex justify-center">
+              <div className="p-4 bg-white rounded-full shadow-md border border-gray-100">
+                <img 
+                  src={data.logoUrl} 
+                  alt="Company Logo" 
+                  className="h-20 w-20 object-contain"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+              </div>
+            </div>
+          )}
+          
+          <div>
+            <h1 
+              className="text-2xl font-bold mb-2"
+              style={{ color: data.brandColor || '#4f46e5' }}
+            >
+              {data.title}
+            </h1>
+            {data.description && (
+              <p className="text-gray-600 text-lg">{data.description}</p>
+            )}
+          </div>
+        </div>
+
         <div className="space-y-4">
           {data.questions.map((question, index) => (
             <div key={question.id} className="border rounded-lg p-4">
@@ -219,11 +251,34 @@ export default function ClientQuestionnaire({
   return (
     <div className="max-w-2xl mx-auto p-4" dir={rtl ? 'rtl' : 'ltr'}>
       <div className="space-y-6">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-2">{data.title}</h1>
-          {data.description && (
-            <p className="text-gray-600">{data.description}</p>
+        {/* Header with Logo, Title and Description */}
+        <div className="text-center space-y-4 pb-6 border-b border-gray-200">
+          {data.logoUrl && (
+            <div className="flex justify-center">
+              <div className="p-4 bg-white rounded-full shadow-md border border-gray-100">
+                <img 
+                  src={data.logoUrl} 
+                  alt="Company Logo" 
+                  className="h-20 w-20 object-contain"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+              </div>
+            </div>
           )}
+          
+          <div>
+            <h1 
+              className="text-2xl font-bold mb-2"
+              style={{ color: data.brandColor || '#4f46e5' }}
+            >
+              {data.title}
+            </h1>
+            {data.description && (
+              <p className="text-gray-600 text-lg">{data.description}</p>
+            )}
+          </div>
         </div>
 
         <form onSubmit={(e) => { e.preventDefault(); onSubmit(answers); }}>
@@ -242,7 +297,11 @@ export default function ClientQuestionnaire({
           <div className="mt-6 text-center">
             <button
               type="submit"
-              className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+              className="px-6 py-2 text-white rounded-lg hover:opacity-90 transition-opacity"
+              style={{ 
+                backgroundColor: data.brandColor || '#4f46e5',
+                '--hover-color': data.brandColor || '#4f46e5'
+              } as React.CSSProperties}
             >
               שלח תשובות
             </button>

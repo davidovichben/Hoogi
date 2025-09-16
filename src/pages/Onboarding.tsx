@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { ArrowRight, ArrowLeft, Upload, Plus, Trash2, Copy, GripVertical, Star, Calendar, Mic, Zap, Save, Lock, Eye, Settings, Users, Palette, RotateCcw, QrCode, Globe } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -39,6 +40,27 @@ function safeToast(toastApi: ToastApi, title: string, description?: string, vari
   } catch (_) { /* no-op */ }
 }
 
+// פונקציה לפתרון כתובת הלוגו
+async function resolveLogoUrl(supabase: SupabaseClient, raw?: string): Promise<string | undefined> {
+  if (!raw) return undefined;
+  const v = raw.trim();
+  if (!v) return undefined;
+  // אם כבר http(s) – משתמשים כמות שהוא
+  if (/^https?:\/\//i.test(v)) return v;
+
+  // אם בפורמט "bucket/path/to/file"
+  const slash = v.indexOf("/");
+  if (slash > 0) {
+    const bucket = v.slice(0, slash);
+    const path = v.slice(slash + 1);
+    const { data } = supabase.storage.from(bucket).getPublicUrl(path);
+    return data?.publicUrl || undefined;
+  }
+
+  // אחרת: החזר כמות שהוא (אולי מטופל ב-CDN/נכס סטטי)
+  return v;
+}
+
 // טיפוס פנימי לשאלת UI
 type UiQuestion = {
   id: string;
@@ -75,6 +97,9 @@ interface Question {
 interface QuestionnaireState {
   id?: string;
   title: string;
+  description?: string;
+  brandColor?: string;
+  logoUrl?: string;
   questions: Question[];
   status: 'draft' | 'locked' | 'pending';
   language: string;
@@ -149,6 +174,14 @@ export const Onboarding: React.FC = () => {
   } | null>(null);
   const [publicLinkLoading, setPublicLinkLoading] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
+  
+  // לקוח Supabase מקומי לטעינת נתוני פרופיל
+  const supabaseClient: SupabaseClient = useMemo(() => {
+    return createClient(
+      import.meta.env.VITE_SUPABASE_URL as string,
+      import.meta.env.VITE_SUPABASE_ANON_KEY as string
+    );
+  }, []);
   
   const [formData, setFormData] = useState<QuestionnaireState>({
     id: urlQuestionnaireId || undefined,
@@ -227,6 +260,70 @@ export const Onboarding: React.FC = () => {
         console.warn('fetchProfile failed:', e?.message || e);
       }
     })();
+  }, []);
+
+  // טעינת מיתוג מהפרופיל לטופס השאלון
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadBrandingFromProfile() {
+      try {
+        // אם כבר יש צבע/לוגו ב-formData – לא דורסים
+        const hasBrand = !!(formData?.brandColor && formData.brandColor.trim());
+        const hasLogo  = !!(formData?.logoUrl && formData.logoUrl.trim());
+        if (hasBrand && hasLogo) return;
+
+        // 1) זיהוי משתמש נוכחי
+        const { data: userRes } = await supabaseClient.auth.getUser();
+        const userId = userRes?.user?.id;
+        if (!userId) return;
+
+        // 2) שליפת שדות המיתוג מהפרופיל
+        const { data: prof, error } = await supabaseClient
+          .from("profiles")
+          .select("brand_color, logo_url, brand_primary, brand_logo_path")
+          .eq("id", userId)
+          .single();
+
+        if (error) return;
+        if (!prof) return;
+
+        let brand = formData?.brandColor?.trim() || 
+                   (prof.brand_color ?? "")?.toString().trim() ||
+                   (prof.brand_primary ?? "")?.toString().trim() ||
+                   "";
+        
+        let logoRaw = formData?.logoUrl?.trim() || 
+                     (prof.logo_url ?? "")?.toString().trim() ||
+                     (prof.brand_logo_path ?? "")?.toString().trim() ||
+                     "";
+
+        // 3) פתרון לוגו ל-URL ציבורי אם צריך
+        if (logoRaw) {
+          logoRaw = (await resolveLogoUrl(supabaseClient, logoRaw)) || logoRaw;
+        }
+
+        if (cancelled) return;
+
+        // 4) עדכון עדין של formData (רק אם חסרים)
+        setFormData(prev => ({
+          ...prev,
+          brandColor: prev.brandColor?.trim() ? prev.brandColor : (brand || ""),
+          logoUrl:    prev.logoUrl?.trim()    ? prev.logoUrl    : (logoRaw  || ""),
+        }));
+
+        // 5) שמירה קלה גם ב-localStorage (לא חובה)
+        if (brand) localStorage.setItem("brandColor", brand);
+        if (logoRaw) localStorage.setItem("logoUrl", logoRaw);
+      } catch {
+        // לא מפילים שום דבר במקרה תקלה
+      }
+    }
+
+    loadBrandingFromProfile();
+    return () => { cancelled = true; };
+    // תלויות: נטען פעם אחת בתחילת המסך (או כשריקים)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Load existing questionnaire data if editing
@@ -1205,6 +1302,50 @@ export const Onboarding: React.FC = () => {
                       className="w-56 sm:w-72"
                     />
                   </div>
+                </div>
+              </div>
+
+              {/* תיאור השאלון */}
+              <div className="mb-4 space-y-2">
+                <label className="block font-medium">{language === 'he' ? 'תיאור השאלון' : 'Questionnaire Description'}</label>
+                <textarea
+                  className="w-full border rounded-md p-2"
+                  rows={3}
+                  value={formData.description || ""}
+                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                  placeholder={language === 'he' ? 'כמה מילים שמסבירות למה למלא את השאלון…' : 'A few words explaining why to fill out the questionnaire...'}
+                />
+              </div>
+
+              {/* צבע מותג ולוגו */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block font-medium">{language === 'he' ? 'צבע מותג' : 'Brand Color'}</label>
+                  <input
+                    className="w-full border rounded-md p-2"
+                    placeholder="#4f46e5 או var(--primary) או rgb(…)"
+                    value={formData.brandColor || ""}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setFormData(prev => ({ ...prev, brandColor: v }));
+                      if (typeof window !== "undefined") localStorage.setItem("brandColor", v);
+                    }}
+                  />
+                  <div className="h-8 w-full rounded mt-2 border" style={{ background: formData.brandColor || "#4f46e5" }} />
+                </div>
+
+                <div>
+                  <label className="block font-medium">{language === 'he' ? 'לוגו (URL)' : 'Logo (URL)'}</label>
+                  <input
+                    className="w-full border rounded-md p-2"
+                    placeholder="https://…/logo.png"
+                    value={formData.logoUrl || ""}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setFormData(prev => ({ ...prev, logoUrl: v }));
+                      if (typeof window !== "undefined") localStorage.setItem("logoUrl", v);
+                    }}
+                  />
                 </div>
               </div>
 
