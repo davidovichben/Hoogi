@@ -322,9 +322,9 @@ export const Onboarding: React.FC = () => {
 
     loadBrandingFromProfile();
     return () => { cancelled = true; };
-    // תלויות: נטען פעם אחת בתחילת המסך (או כשריקים)
+    // תלויות: נטען כשהפרופיל משתנה או כשהמסך נטען
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [profileData]);
 
   // Load existing questionnaire data if editing
   useEffect(() => {
@@ -2036,9 +2036,9 @@ export const Onboarding: React.FC = () => {
             {language === 'he' ? 'קודם' : 'Previous'}
           </Button>
 
-          {currentStep < 4 ? (
+          {currentStep < 3 ? (
             <Button
-              onClick={currentStep === 1 ? handleNextFromProfile : () => updateStep(Math.min(4, currentStep + 1))}
+              onClick={currentStep === 1 ? handleNextFromProfile : () => updateStep(3)}
               disabled={savingProfile}
               className="gap-2"
             >
