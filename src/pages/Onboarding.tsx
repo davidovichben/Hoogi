@@ -25,7 +25,8 @@ import { Portal } from "@radix-ui/react-portal";
 import { HexColorPicker } from "react-colorful";
 import ProfileForm, { ProfileFormHandle } from "@/components/ProfileForm";
 import { showSuccess, showError, showInfo } from "@/lib/toast";
-import { fetchSuggestedQuestions } from "@/lib/suggestQuestions";
+import { fetchSuggestedQuestions, type ProfileForAI, type AiQuestion } from "@/lib/suggestQuestions";
+import { nanoid } from "nanoid";
 
 type ToastApi = ((opts: { title?: string; description?: string, variant?: 'default' | 'destructive' }) => void) | undefined;
 function safeToast(toastApi: ToastApi, title: string, description?: string, variant?: 'default' | 'destructive') {
@@ -34,6 +35,25 @@ function safeToast(toastApi: ToastApi, title: string, description?: string, vari
        toastApi({ title, description, variant });
     }
   } catch (_) { /* no-op */ }
+}
+
+// טיפוס פנימי לשאלת UI
+type UiQuestion = {
+  id: string;
+  text: string;
+  type: "text" | "single_choice" | "multiple_choice" | "date" | "email" | "phone";
+  options?: string[];
+  isRequired?: boolean;
+};
+
+function mapAiToUi(ai: AiQuestion[]): UiQuestion[] {
+  return ai.map(q => ({
+    id: nanoid(),
+    text: q.text,
+    type: (q.type === "single" ? "single_choice" : q.type === "multi" ? "multiple_choice" : q.type) as UiQuestion["type"],
+    options: q.options,
+    isRequired: q.isRequired ?? false
+  }));
 }
 
 type QuestionType = 'text' | 'single_choice' | 'multiple_choice' | 'rating' | 'date' | 'audio' | 'conditional' | 'email' | 'phone';
@@ -151,6 +171,12 @@ export const Onboarding: React.FC = () => {
       return Boolean(formData.category && formData.category.trim().length > 1);
     }
     return Boolean(formData.category);
+  }
+
+  // פונקציה לבדיקת האם ניתן להציג שאלות מומלצות
+  function canShowSuggestedQuestions() {
+    const occupation = formData?.category ?? safeProfile?.occupation;
+    return occupation && !["אחר", "other", "Other"].includes(occupation.trim());
   }
 
   // Load saved profile data on component mount
@@ -630,100 +656,44 @@ export const Onboarding: React.FC = () => {
 
   async function onSuggestClick() {
     try {
-      // לא ליפול על כותרת חסרה:
-      ensureQuestionnaireTitle();
+      // שליפת הפרופיל ממקום קיים אצלך (form/safeProfile)
+      const profile: ProfileForAI = {
+        businessName: formData?.title ?? safeProfile?.business_name,
+        occupation:   formData?.category ?? safeProfile?.occupation,
+        suboccupation: safeProfile?.suboccupation,
+        email:        safeProfile?.email,
+        phone:        safeProfile?.phone,
+        links:        safeProfile?.links ?? [],
+        extra:        safeProfile?.other_text
+      };
 
-      // קחי פרופיל קיים אם יש, אחרת מה-DB
-      const p: ProfileRow | null =
-        (typeof safeProfile !== 'undefined' && safeProfile) || (await loadProfileFromSupabase());
+      // "אחר" => לא מציגים הצעות
+      const occ = (profile.occupation ?? "").trim();
+      if (!occ || ["אחר","other","Other"].includes(occ)) {
+        safeToast(toast, "אין שאלות מומלצות עבור 'אחר' — אפשר להוסיף ידנית.");
+        return;
+      }
 
-      const businessName = p?.business_name || formData?.title || 'עסק';
-      const occupation = p?.occupation || formData?.category || 'כללי';
-      const suboccupation = p?.suboccupation || 'כללי';
-      const linksStr = Array.isArray(p?.links)
-        ? p!.links
-            .map(l => [l?.title, l?.url].filter(Boolean).join(' '))
-            .filter(Boolean)
-            .join(' | ')
-        : '';
-      const otherText = [p?.other_text, linksStr].filter(Boolean).join(' | ') || '—';
+      const aiQ = await fetchSuggestedQuestions(profile, { locale: "he", minCore: 4, maxTotal: 7 });
+      if (!aiQ.length) {
+        safeToast(toast, "לא התקבלו שאלות מומלצות. ניתן להוסיף ידנית.");
+        return;
+      }
 
-      const marketingPrompt = `
-אתה מומחה UX ושיווק שמייצר שאלוני לידים קצרים ואפקטיביים.
+      const uiQs = mapAiToUi(aiQ);
 
-🧩 קלט:
-- תחום השירות: ${occupation || 'כללי'}
-- תת-תחום/התמחות: ${suboccupation || 'כללי'}
-- מידע נוסף (לינק לאתר, מסרים שיווקיים וכו'):
-${(otherText || '—') + (linksStr ? '\n' + linksStr : '')}
+      // אם קיימות רק ברירות מחדל (שם/טלפון/מייל) — החלפה; אחרת הוספה לסוף
+      const existing = formData.questions ?? [];
+      const onlyBasics = existing.length <= 3 && existing.every(q =>
+        ["שם","טלפון","אימייל","דוא\"ל"].some(b => (q.text || "").includes(b))
+      );
 
-🎯 מטרה:
-צור שאלון שיווקי קצר (5–7 שאלות) **ללקוח קצה** שמתעניין בשירות של נותן השירות.
-המטרה: להבין את צרכי הלקוח ולהוביל להשארת פרטים ליצירת קשר.
-
-📌 הנחיות חובה:
-1. כתוב את השאלות **מנקודת המבט של הלקוח** – כאילו הוא ממלא טופס באתר/דף נחיתה.
-2. שפה פשוטה, חיובית ומזמינה (לא רשמית).
-3. שאלות קלות למילוי, ידידותיות למובייל, בסגנון לידים שיווקיים.
-4. לכל שאלה החזר אובייקט עם השדות:
-   - "type": ["בחירה יחידה","בחירה מרובה","כן/לא","שדה טקסט חופשי"]
-   - "text": נוסח השאלה כפי שיוצג ללקוח
-   - "options": רשימת תשובות (אם רלוונטי, 3–5 אפשרויות)
-
-📥 פורמט פלט נדרש – JSON תקני בלבד (ללא טקסט נוסף):
-[
-  {
-    "type": "בחירה מרובה",
-    "text": "מה חשוב לך במיוחד בשירות שאנחנו מציעים?",
-    "options": ["מקצועיות","יחס אישי","זמינות מהירה","מחיר נוח","המלצות מלקוחות"]
-  },
-  { "type": "כן/לא", "text": "האם יצא לך להתנסות בשירות כזה בעבר?" },
-  { "type": "שדה טקסט חופשי", "text": "מה היית רוצה שנדע על הצורך שלך?" }
-]
-`.trim();
-
-      console.log("[AI] prompt_override:", marketingPrompt.slice(0, 160));
-
-      // קריאה לפונקציה בענן
-      const suggestions = await fetchSuggestedQuestions({
-        businessName,
-        occupation,
-        suboccupation,
-        other_text: otherText,
-        links: linksStr,
-        language: 'he',
-        max: 7,
-        prompt_override: marketingPrompt,
-        __debug: true, // לצורך בדיקה
-      });
-
-      // הזרקה ל-formData.questions (לא משתמשים ב-setQuestions שלא קיים)
-      setFormData(prev => {
-        const onlyDefaults =
-          prev.questions.length <= 3 &&
-          prev.questions.every((q: any) =>
-            typeof q?.text === 'string' && /(שם|טלפון|נייד|מייל)/.test(q.text)
-          );
-
-        // תומך גם במערך מחרוזות וגם במערך אובייקטים {text,type,options}
-        const aiBlocks = suggestions.map((q: any) => {
-          const text = typeof q === 'string' ? q : (q?.text || '').toString();
-          return {
-            id: makeId(),
-            type: 'text' as const,   // אם זמנית תומכים רק בשדה חופשי
-            text,
-            isRequired: false,
-          };
-        }).filter(block => block.text.trim());
-
-        return {
-          ...prev,
-          questions: onlyDefaults ? aiBlocks : [...prev.questions, ...aiBlocks],
-        };
-      });
-    } catch (e: any) {
-      console.error('AI suggest failed:', e);
-      alert('שגיאה בטעינת שאלות AI: ' + (e?.message || ''));
+      const merged = onlyBasics ? uiQs : [...existing, ...uiQs];
+      setFormData(prev => ({ ...prev, questions: merged }));
+      safeToast(toast, "שאלות מומלצות ללקוח הקצה נוספו ✔");
+    } catch (e) {
+      console.error(e);
+      safeToast(toast, "שגיאה בטעינת שאלות מומלצות");
     }
   }
 
@@ -1185,11 +1155,15 @@ ${(otherText || '—') + (linksStr ? '\n' + linksStr : '')}
                 </div>
                 
                 <div className="flex flex-wrap items-center gap-2">
-                  <TooltipWrapper content={language === 'he' ? 'טען שאלות מוצעות לקטגוריה' : 'Load suggested questions for category'}>
+                  <TooltipWrapper content={
+                    canShowSuggestedQuestions() 
+                      ? (language === 'he' ? 'טען שאלות מוצעות לקטגוריה' : 'Load suggested questions for category')
+                      : (language === 'he' ? 'שאלות מומלצות זמינות רק לקטגוריות ספציפיות' : 'Suggested questions available only for specific categories')
+                    }>
                     <Button
                       variant="secondary"
                       onClick={onSuggestClick}
-                      disabled={!hasValidCategory()}
+                      disabled={!canShowSuggestedQuestions()}
                       className="gap-2"
                     >
                       <Zap className="h-4 w-4" />
@@ -1222,14 +1196,14 @@ ${(otherText || '—') + (linksStr ? '\n' + linksStr : '')}
               </div>
 
               {/* Category reminder */}
-              {!hasValidCategory() && (
+              {!canShowSuggestedQuestions() && (
                 <div className="bg-secondary/20 border border-secondary/40 rounded-lg p-4">
                   <div className="flex items-center gap-2 text-secondary-foreground">
                     <span className="text-lg">⚠️</span>
                     <span>
                       {language === 'he' 
-                        ? 'יש לבחור קטגוריה עסקית בשלב הראשון כדי לקבל שאלות מוצעות'
-                        : 'Please select a business category in step 1 to get suggested questions'
+                        ? 'יש לבחור קטגוריה עסקית ספציפית בשלב הראשון כדי לקבל שאלות מוצעות (לא "אחר")'
+                        : 'Please select a specific business category in step 1 to get suggested questions (not "Other")'
                       }
                     </span>
                   </div>

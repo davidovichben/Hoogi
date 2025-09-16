@@ -1,65 +1,67 @@
-// src/lib/suggestQuestions.ts
-export type SuggestInput = {
+// /src/lib/suggestQuestions.ts
+export type AiQuestion = {
+  text: string;
+  type: "text" | "yes_no" | "single" | "multi" | "single_choice" | "multiple_choice" | "date" | "email" | "phone";
+  options?: string[];
+  isRequired?: boolean;
+};
+
+export type ProfileForAI = {
   businessName?: string;
   occupation?: string;
   suboccupation?: string;
-  other_text?: string;
-  links?: string;
-  language?: 'he' | 'en';
-  max?: number;
-  prompt_override?: string;
-  __debug?: boolean;
+  email?: string;
+  phone?: string;
+  links?: string[];
+  extra?: string;
 };
 
-const BASE = import.meta.env.VITE_SUPABASE_URL as string;
-const ANON = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+export async function fetchSuggestedQuestions(
+  profile: ProfileForAI,
+  opts?: { locale?: "he" | "en" | "fr"; minCore?: number; maxTotal?: number }
+): Promise<AiQuestion[]> {
+  const edgeUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/suggest-questions`;
+  const anon = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-export async function fetchSuggestedQuestions(input: SuggestInput): Promise<string[]> {
-  if (!BASE || !ANON) {
-    throw new Error('Missing VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY');
-  }
-
-  const url = `${BASE.replace(/\/$/, '')}/functions/v1/suggest-questions`;
-
-  const res = await fetch(url, {
-    method: 'POST',
-    mode: 'cors',
-    cache: 'no-store',
+  const res = await fetch(edgeUrl, {
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${ANON}`,
-      'apikey': ANON,
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${anon}`,
+      "apikey": anon
     },
     body: JSON.stringify({
-      businessName: input.businessName ?? 'עסק',
-      occupation: input.occupation ?? '',
-      suboccupation: input.suboccupation ?? '',
-      other_text: input.other_text ?? '',
-      links: input.links ?? '',
-      language: input.language ?? 'he',
-      max: Math.min(Math.max(input.max ?? 7, 5), 10),
-      prompt_override: input.prompt_override,
-      __debug: input.__debug,
-    }),
+      businessName: profile.businessName,
+      occupation: profile.occupation,
+      suboccupation: profile.suboccupation,
+      other_text: profile.extra,
+      links: (profile.links ?? []).join(", "),
+      language: opts?.locale ?? "he",
+      max: opts?.maxTotal ?? 7
+    })
   });
 
-  const data = await res.json().catch(() => null);
   if (!res.ok) {
-    throw new Error(`suggest-questions ${res.status}: ${JSON.stringify(data)}`);
+    const txt = await res.text().catch(() => "");
+    throw new Error(`suggest-questions ${res.status}: ${txt}`);
   }
 
-  // תומך גם במערך ישיר וגם באובייקט { questions: [...] }
-  const arr = Array.isArray(data) ? data : (data?.questions ?? []);
-  
-  // לוג דיבוג לראות מה חוזר
-  if (input.__debug) {
-    console.log('[AI] Response structure:', {
-      isArray: Array.isArray(data),
-      hasQuestions: !!data?.questions,
-      questionsCount: arr.length,
-      sample: arr.slice(0, 2)
-    });
-  }
-  
-  return Array.isArray(arr) ? arr : [];
+  const data = await res.json().catch(() => ({}));
+  const arr = Array.isArray(data?.questions) ? data.questions : [];
+
+  // סניטציה: החזר רק אובייקטים תקינים
+  return arr.map((q: any) => {
+    const text = (q?.text ?? "").toString().trim();
+    if (!text) return null;
+
+    let type = (q?.type ?? "text").toString().toLowerCase();
+    if (type === "single") type = "single_choice";
+    if (type === "multi")  type = "multiple_choice";
+    if (type === "yes_no") { type = "single_choice"; q.options = ["כן","לא"]; }
+
+    const options = Array.isArray(q?.options) ? q.options.filter((o: any) => typeof o === "string" && o.trim()).map((o: string)=>o.trim()) : undefined;
+    const isRequired = typeof q?.isRequired === "boolean" ? q.isRequired : false;
+
+    return { text, type, options, isRequired } as AiQuestion;
+  }).filter(Boolean);
 }
