@@ -27,6 +27,8 @@ import ProfileForm, { ProfileFormHandle } from "@/components/ProfileForm";
 import { showSuccess, showError, showInfo } from "@/lib/toast";
 import { fetchSuggestedQuestions, type ProfileForAI, type AiQuestion } from "@/lib/suggestQuestions";
 import { nanoid } from "nanoid";
+import PreviewMenuButton from "@/components/PreviewMenuButton";
+import PreviewPanel from "@/components/PreviewPanel";
 
 type ToastApi = ((opts: { title?: string; description?: string, variant?: 'default' | 'destructive' }) => void) | undefined;
 function safeToast(toastApi: ToastApi, title: string, description?: string, variant?: 'default' | 'destructive') {
@@ -56,7 +58,7 @@ function mapAiToUi(ai: AiQuestion[]): UiQuestion[] {
   }));
 }
 
-type QuestionType = 'text' | 'single_choice' | 'multiple_choice' | 'rating' | 'date' | 'audio' | 'conditional' | 'email' | 'phone';
+type QuestionType = 'text' | 'single_choice' | 'multiple_choice' | 'rating' | 'date' | 'audio' | 'conditional' | 'email' | 'phone' | 'file';
 
 interface Question {
   id: string;
@@ -123,6 +125,7 @@ export const Onboarding: React.FC = () => {
   
   const [currentStep, setCurrentStep] = useState(urlStep ? parseInt(urlStep) : 1);
   const [isGeneratingOptions, setIsGeneratingOptions] = useState<string | null>(null);
+  const [previewMode, setPreviewMode] = useState<'edit' | 'preview'>('edit');
 
   function goNextStep() {
     // העדפה: פונקציה קיימת אם יש
@@ -475,7 +478,8 @@ export const Onboarding: React.FC = () => {
     { value: 'audio', label: language === 'he' ? 'הקלטה קולית' : 'Audio Recording', icon: '🎤' },
     { value: 'conditional', label: language === 'he' ? 'שאלה מותנית' : 'Conditional Question', icon: '🔀' },
     { value: 'email', label: language === 'he' ? 'אימייל' : 'Email', icon: '📧' },
-    { value: 'phone', label: language === 'he' ? 'טלפון' : 'Phone', icon: '📞' }
+    { value: 'phone', label: language === 'he' ? 'טלפון' : 'Phone', icon: '📞' },
+    { value: 'file', label: language === 'he' ? 'העלאת קובץ/מסמכים' : 'File Upload', icon: '📎' }
   ];
 
   const suggestedQuestions = {
@@ -1068,6 +1072,8 @@ export const Onboarding: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6" dir={language === 'he' ? 'rtl' : 'ltr'}>
+      {previewMode === 'edit' ? (
+        <>
       {/* Progress Header */}
       <div className="text-center space-y-4">
         <h1 className="text-3xl font-bold text-primary">
@@ -1177,6 +1183,13 @@ export const Onboarding: React.FC = () => {
                       {language === 'he' ? 'הוסף שאלה' : 'Add Question'}
                     </Button>
                   </TooltipWrapper>
+                  
+                  {/* כפתור תצוגה עם תפריט */}
+                  <PreviewMenuButton
+                    brandColor={formData?.brandColor || "#4f46e5"}
+                    onForm={() => setPreviewMode('preview')}
+                    onChat={() => setPreviewMode('preview')}
+                  />
 
                   {/* Questionnaire Title field (placed to the right of the buttons) */}
                   <div className="flex items-center gap-2 ms-2">
@@ -1907,6 +1920,13 @@ export const Onboarding: React.FC = () => {
         value={publicLinkData?.public_token ? buildPublicUrl(publicLinkData.public_token, publicLinkData.default_lang as 'he' | 'en') : ''}
         title={language === 'he' ? 'QR Code' : 'QR Code'}
       />
+        </>
+      ) : (
+        <PreviewPanel 
+          formData={formData} 
+          onBackToEdit={() => setPreviewMode('edit')} 
+        />
+      )}
     </div>
   );
 };
