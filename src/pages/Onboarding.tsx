@@ -31,7 +31,6 @@ import { nanoid } from "nanoid";
 import PreviewMenuButton from "@/components/PreviewMenuButton";
 import PreviewPanel from "@/components/PreviewPanel";
 import { useBranding } from "@/branding/BrandProvider";
-import { useRef } from "react";
 
 type ToastApi = ((opts: { title?: string; description?: string, variant?: 'default' | 'destructive' }) => void) | undefined;
 function safeToast(toastApi: ToastApi, title: string, description?: string, variant?: 'default' | 'destructive') {
