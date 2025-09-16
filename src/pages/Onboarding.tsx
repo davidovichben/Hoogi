@@ -294,18 +294,18 @@ export const Onboarding: React.FC = () => {
         console.log('Loaded profile for user:', userId, prof);
 
         // 3) עדכון הלוגו והצבעים מהפרופיל (דורס את הקיים)
-        let brandColor = (prof.brand_color ?? "")?.toString().trim() ||
-                        (prof.brand_primary ?? "")?.toString().trim() ||
+        let brandColor = ((prof.brand_color ?? "")?.toString().trim()) ||
+                        ((prof.brand_primary ?? "")?.toString().trim()) ||
                         "";
         
-        let primaryColor = (prof.brand_primary ?? "")?.toString().trim() ||
-                          (prof.brand_color ?? "")?.toString().trim() ||
+        let primaryColor = ((prof.brand_primary ?? "")?.toString().trim()) ||
+                          ((prof.brand_color ?? "")?.toString().trim()) ||
                           "";
         
         let secondaryColor = (prof.brand_secondary ?? "")?.toString().trim() || "";
         
-        let logoRaw = (prof.logo_url ?? "")?.toString().trim() ||
-                     (prof.brand_logo_path ?? "")?.toString().trim() ||
+        let logoRaw = ((prof.logo_url ?? "")?.toString().trim()) ||
+                     ((prof.brand_logo_path ?? "")?.toString().trim()) ||
                      "";
 
         console.log('Raw logo from profile:', logoRaw);
