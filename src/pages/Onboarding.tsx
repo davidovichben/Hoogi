@@ -2038,7 +2038,19 @@ export const Onboarding: React.FC = () => {
 
           {currentStep < 3 ? (
             <Button
-              onClick={currentStep === 1 ? handleNextFromProfile : () => updateStep(3)}
+              onClick={currentStep === 1 ? handleNextFromProfile : () => {
+                // בדף 2 - עבור ישירות להפצה
+                if (formData.id) {
+                  navigate(routes.distributeHub);
+                } else {
+                  // אם אין ID, שמור קודם ואז עבור להפצה
+                  handleSaveAndNavigate().then(() => {
+                    if (formData.id) {
+                      navigate(routes.distributeHub);
+                    }
+                  });
+                }
+              }}
               disabled={savingProfile}
               className="gap-2"
             >
