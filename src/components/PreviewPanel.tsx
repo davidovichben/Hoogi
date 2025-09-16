@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import ClientQuestionnaire from './ClientQuestionnaire';
 import { useBranding } from '@/branding/BrandProvider';
+import { useProfileLogo } from '@/hooks/useProfileLogo';
 
 interface Question {
   id: string;
@@ -24,6 +25,7 @@ interface PreviewPanelProps {
 export default function PreviewPanel({ formData, onBackToEdit }: PreviewPanelProps) {
   const [mode, setMode] = useState<'form' | 'chat'>('form');
   const branding = useBranding();
+  const profileLogoUrl = useProfileLogo();
 
   const handleSubmit = (answers: any) => {
     console.log('Preview answers:', answers);
@@ -33,12 +35,12 @@ export default function PreviewPanel({ formData, onBackToEdit }: PreviewPanelPro
   const data = useMemo(() => ({
     title: (formData?.title ?? "").trim() || "— חייב כותרת —",
     description: formData?.description ?? "",
-    logoUrl: (formData?.logoUrl || branding.logoUrl || "").trim() || undefined,
+    logoUrl: (formData?.logoUrl || profileLogoUrl || "").trim() || undefined, // קודם מהמסך, אחרת מהפרופיל
     brandColor: (formData?.brandColor || branding.primary || "").trim() || undefined,
     brandSecondary: (((formData as any)?.brandSecondary || branding.secondary || "") as string).trim() || undefined,
     bgColor: (((formData as any)?.brandBg || branding.background || "") as string).trim() || undefined,
     questions: formData?.questions ?? [],
-  }), [formData, branding]);
+  }), [formData, branding, profileLogoUrl]);
 
   return (
     <div className="max-w-4xl mx-auto p-4">

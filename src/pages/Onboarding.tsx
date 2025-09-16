@@ -31,6 +31,7 @@ import { nanoid } from "nanoid";
 import PreviewMenuButton from "@/components/PreviewMenuButton";
 import PreviewPanel from "@/components/PreviewPanel";
 import { useBranding } from "@/branding/BrandProvider";
+import { useProfileLogo } from "@/hooks/useProfileLogo";
 
 type ToastApi = ((opts: { title?: string; description?: string, variant?: 'default' | 'destructive' }) => void) | undefined;
 function safeToast(toastApi: ToastApi, title: string, description?: string, variant?: 'default' | 'destructive') {
@@ -123,6 +124,7 @@ export const Onboarding: React.FC = () => {
   const { toast } = useShadcnToast();
   const profileRef = useRef<ProfileFormHandle>(null);
   const branding = useBranding();
+  const profileLogoUrl = useProfileLogo();
   const [canProceed, setCanProceed] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
   const [user, setUser] = useState<any>(null);
@@ -349,6 +351,15 @@ export const Onboarding: React.FC = () => {
     // תלויות: נטען כשהפרופיל משתנה או כשהמסך נטען
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profileData]);
+
+  // עדכון לוגו מהפרופיל אם formData.logoUrl ריק
+  useEffect(() => {
+    if (!profileLogoUrl) return;
+    setFormData(prev => ({
+      ...prev,
+      logoUrl: prev.logoUrl?.trim() ? prev.logoUrl : profileLogoUrl
+    }));
+  }, [profileLogoUrl]);
 
   // Load existing questionnaire data if editing
   useEffect(() => {
@@ -1414,7 +1425,7 @@ export const Onboarding: React.FC = () => {
                     <div className="flex gap-3">
                       <input
                         className="flex-1 border rounded-md p-2"
-                        placeholder={branding.logoUrl || "https://…/logo.png"}
+                        placeholder={profileLogoUrl || "https://…/logo.png"}
                         value={formData.logoUrl || ""}
                         onChange={(e) => {
                           const v = e.target.value;
