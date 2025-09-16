@@ -13,6 +13,8 @@ interface PreviewPanelProps {
   formData: {
     title: string;
     description?: string;
+    brandColor?: string;
+    logoUrl?: string;
     questions: Question[];
   };
   onBackToEdit: () => void;

@@ -242,7 +242,9 @@ export const Onboarding: React.FC = () => {
             primaryColor: profile.brand_primary ?? prev.primaryColor,
             secondaryColor: profile.brand_secondary ?? prev.secondaryColor,
           }));
-          
+
+          console.log('Initial logo from profile:', profile.brand_logo_path);
+
           // עדכון קטגוריה מהפרופיל
           if (profile.occupation) {
             setFormData(prev => ({
@@ -316,6 +318,8 @@ export const Onboarding: React.FC = () => {
           console.log('Resolved logo URL:', resolvedLogo);
           logoRaw = resolvedLogo || logoRaw;
         }
+
+        console.log('Final logo URL for formData:', logoRaw);
 
         if (cancelled) return;
 
