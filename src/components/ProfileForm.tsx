@@ -152,6 +152,15 @@ const ProfileForm = forwardRef<ProfileFormHandle, Props>(function ProfileForm({ 
         brandLogoPath: p.brand_logo_path ?? "",
       }));
 
+      // לוגו להצגה: אם יש logo_url – קודם; אחרת נגזור URL ציבורי מה־path
+      if (p.logo_url && typeof p.logo_url === "string" && p.logo_url.trim()) {
+        setLogoUrl(p.logo_url.trim());
+      } else if (p.brand_logo_path) {
+        void resolveLogoUrl(p.brand_logo_path);
+      } else {
+        setLogoUrl("");
+      }
+
       // טעינת קישורים
       setLinks(Array.isArray(p.links) ? p.links : []);
 
@@ -225,6 +234,7 @@ const ProfileForm = forwardRef<ProfileFormHandle, Props>(function ProfileForm({ 
         brandPrimary: form.brandPrimary,
         brandSecondary: form.brandSecondary,
         backgroundColor: form.backgroundColor,
+        logoUrl: (logoUrl || "").trim() || null,   // ← חדש
         brandLogoPath: form.brandLogoPath || null,
         occupation: form.occupation === OTHER ? free : (form.occupation || null),
         suboccupation: subFinal || null,

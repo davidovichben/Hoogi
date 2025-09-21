@@ -129,6 +129,7 @@ export type UpsertProfileInput = {
   brandPrimary?: string | null;
   brandSecondary?: string | null;
   backgroundColor?: string | null;
+  logoUrl?: string | null;
   brandLogoPath?: string | null;
   occupation?: string | null;
   suboccupation?: string | null;
@@ -146,6 +147,9 @@ export async function upsertProfile(input: UpsertProfileInput) {
     brand_primary: toHexOrNull(input.brandPrimary, "#000000"),
     brand_secondary: toHexOrNull(input.brandSecondary, "#000000"),
     background_color: toHexOrNull(input.backgroundColor, "#ffffff"),
+    // לוגו: שדה חיצוני
+    logo_url: input.logoUrl ?? null,
+    // לוגו מקובץ
     brand_logo_path: input.brandLogoPath ?? null,
     occupation: (input.occupation ?? "").trim() || null,
     suboccupation: (input.suboccupation ?? "").trim() || null,
