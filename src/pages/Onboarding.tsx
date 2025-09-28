@@ -749,11 +749,7 @@ export const Onboarding: React.FC = () => {
   };
 
   // הוסיפי למעלה בסקופ הקומפוננטה:
-  const safeProfile =
-    (typeof profile !== "undefined" && profile) || // אם יש משתנה כזה
-    (typeof profileData !== "undefined" && profileData) ||
-    (typeof currentProfile !== "undefined" && currentProfile) ||
-    null;
+  const safeProfile = profileData || null;
 
   // helpers קטנים שנשים ליד שאר הפונקציות בקומפוננטה
   const makeId = () =>
@@ -796,8 +792,8 @@ export const Onboarding: React.FC = () => {
 
   async function onSuggestClick() {
     try {
-      const businessName = formData?.title ?? safeProfile?.business_name ?? "Business Name";
-      const occupation = formData?.category ?? safeProfile?.occupation ?? "Occupation";
+      const businessName = (formData?.title || safeProfile?.companyName || "").toString().trim() || "עסק ללא שם";
+      const occupation = (formData?.category || "").toString().trim();
       const profile: ProfileForAI = {
         businessName,
         occupation,
@@ -808,7 +804,7 @@ export const Onboarding: React.FC = () => {
         extra:        safeProfile?.other_text
       };
 
-      const occ = (profile.occupation ?? "").trim();
+      const occ = occupation;
       if (!occ || ["אחר","other","Other"].includes(occ)) {
         safeToast(toast, "אין שאלות מומלצות עבור 'אחר' — אפשר להוסיף ידנית.");
         return;
