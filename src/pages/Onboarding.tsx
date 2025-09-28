@@ -796,10 +796,11 @@ export const Onboarding: React.FC = () => {
 
   async function onSuggestClick() {
     try {
-      // שליפת הפרופיל ממקום קיים אצלך (form/safeProfile)
+      const businessName = formData?.title ?? safeProfile?.business_name ?? "Business Name";
+      const occupation = formData?.category ?? safeProfile?.occupation ?? "Occupation";
       const profile: ProfileForAI = {
-        businessName: formData?.title ?? safeProfile?.business_name,
-        occupation:   formData?.category ?? safeProfile?.occupation,
+        businessName,
+        occupation,
         suboccupation: safeProfile?.suboccupation,
         email:        safeProfile?.email,
         phone:        safeProfile?.phone,
@@ -807,22 +808,27 @@ export const Onboarding: React.FC = () => {
         extra:        safeProfile?.other_text
       };
 
-      // "אחר" => לא מציגים הצעות
       const occ = (profile.occupation ?? "").trim();
       if (!occ || ["אחר","other","Other"].includes(occ)) {
         safeToast(toast, "אין שאלות מומלצות עבור 'אחר' — אפשר להוסיף ידנית.");
         return;
       }
 
-      const aiQ = await fetchSuggestedQuestions(profile, { locale: "he", minCore: 4, maxTotal: 7 });
+      let aiQ = await fetchSuggestedQuestions(profile, { locale: "he", minCore: 4, maxTotal: 7 });
+
       if (!aiQ.length) {
-        safeToast(toast, "לא התקבלו שאלות מומלצות. ניתן להוסיף ידנית.");
-        return;
+        // Fallback questions
+        aiQ = [
+          { text: "מה שמך?", type: "text", isRequired: true },
+          { text: "מה מספר הטלפון שלך?", type: "phone", isRequired: true },
+          { text: "מה כתובת האימייל שלך?", type: "email", isRequired: true },
+          { text: "תאר את הבעיה שלך", type: "text", isRequired: false }
+        ];
+        safeToast(toast, "לא התקבלו שאלות מהשרת, טוען שאלות בסיסיות.");
       }
 
       const uiQs = mapAiToUi(aiQ);
 
-      // אם קיימות רק ברירות מחדל (שם/טלפון/מייל) — החלפה; אחרת הוספה לסוף
       const existing = formData.questions ?? [];
       const onlyBasics = existing.length <= 3 && existing.every(q =>
         ["שם","טלפון","אימייל","דוא\"ל"].some(b => (q.text || "").includes(b))
@@ -830,10 +836,20 @@ export const Onboarding: React.FC = () => {
 
       const merged = onlyBasics ? uiQs : [...existing, ...uiQs];
       setFormData(prev => ({ ...prev, questions: merged }));
-      safeToast(toast, "שאלות מומלצות ללקוח הקצה נוספו ✔");
+      safeToast(toast, "שאלות מומלצות נוספו ✔");
     } catch (e) {
       console.error(e);
       safeToast(toast, "שגיאה בטעינת שאלות מומלצות");
+      // Fallback in case of error
+      const fallbackQ = [
+        { text: "מה שמך?", type: "text", isRequired: true },
+        { text: "מה מספר הטלפון שלך?", type: "phone", isRequired: true },
+        { text: "מה כתובת האימייל שלך?", type: "email", isRequired: true },
+        { text: "תאר את הבעיה שלך", type: "text", isRequired: false }
+      ];
+      const uiQs = mapAiToUi(fallbackQ);
+      setFormData(prev => ({ ...prev, questions: uiQs }));
+      safeToast(toast, "טוען שאלות בסיסיות בגלל שגיאה.");
     }
   }
 
