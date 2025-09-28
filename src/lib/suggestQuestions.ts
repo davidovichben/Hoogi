@@ -168,19 +168,65 @@ export async function fetchSuggestedQuestions(
   const data = await res.json().catch(() => ({}));
   const arr = Array.isArray(data?.questions) ? data.questions : [];
 
-  // סניטציה: החזר רק אובייקטים תקינים
-  return arr.map((q: any) => {
+  // סניטציה ראשונית: החזר רק אובייקטים תקינים
+  const mapped: AiQuestion[] = arr.map((q: any) => {
     const text = (q?.text ?? "").toString().trim();
     if (!text) return null;
 
     let type = (q?.type ?? "text").toString().toLowerCase();
     if (type === "single") type = "single_choice";
     if (type === "multi")  type = "multiple_choice";
+    // שמור yes_no כבחירה יחידה עם אופציות כן/לא כדי להתאים ל-UI, אך נזהה זאת בהמשך כ-yes/no
     if (type === "yes_no") { type = "single_choice"; q.options = ["כן","לא"]; }
 
     const options = Array.isArray(q?.options) ? q.options.filter((o: any) => typeof o === "string" && o.trim()).map((o: string)=>o.trim()) : undefined;
     const isRequired = typeof q?.isRequired === "boolean" ? q.isRequired : false;
 
     return { text, type, options, isRequired } as AiQuestion;
-  }).filter(Boolean);
+  }).filter(Boolean) as AiQuestion[];
+
+  // אכיפה: ודא שיש לפחות אחת מכל הסוגים: בחירה מרובה, בחירה יחידה, וכן/לא
+  const normalize = (s: string) => (s || "").toLowerCase().trim();
+  const hasYesNoOptions = (opts?: string[]) => {
+    if (!Array.isArray(opts)) return false;
+    const norm = opts.map(normalize);
+    return (norm.includes("כן") && norm.includes("לא")) || (norm.includes("yes") && norm.includes("no"));
+  };
+
+  let hasMultiple = mapped.some(q => q.type === "multiple_choice");
+  let hasSingle   = mapped.some(q => q.type === "single_choice");
+  let hasYesNo    = mapped.some(q => (q.type === "single_choice" && hasYesNoOptions(q.options)));
+
+  const fillers: AiQuestion[] = [];
+  if (!hasMultiple) {
+    fillers.push({
+      text: "מה הכי חשוב לך?",
+      type: "multiple_choice",
+      options: ["איכות", "מהירות", "מחיר", "שירות", "אחר"],
+      isRequired: false
+    });
+    hasMultiple = true;
+  }
+  if (!hasSingle) {
+    fillers.push({
+      text: "איזה סוג שירות אתה מחפש?",
+      type: "single_choice",
+      options: ["ייעוץ", "ביצוע", "תחזוקה", "אבחון", "אחר"],
+      isRequired: false
+    });
+    hasSingle = true;
+  }
+  if (!hasYesNo) {
+    fillers.push({
+      text: "האם זה דחוף?",
+      type: "single_choice",
+      options: ["כן", "לא"],
+      isRequired: false
+    });
+    hasYesNo = true;
+  }
+
+  // שלב את המילויים בתחילת הרשימה כדי שלא ייחתכו ע"י max בהמשך השרשרת
+  const finalList = [...fillers, ...mapped];
+  return finalList;
 }
