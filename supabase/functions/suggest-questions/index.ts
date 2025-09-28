@@ -591,8 +591,8 @@ serve(async (req) => {
             .slice(0, max);
         }
 
-        if (payload.__debug) return ok({ questions: questions, prompt_used });
-        return ok(questions);
+        if (payload.__debug) return ok({ questions, prompt_used });
+        return ok({ questions });
       } catch (aiError) {
         console.error('AI Error:', aiError);
         // fallback לשאלות מוכנות
@@ -646,10 +646,8 @@ serve(async (req) => {
       id: `${occupation.toLowerCase().replace(/\s+/g, '-')}-${index + 1}-${Date.now()}`
     }));
 
-    const base = [ "מה השירות המרכזי שנדרש כעת?", "מה חשוב לך בתהליך (מהירות/מחיר/מוניטין/ליווי)?", "יש פרטים/מסמכים שכדאי שנכיר?", "מה התוצאה שהכי תשמח/י לקבל?" ].slice(0, max);
-
-    if (payload.__debug) return ok({ questions: base, prompt_used });
-    return ok(base);
+    if (payload.__debug) return ok({ questions: questionsWithIds, prompt_used });
+    return ok({ questions: questionsWithIds });
 
   } catch (error) {
     console.error('Error in suggest-questions function:', error)
