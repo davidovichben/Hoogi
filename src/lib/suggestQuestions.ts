@@ -16,6 +16,38 @@ export type ProfileForAI = {
   extra?: string;
 };
 
+function buildPromptOverride(profile: ProfileForAI, locale: "he" | "en" | "fr" = "he"): string {
+  const businessName = (profile.businessName || "").trim();
+  const occupation = (profile.occupation || "").trim();
+  const suboccupation = (profile.suboccupation || "").trim();
+  const otherText = (profile.extra || "").trim();
+  const linksText = (profile.links || []).filter(Boolean).join(", ");
+
+  // Prompt authored in Hebrew per requirement
+  return `אתה מומחה UX ושיווק שמפתח שאלוני לידים שיווקיים קצרים ללקוחות קצה.
+
+🔹 הנתונים שאתה מקבל שייכים לנותן השירות (לדוגמה: ${occupation || "עו"} / ${suboccupation || "התמחות"}).
+🔹 המטרה: ליצור שאלון קצר (5–7 שאלות) ללקוח הקצה כדי להבין צורך, לחזק אמון ולעודד השארת פרטים.
+
+איך לזהות תחום השירות (היררכיה):
+1) אם יש תת תחום – הוא הקובע העיקרי. התחום הכללי רק להקשר.
+2) אם אין תת תחום או שהוא "אחר" – השתמש בטקסט otherText: ${otherText || "—"}.
+3) אם גם תחום וגם תת תחום ריקים – התייחס ל‑otherText כתחום.
+4) אם יש קישורים שימושיים – אפשר להיעזר בהם להקשר בלבד: ${linksText || "—"}.
+5) אם לא ניתן לקרוא קישורים – התעלם והמשך כרגיל.
+
+אל תשאל את נותן השירות שום דבר.
+
+כן לשאול את הלקוח הקצה: מה צריך, איזה סוג שירות, מה חשוב, לוח זמנים, ניסיון קודם.
+
+פורמט הפלט (JSON בלבד): מערך של 5–7 שאלות, כל שאלה היא אובייקט:
+{ "type": "בחירה יחידה"|"בחירה מרובה"|"כן/לא"|"שדה טקסט חופשי", "text": string, "options"?: string[] (עד 5) }
+
+אנא החזר אך ורק JSON תקני של המערך, ללא הסברים נוספים.
+שם העסק: ${businessName || "—"}
+שפה מועדפת להצגה: ${locale}`;
+}
+
 export async function fetchSuggestedQuestions(
   profile: ProfileForAI,
   opts?: { locale?: "he" | "en" | "fr"; minCore?: number; maxTotal?: number }
@@ -37,7 +69,8 @@ export async function fetchSuggestedQuestions(
       other_text: profile.extra,
       links: (profile.links ?? []).join(", "),
       language: opts?.locale ?? "he",
-      max: opts?.maxTotal ?? 7
+      max: opts?.maxTotal ?? 7,
+      prompt_override: buildPromptOverride(profile, opts?.locale ?? "he")
     })
   });
 
