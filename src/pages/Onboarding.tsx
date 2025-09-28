@@ -825,12 +825,39 @@ export const Onboarding: React.FC = () => {
 
       const uiQs = mapAiToUi(aiQ);
 
+      // הבטחת 3 שאלות חובה + מינימום 8 שאלות בסך הכול
+      const normalize = (s: string) => (s || "").toLowerCase().replace(/\s+/g, " ").trim();
+      const hasName  = uiQs.some(q => /שם/.test(normalize(q.text)));
+      const hasEmail = uiQs.some(q => /(אימייל|דוא\"?ל|email)/.test(normalize(q.text)));
+      const hasPhone = uiQs.some(q => /(טלפון|נייד|phone)/.test(normalize(q.text)));
+
+      const baseline: UiQuestion[] = [];
+      if (!hasName)  baseline.push({ id: nanoid(), text: "שם מלא", type: "text",  isRequired: true });
+      if (!hasEmail) baseline.push({ id: nanoid(), text: "אימייל",  type: "email", isRequired: true });
+      if (!hasPhone) baseline.push({ id: nanoid(), text: "טלפון",  type: "phone", isRequired: true });
+
+      let suggestedWithBaseline: UiQuestion[] = [...baseline, ...uiQs];
+      if (suggestedWithBaseline.length < 8) {
+        const fillers: UiQuestion[] = [
+          { id: nanoid(), text: "איך נוכל לעזור?", type: "text" },
+          { id: nanoid(), text: "מה חשוב לך בתהליך?", type: "text" },
+          { id: nanoid(), text: "טווח תקציב משוער", type: "text" },
+          { id: nanoid(), text: "מתי תרצה/י להתחיל?", type: "date" },
+          { id: nanoid(), text: "אופן התקשרות מועדף", type: "single_choice", options: ["טלפון","ווטסאפ","אימייל"] },
+        ];
+        const existingNorm = new Set(suggestedWithBaseline.map(q => normalize(q.text)));
+        for (const f of fillers) {
+          if (suggestedWithBaseline.length >= 8) break;
+          if (!existingNorm.has(normalize(f.text))) suggestedWithBaseline.push(f);
+        }
+      }
+
       const existing = formData.questions ?? [];
       const onlyBasics = existing.length <= 3 && existing.every(q =>
         ["שם","טלפון","אימייל","דוא\"ל"].some(b => (q.text || "").includes(b))
       );
 
-      const merged = onlyBasics ? uiQs : [...existing, ...uiQs];
+      const merged = onlyBasics ? suggestedWithBaseline : [...existing, ...suggestedWithBaseline];
       setFormData(prev => ({ ...prev, questions: merged }));
       safeToast(toast, "שאלות מומלצות נוספו ✔");
     } catch (e) {
