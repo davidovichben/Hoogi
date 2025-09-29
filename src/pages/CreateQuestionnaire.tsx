@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { getUserId, fetchProfileByUserId } from "@/lib/rpc";
 import BrandStyles from "@/components/BrandStyles";
 export default function CreateQuestionnaire(){
   const [title,setTitle]=useState(""); const [description,setDescription]=useState("");
@@ -11,50 +12,47 @@ export default function CreateQuestionnaire(){
   const [subLabel, setSubLabel] = useState<string>(""); // תת-תחום/אחר לתצוגה
   const logoTouched = useRef(false);
   const siteUrl = (import.meta as any).env?.VITE_SITE_URL || window.location.origin;
+  // פונקציית עזר לרענון פרופיל
+  async function refreshProfileUi() {
+    const uid = await getUserId();
+    if (!uid) return;
+    const p = await fetchProfileByUserId(uid);
+
+    // לוגו
+    setLogoUrl(p?.logo_url || "");
+    setLogoCb(Date.now()); // לפצח קאש אם ה-URL לא השתנה
+
+    // תת-תחום / "אחר"
+    const OTHER = "__other__";
+    const sub =
+      p?.suboccupation ??
+      p?.business_subcategory ??
+      p?.sub_category ??
+      "";
+
+    const subFree =
+      p?.suboccupationFree ??
+      p?.business_other ??
+      "";
+
+    const label =
+      (sub === OTHER || sub?.toLowerCase() === "other")
+        ? (subFree || "אחר")
+        : (sub || "");
+
+    setSubLabel(label);
+  }
+
   const handleLogoUpload=async(file:File)=>{ 
     logoTouched.current = true;
     try{ setLogoUploading(true); const {data:{user}}=await supabase.auth.getUser(); if(!user) throw new Error("יש להיכנס למערכת כדי להעלות לוגו.");
     const path=`${user.id}/logos/${Date.now()}_${file.name.replace(/\s+/g,"_")}`; const {error:upErr}=await supabase.storage.from("branding").upload(path,file); if(upErr) throw upErr;
     const {data:pub}=await supabase.storage.from("branding").getPublicUrl(path); setLogoUrl(pub.publicUrl);}catch(e:any){setError(e.message||String(e));}finally{setLogoUploading(false);} };
-  // טעינת פרופיל המשתמש
+  // טעינה ראשונית + האזנה לשמירה
   useEffect(() => {
-    const loadProfile = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-        
-        const { data: p } = await supabase
-          .from("profiles")
-          .select("*")
-          .or(`id.eq.${user.id},user_id.eq.${user.id}`)
-          .limit(1)
-          .single();
-        
-        if (p) {
-          // טעינת לוגו רק אם לא נגעו בו
-          if (!logoTouched.current) {
-            setLogoUrl(p?.logo_url || "");
-            setLogoCb(Date.now()); // לפצח קאש אם התמונה אותה כתובת
-          }
-          
-          // טעינת תת-תחום
-          const OTHER = "__other__";
-          const sub = p?.suboccupation ?? p?.business_subcategory ?? p?.sub_category ?? "";
-          const subFree = p?.suboccupationFree ?? p?.business_other ?? "";
-          const label = (sub === OTHER || sub?.toLowerCase() === "other") ? (subFree || "אחר") : (sub || "");
-          setSubLabel(label);
-        }
-      } catch (e) {
-        console.error("Error loading profile:", e);
-      }
-    };
-    
-    loadProfile();
-  }, []);
+    refreshProfileUi(); // טעינה ראשונית
 
-  // רענון לוגו אוטומטי אחרי שמירת פרופיל
-  useEffect(() => {
-    const onSaved = () => setLogoCb(Date.now());
+    const onSaved = () => { refreshProfileUi(); };
     window.addEventListener("profile:saved", onSaved);
     return () => window.removeEventListener("profile:saved", onSaved);
   }, []);
