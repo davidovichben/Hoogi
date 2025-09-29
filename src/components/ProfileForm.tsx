@@ -192,53 +192,35 @@ const ProfileForm = forwardRef<ProfileFormHandle, Props>(function ProfileForm({ 
     void resolveLogoUrl(form.brandLogoPath);
   }, [form.brandLogoPath]);
 
-  function isValidForm(): boolean {
+  function isValidForm() {
     const OTHER = "__other__";
 
-    const missing: string[] = [];
-    const nameOk = (form.businessName || "").trim();
-    const emailOk = (form.email || "").trim();
-    const phoneOk = (form.phone || "").trim();
+    const hasName  = !!(form.businessName || "").trim();
+    const hasMail  = !!(form.email || "").trim();
+    const hasPhone = !!(form.phone || "").trim();
 
-    const occ = (form.occupation || "").trim();
-    const sub = (form.suboccupation || "").trim();
-    const occFree = (form.occupationFree || "").trim();
-    const subFree = (form.suboccupationFree || "").trim();
+    // תחום: אם OTHER נבחר – שדה הטקסט החופשי חובה
+    const occOk = !!(form.occupation || "").trim() &&
+                  (form.occupation !== OTHER ? true : !!(form.occupationFree || "").trim());
 
-    // תחום ותת־תחום תמיד חובה
-    let occOk = !!occ;
-    let subOk = !!sub;
+    // תת־תחום: תמיד חובה.
+    // אם OTHER – חובה טקסט חופשי; אחרת חובה בחירה מהרשימה.
+    const subOk = (form.suboccupation === OTHER)
+                    ? !!(form.suboccupationFree || "").trim()
+                    : !!(form.suboccupation || "").trim();
 
-    // אם נבחר "אחר" בתחום — שדה הטקסט החופשי של תחום חובה, ותת־תחום לא נכפה
-    if (occ === OTHER) {
-      occOk = !!occFree;
-      // אם תת־תחום נבחר "אחר" — גם שדה הטקסט שלו חובה
-      if (sub === OTHER) subOk = !!subFree;
-      // אם לא נבחר תת־תחום בכלל — עדיין נדרוש אחד מהשניים: sub או subFree
-      if (!sub && !subFree) subOk = false;
-    } else {
-      // תחום רגיל: תת־תחום חובה; אם תת־תחום == "אחר" — דורשים subFree
-      if (sub === OTHER) subOk = !!subFree;
-    }
-
-    if (!nameOk) missing.push("שם עסק");
-    if (!emailOk) missing.push("אימייל");
-    if (!phoneOk) missing.push("נייד");
-    if (!occOk) missing.push("תחום");
-    if (!subOk) missing.push("תת־תחום");
-
-    if (missing.length) {
-      showError(`חסר/שגוי: ${missing.join(", ")}`);
-      return false;
-    }
-    return true;
+    return Boolean(hasName && hasMail && hasPhone && occOk && subOk);
   }
 
     async function handleSave(): Promise<boolean> {
     const userId = await getUserId();
     if (!userId) { showError("לא נמצאה התחברות"); return false; }
 
-    if (!isValidForm()) return false;
+    if (!isValidForm()) {
+      showError("חובה למלא: שם עסק, אימייל, נייד, תחום ותת־תחום (או טקסט כשנבחר 'אחר').");
+      console.error("✖","חובה למלא: שם עסק, נייד, מייל, תחום/תת־תחום (או טקסט כשנבחר 'אחר')");
+      return false;
+    }
 
     setSaving(true);
     try {

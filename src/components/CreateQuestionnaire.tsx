@@ -147,6 +147,9 @@ export default function CreateQuestionnaire({ lang = "he", userId, onSuccess }: 
   const [success, setSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [profile, setProfile] = useState<any>(null);
+  const [logoUrl, setLogoUrl] = useState<string>("");
+  const [logoCb, setLogoCb] = useState<number>(0);
+  const [subLabel, setSubLabel] = useState<string>("");
   const [customizeBrand, setCustomizeBrand] = useState(false);
   const [customizeCategory, setCustomizeCategory] = useState(false);
 
@@ -192,9 +195,29 @@ export default function CreateQuestionnaire({ lang = "he", userId, onSuccess }: 
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user?.id) return;
-      const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+      const { data } = await supabase
+        .from('profiles')
+        .select('*')
+        .or(`id.eq.${user.id},user_id.eq.${user.id}`)
+        .maybeSingle();
+
       if (data) {
         setProfile(data);
+
+        // לוגו + פיצוח קאש אם ה-URL זהה
+        setLogoUrl(data.logo_url || "");
+        setLogoCb(Date.now());
+
+        // תת־תחום/אחר לתצוגה
+        const OTHER = "__other__";
+        const sub = data.suboccupation ?? data.business_subcategory ?? data.sub_category ?? "";
+        const subFree = data.suboccupationFree ?? data.business_other ?? "";
+        const label =
+          (sub === OTHER || (typeof sub === "string" && sub.toLowerCase() === "other"))
+            ? (subFree || "אחר")
+            : (sub || "");
+        setSubLabel(label);
+
         // עדכון ברירות מחדל מהפרופיל
         reset((prev:any)=>({
           ...prev,
@@ -211,6 +234,40 @@ export default function CreateQuestionnaire({ lang = "he", userId, onSuccess }: 
       }
     })();
   }, [reset]);
+
+  // רענון פרופיל אחרי שמירה
+  useEffect(() => {
+    async function refreshProfile() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user?.id) return;
+
+        const { data } = await supabase
+          .from('profiles')
+          .select('*')
+          .or(`id.eq.${user.id},user_id.eq.${user.id}`)
+          .maybeSingle();
+
+        if (data) {
+          setLogoUrl(data.logo_url || "");
+          setLogoCb(Date.now());
+
+          const OTHER = "__other__";
+          const sub = data.suboccupation ?? data.business_subcategory ?? data.sub_category ?? "";
+          const subFree = data.suboccupationFree ?? data.business_other ?? "";
+          const label =
+            (sub === OTHER || (typeof sub === "string" && sub.toLowerCase() === "other"))
+              ? (subFree || "אחר")
+              : (sub || "");
+          setSubLabel(label);
+        }
+      } catch {}
+    }
+
+    const onSaved = () => { refreshProfile(); };
+    window.addEventListener("profile:saved", onSaved);
+    return () => window.removeEventListener("profile:saved", onSaved);
+  }, []);
 
   const { fields: stepFields, append: addStep, remove: removeStep } = useFieldArray({ 
     control, 
@@ -571,7 +628,21 @@ export default function CreateQuestionnaire({ lang = "he", userId, onSuccess }: 
           <span className="text-2xl">🦉</span>
         </div>
         <div>
-          <h1 className="text-3xl font-bold text-gray-800">{t.title}</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold text-gray-800">{t.title}</h1>
+            {subLabel ? (
+              <span className="text-sm px-2 py-0.5 rounded border border-black/10">
+                תת־תחום: {subLabel}
+              </span>
+            ) : null}
+            {logoUrl ? (
+              <img
+                alt="Logo"
+                className="h-10 object-contain"
+                src={`${logoUrl}${logoUrl.includes("?") ? "&" : "?"}cb=${logoCb}`}
+              />
+            ) : null}
+          </div>
           <p className="text-gray-600">מערכת מתקדמת ליצירת שאלונים דינמיים</p>
         </div>
       </div>
