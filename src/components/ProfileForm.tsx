@@ -274,6 +274,7 @@ const ProfileForm = forwardRef<ProfileFormHandle, Props>(function ProfileForm({ 
       } else {
         showSuccess("✔ הפרופיל נשמר בהצלחה");
       }
+      window.dispatchEvent(new Event("profile:saved")); // ליידע עמודים אחרים
       onSaved?.(true);
       initialSnap.current = snapshot();
       return true;
@@ -287,7 +288,7 @@ const ProfileForm = forwardRef<ProfileFormHandle, Props>(function ProfileForm({ 
           variant: "destructive"
         });
       } else {
-        showError(`שמירה נכשלה: ${msg}`);
+        showError("שמירת פרופיל נכשלה");
       }
       onSaved?.(false);
       return false;

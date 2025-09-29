@@ -5,9 +5,10 @@ export default function CreateQuestionnaire(){
   const [title,setTitle]=useState(""); const [description,setDescription]=useState("");
   const [defaultLocale,setDefaultLocale]=useState("he"); const [isPublished,setIsPublished]=useState(true);
   const [brandPrimary,setBrandPrimary]=useState("#2563eb"); const [brandAccent,setBrandAccent]=useState("#f59e0b"); const [brandBackground,setBrandBackground]=useState("#ffffff");
-  const [logoUrl,setLogoUrl]=useState<string|null>(null); const [logoUploading,setLogoUploading]=useState(false);
+  const [logoUrl,setLogoUrl]=useState<string>(""); const [logoUploading,setLogoUploading]=useState(false);
+  const [logoCb, setLogoCb] = useState<number>(0);   // cache-buster לתמונה
   const [shareLink,setShareLink]=useState<string|null>(null); const [loading,setLoading]=useState(false); const [error,setError]=useState<string|null>(null);
-  const [subLabel, setSubLabel] = useState("");
+  const [subLabel, setSubLabel] = useState<string>(""); // תת-תחום/אחר לתצוגה
   const logoTouched = useRef(false);
   const siteUrl = (import.meta as any).env?.VITE_SITE_URL || window.location.origin;
   const handleLogoUpload=async(file:File)=>{ 
@@ -32,9 +33,8 @@ export default function CreateQuestionnaire(){
         if (p) {
           // טעינת לוגו רק אם לא נגעו בו
           if (!logoTouched.current) {
-            if (p.logo_url && typeof p.logo_url === "string" && p.logo_url.trim()) {
-              setLogoUrl(p.logo_url.trim());
-            }
+            setLogoUrl(p?.logo_url || "");
+            setLogoCb(Date.now()); // לפצח קאש אם התמונה אותה כתובת
           }
           
           // טעינת תת-תחום
@@ -50,6 +50,13 @@ export default function CreateQuestionnaire(){
     };
     
     loadProfile();
+  }, []);
+
+  // רענון לוגו אוטומטי אחרי שמירת פרופיל
+  useEffect(() => {
+    const onSaved = () => setLogoCb(Date.now());
+    window.addEventListener("profile:saved", onSaved);
+    return () => window.removeEventListener("profile:saved", onSaved);
   }, []);
 
   const handleCreate=async()=>{ setLoading(true); setError(null); try{
@@ -68,7 +75,11 @@ export default function CreateQuestionnaire(){
           ) : null}
         </div>
         {logoUrl ? (
-          <img src={logoUrl} className="h-10 object-contain" alt="Logo" />
+          <img
+            alt="Logo"
+            className="h-10 object-contain"
+            src={`${logoUrl}${logoUrl.includes("?") ? "&" : "?"}cb=${logoCb}`}
+          />
         ) : (
           <div className="text-sm opacity-70">ללא לוגו</div>
         )}
