@@ -189,31 +189,53 @@ const ProfileForm = forwardRef<ProfileFormHandle, Props>(function ProfileForm({ 
     void resolveLogoUrl(form.brandLogoPath);
   }, [form.brandLogoPath]);
 
-  function isValidForm() {
-    const baseOk =
-      (form.businessName || "").trim() &&
-      (form.phone || "").trim() &&
-      (form.email || "").trim() &&
-      (form.occupation || "").trim(); // תחום חובה
+  function isValidForm(): boolean {
+    const OTHER = "__other__";
 
-    // "אחר": אם נבחר ברמת תחום או תת־תחום — חייבים טקסט חופשי
-    const occOtherOk = form.occupation !== "__other__" || (form.suboccupationFree || "").trim();
-    const subOtherOk =
-      form.occupation === "__other__" ||
-      form.suboccupation !== "__other__" ||
-      (form.suboccupationFree || "").trim();
+    const missing: string[] = [];
+    const nameOk = (form.businessName || "").trim();
+    const emailOk = (form.email || "").trim();
+    const phoneOk = (form.phone || "").trim();
 
-    return Boolean(baseOk && occOtherOk && subOtherOk);
+    const occ = (form.occupation || "").trim();
+    const sub = (form.suboccupation || "").trim();
+    const occFree = (form.occupationFree || "").trim();
+    const subFree = (form.suboccupationFree || "").trim();
+
+    // תחום ותת־תחום תמיד חובה
+    let occOk = !!occ;
+    let subOk = !!sub;
+
+    // אם נבחר "אחר" בתחום — שדה הטקסט החופשי של תחום חובה, ותת־תחום לא נכפה
+    if (occ === OTHER) {
+      occOk = !!occFree;
+      // אם תת־תחום נבחר "אחר" — גם שדה הטקסט שלו חובה
+      if (sub === OTHER) subOk = !!subFree;
+      // אם לא נבחר תת־תחום בכלל — עדיין נדרוש אחד מהשניים: sub או subFree
+      if (!sub && !subFree) subOk = false;
+    } else {
+      // תחום רגיל: תת־תחום חובה; אם תת־תחום == "אחר" — דורשים subFree
+      if (sub === OTHER) subOk = !!subFree;
+    }
+
+    if (!nameOk) missing.push("שם עסק");
+    if (!emailOk) missing.push("אימייל");
+    if (!phoneOk) missing.push("נייד");
+    if (!occOk) missing.push("תחום");
+    if (!subOk) missing.push("תת־תחום");
+
+    if (missing.length) {
+      showError(`חסר/שגוי: ${missing.join(", ")}`);
+      return false;
+    }
+    return true;
   }
 
     async function handleSave(): Promise<boolean> {
     const userId = await getUserId();
     if (!userId) { showError("לא נמצאה התחברות"); return false; }
 
-    if (!isValidForm()) {
-      showError("חובה למלא: שם עסק, נייד, מייל, תחום, ושדה טקסט כשנבחר 'אחר'");
-      return false;
-    }
+    if (!isValidForm()) return false;
 
     setSaving(true);
     try {
@@ -247,7 +269,7 @@ const ProfileForm = forwardRef<ProfileFormHandle, Props>(function ProfileForm({ 
           description: "פרופיל נשמר בהצלחה",
         });
       } else {
-        showSuccess("פרופיל נשמר");
+        showSuccess("✔ הפרופיל נשמר בהצלחה");
       }
       onSaved?.(true);
       initialSnap.current = snapshot();
@@ -272,11 +294,17 @@ const ProfileForm = forwardRef<ProfileFormHandle, Props>(function ProfileForm({ 
   }
 
   async function handleLogoFile(file?: File | null) {
-    if (!file) return;
     try {
+      if (!file) return;
+      
+      // תצוגה מיידית
+      const objectUrl = URL.createObjectURL(file);
+      setLogoUrl(objectUrl);
+      
       setUploadingLogo(true);
       const userId = await getUserId();
       if (!userId) { showError("לא נמצאה התחברות"); return; }
+      
       const ext = (file.name?.split(".").pop() || "png").toLowerCase();
       const path = `users/${userId}/logo.${ext}`; // בתוך bucket "branding"
       const { error } = await supabase.storage.from("branding").upload(path, file, {
@@ -284,11 +312,12 @@ const ProfileForm = forwardRef<ProfileFormHandle, Props>(function ProfileForm({ 
         contentType: file.type || "image/png",
       });
       if (error) throw error;
+      
       setForm(prev => ({ ...prev, brandLogoPath: path }));
-      showSuccess("הלוגו הועלה ונשמר בהגדרות");
+      showSuccess("✔ הלוגו הוחלף בתצוגה. לחצי 'שמור פרופיל' כדי לקבע.");
     } catch (e: any) {
       console.error(e);
-      showError(e?.message || "העלאת לוגו נכשלה");
+      showError("החלפת לוגו נכשלה");
     } finally {
       setUploadingLogo(false);
     }
