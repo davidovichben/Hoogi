@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import BrandStyles from "@/components/BrandStyles";
 export default function CreateQuestionnaire(){
@@ -7,17 +7,72 @@ export default function CreateQuestionnaire(){
   const [brandPrimary,setBrandPrimary]=useState("#2563eb"); const [brandAccent,setBrandAccent]=useState("#f59e0b"); const [brandBackground,setBrandBackground]=useState("#ffffff");
   const [logoUrl,setLogoUrl]=useState<string|null>(null); const [logoUploading,setLogoUploading]=useState(false);
   const [shareLink,setShareLink]=useState<string|null>(null); const [loading,setLoading]=useState(false); const [error,setError]=useState<string|null>(null);
+  const [subLabel, setSubLabel] = useState("");
+  const logoTouched = useRef(false);
   const siteUrl = (import.meta as any).env?.VITE_SITE_URL || window.location.origin;
-  const handleLogoUpload=async(file:File)=>{ try{ setLogoUploading(true); const {data:{user}}=await supabase.auth.getUser(); if(!user) throw new Error("יש להיכנס למערכת כדי להעלות לוגו.");
+  const handleLogoUpload=async(file:File)=>{ 
+    logoTouched.current = true;
+    try{ setLogoUploading(true); const {data:{user}}=await supabase.auth.getUser(); if(!user) throw new Error("יש להיכנס למערכת כדי להעלות לוגו.");
     const path=`${user.id}/logos/${Date.now()}_${file.name.replace(/\s+/g,"_")}`; const {error:upErr}=await supabase.storage.from("branding").upload(path,file); if(upErr) throw upErr;
     const {data:pub}=await supabase.storage.from("branding").getPublicUrl(path); setLogoUrl(pub.publicUrl);}catch(e:any){setError(e.message||String(e));}finally{setLogoUploading(false);} };
+  // טעינת פרופיל המשתמש
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        
+        const { data: p } = await supabase
+          .from("profiles")
+          .select("*")
+          .or(`id.eq.${user.id},user_id.eq.${user.id}`)
+          .limit(1)
+          .single();
+        
+        if (p) {
+          // טעינת לוגו רק אם לא נגעו בו
+          if (!logoTouched.current) {
+            if (p.logo_url && typeof p.logo_url === "string" && p.logo_url.trim()) {
+              setLogoUrl(p.logo_url.trim());
+            }
+          }
+          
+          // טעינת תת-תחום
+          const OTHER = "__other__";
+          const sub = p?.suboccupation ?? p?.business_subcategory ?? p?.sub_category ?? "";
+          const subFree = p?.suboccupationFree ?? p?.business_other ?? "";
+          const label = (sub === OTHER || sub?.toLowerCase() === "other") ? (subFree || "אחר") : (sub || "");
+          setSubLabel(label);
+        }
+      } catch (e) {
+        console.error("Error loading profile:", e);
+      }
+    };
+    
+    loadProfile();
+  }, []);
+
   const handleCreate=async()=>{ setLoading(true); setError(null); try{
       const payload:any={title,description,default_locale:defaultLocale,is_published:isPublished,brand_logo_url:logoUrl,brand_primary:brandPrimary,brand_accent:brandAccent,brand_background:brandBackground};
       const {data, error}=await supabase.from("questionnaires").insert(payload).select("id, form_token").single(); if(error) throw error;
       setShareLink(`${siteUrl}/q/${data!.id}?t=${data!.form_token}`);}catch(e:any){setError(e.message||String(e));}finally{setLoading(false);} };
   return(<BrandStyles primary={brandPrimary} accent={brandAccent} background={brandBackground}>
     <div className="max-w-3xl mx-auto p-6">
-      <div className="flex items-center justify-between mb-4"><h1 className="text-2xl font-semibold">יצירת שאלון חדש</h1>{logoUrl?<img src={logoUrl} className="h-10 object-contain" />:<div className="text-sm opacity-70">ללא לוגו</div>}</div>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-semibold">יצירת שאלון חדש</h1>
+          {subLabel ? (
+            <span className="text-sm px-2 py-0.5 rounded border border-black/10">
+              תת־תחום: {subLabel}
+            </span>
+          ) : null}
+        </div>
+        {logoUrl ? (
+          <img src={logoUrl} className="h-10 object-contain" alt="Logo" />
+        ) : (
+          <div className="text-sm opacity-70">ללא לוגו</div>
+        )}
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
         <div className="md:col-span-2 card p-4">
           <label className="label">כותרת</label><input className="input" value={title} onChange={e=>setTitle(e.target.value)} placeholder="למשל: שאלון התאמה ללקוח"/>

@@ -69,6 +69,7 @@ const ProfileForm = forwardRef<ProfileFormHandle, Props>(function ProfileForm({ 
   const [logoUrl, setLogoUrl] = useState<string>("");
   const [links, setLinks] = useState<{title: string; url: string}[]>([]);
   const initialSnap = useRef<string>("");
+  const logoTouched = useRef(false);
 
   function snapshot() {
     const pick = {
@@ -153,12 +154,14 @@ const ProfileForm = forwardRef<ProfileFormHandle, Props>(function ProfileForm({ 
       }));
 
       // לוגו להצגה: אם יש logo_url – קודם; אחרת נגזור URL ציבורי מה־path
-      if (p.logo_url && typeof p.logo_url === "string" && p.logo_url.trim()) {
-        setLogoUrl(p.logo_url.trim());
-      } else if (p.brand_logo_path) {
-        void resolveLogoUrl(p.brand_logo_path);
-      } else {
-        setLogoUrl("");
+      if (!logoTouched.current) {
+        if (p.logo_url && typeof p.logo_url === "string" && p.logo_url.trim()) {
+          setLogoUrl(p.logo_url.trim());
+        } else if (p.brand_logo_path) {
+          void resolveLogoUrl(p.brand_logo_path);
+        } else {
+          setLogoUrl("");
+        }
       }
 
       // טעינת קישורים
@@ -488,7 +491,12 @@ const ProfileForm = forwardRef<ProfileFormHandle, Props>(function ProfileForm({ 
           <input
             type="file"
             accept="image/*"
-            onChange={e => void handleLogoFile(e.target.files?.[0] || null)}
+            onChange={e => {
+              const f = e.target.files?.[0];
+              if (!f) return;
+              logoTouched.current = true;
+              void handleLogoFile(f);
+            }}
             disabled={uploadingLogo}
           />
           {uploadingLogo && <span className="text-xs text-slate-500">מעלה…</span>}
