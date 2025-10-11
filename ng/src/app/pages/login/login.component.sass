@@ -1,0 +1,11 @@
+// Auth component styles
+@use 'sass:color'
+
+.text-primary
+  color: #17a2b8
+
+.btn-primary
+  background-color: #17a2b8
+
+  &:hover:not(:disabled)
+    background-color: color.adjust(#17a2b8, $lightness: -10%)

@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -47,7 +46,7 @@ const QUESTION_TEMPLATES: Record<string, Question[]> = {
       isRequired: true
     },
     {
-      id: "lawyer-2", 
+      id: "lawyer-2",
       text: "מתי התרחשה הבעיה?",
       type: "date",
       isRequired: false
@@ -66,7 +65,7 @@ const QUESTION_TEMPLATES: Record<string, Question[]> = {
     {
       id: "accountant-1",
       text: "איזה סוג שירות אתה צריך?",
-      type: "single_choice", 
+      type: "single_choice",
       options: ["דוחות שנתיים", "חשבות שכר", "פתיחת עוסק", "ייעוץ מס", "אחר"],
       isRequired: true
     },
@@ -510,9 +509,9 @@ serve(async (req) => {
     if (!businessName || !occupation) {
       return new Response(
         JSON.stringify({ error: 'businessName and occupation are required' }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       )
     }
@@ -614,7 +613,7 @@ serve(async (req) => {
           isRequired: true
         },
         {
-          id: "general-2", 
+          id: "general-2",
           text: language === 'he' ? "מה המייל שלך?" : "What is your email?",
           type: "email",
           isRequired: true
@@ -629,7 +628,7 @@ serve(async (req) => {
           id: "general-4",
           text: language === 'he' ? "איך שמעת עלינו?" : "How did you hear about us?",
           type: "single_choice",
-          options: language === 'he' 
+          options: language === 'he'
             ? ["חיפוש בגוגל", "רשתות חברתיות", "המלצה", "פרסום", "אחר"]
             : ["Google Search", "Social Media", "Recommendation", "Advertisement", "Other"],
           isRequired: false
@@ -653,13 +652,13 @@ serve(async (req) => {
     console.error('Error in suggest-questions function:', error)
     
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         error: 'Internal server error',
-        message: error.message 
+        message: error.message
       }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     )
   }

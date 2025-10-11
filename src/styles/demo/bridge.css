@@ -1,7 +1,0 @@
-.card{ background:#fff;border:1px solid hsl(var(--border));border-radius:16px;box-shadow:var(--shadow-elegant);padding:16px; }
-.input{ width:100%;padding:.75rem 1rem;border:1px solid hsl(var(--border));border-radius:12px;background:hsl(var(--input));outline:none; }
-.input:focus{ border-color:hsl(var(--ring));box-shadow:0 0 0 3px hsl(var(--ring)/.25);background:#fff; }
-.label{ color:hsl(var(--muted-foreground));font-weight:600;font-size:.9rem; }
-.btn-brand{ padding:.75rem 1rem;border-radius:12px;background:hsl(var(--primary));color:#fff;font-weight:700; }
-.outline{ padding:.7rem 1rem;border-radius:12px;background:transparent;border:1px solid hsl(var(--border)); }
-.chip{ background:hsl(var(--muted));color:hsl(var(--muted-foreground));padding:4px 12px;border-radius:999px;font-size:12px; }

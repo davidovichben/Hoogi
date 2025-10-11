@@ -1,0 +1,571 @@
+import { Component, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewChecked, ChangeDetectorRef, NgZone } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { Router, ActivatedRoute } from '@angular/router';
+import { QuestionnaireService } from '../../core/services/questionnaire.service';
+import { ToastService } from '../../core/services/toast.service';
+import { SupabaseService } from '../../core/services/supabase.service';
+import { LanguageService } from '../../core/services/language.service';
+import { Questionnaire, Question, QuestionOption } from '../../core/models/questionnaire.model';
+
+@Component({
+  selector: 'app-questionnaire-chat',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
+  templateUrl: './questionnaire-chat.html',
+  styleUrl: './questionnaire-chat.sass'
+})
+export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
+  @ViewChild('messagesContainer') private messagesContainer!: ElementRef;
+
+  questionnaire: Questionnaire | null = null;
+  questions: Question[] = [];
+  options: QuestionOption[] = [];
+  isLoading = false;
+  isSubmitted = false;
+  isOwnerView = false; // Flag to determine if this is owner/preview mode
+
+  // Current question tracking
+  currentQuestionIndex = 0;
+  chatMessages: Array<{type: 'bot' | 'user', text: string, questionIndex?: number}> = [];
+
+  // Owner's theme colors
+  primaryColor = '#199f3a';
+  secondaryColor = '#9cbb54';
+  logoUrl = '';
+
+  // Store responses
+  responses: Record<string, any> = {};
+  multiResponses: Record<string, Record<string, boolean>> = {};
+  currentAnswer: string = '';
+
+  // Auto-scroll control
+  private shouldScrollToBottom = false;
+  showOptions = true; // Always show options immediately
+  optionsLoading = false; // Show spinner while options are loading
+
+  // File upload
+  uploadedFileName = '';
+  uploadedFile: File | null = null;
+
+  // Audio recording
+  isRecording = false;
+  audioFileName = '';
+  private mediaRecorder: MediaRecorder | null = null;
+  private audioChunks: Blob[] = [];
+  private audioBlob: Blob | null = null;
+
+  constructor(
+    private questionnaireService: QuestionnaireService,
+    private toastService: ToastService,
+    private supabaseService: SupabaseService,
+    public lang: LanguageService,
+    private router: Router,
+    private route: ActivatedRoute,
+    private cdr: ChangeDetectorRef,
+    private ngZone: NgZone
+  ) {}
+
+  ngOnInit() {
+    // Prevent body scroll
+    document.body.style.overflow = 'hidden';
+
+    // Determine view mode based on route path
+    const currentPath = this.router.url;
+    if (currentPath.startsWith('/q/')) {
+      // Public guest view - fillable chat form
+      this.isOwnerView = false;
+    } else if (currentPath.startsWith('/questionnaires/chat/') || currentPath.startsWith('/c/')) {
+      // Owner preview or legacy chat route - preview mode
+      this.isOwnerView = true;
+    }
+
+    const id = this.route.snapshot.paramMap.get('id');
+    if (id) {
+      if (id === 'preview') {
+        this.loadPreviewData();
+      } else {
+        this.loadQuestionnaire(id);
+      }
+    }
+  }
+
+  ngOnDestroy() {
+    // Restore body scroll
+    document.body.style.overflow = '';
+  }
+
+  ngAfterViewChecked() {
+    if (this.shouldScrollToBottom) {
+      this.scrollToBottom();
+      this.shouldScrollToBottom = false;
+    }
+  }
+
+  private scrollToBottom(): void {
+    try {
+      if (this.messagesContainer) {
+        this.messagesContainer.nativeElement.scrollTo({
+          top: this.messagesContainer.nativeElement.scrollHeight,
+          behavior: 'smooth'
+        });
+      }
+    } catch (err) {
+      console.error('Error scrolling to bottom:', err);
+    }
+  }
+
+  loadPreviewData() {
+    try {
+      const previewDataStr = sessionStorage.getItem('preview_questionnaire');
+      if (!previewDataStr) {
+        this.toastService.show('No preview data found', 'error');
+        return;
+      }
+
+      const data = JSON.parse(previewDataStr);
+
+      this.questionnaire = {
+        id: 'preview',
+        title: data.questionnaire.title,
+        description: data.questionnaire.description,
+        language: data.questionnaire.language,
+        owner_id: data.questionnaire.owner_id,
+        status: 'draft',
+        is_active: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        user_id: data.questionnaire.owner_id
+      } as Questionnaire;
+
+      this.questions = data.questions;
+      this.options = data.options || [];
+
+      // Apply theme from preview data
+      if (data.profile) {
+        this.primaryColor = data.profile.brand_primary || '#199f3a';
+        this.secondaryColor = data.profile.brand_secondary || '#9cbb54';
+        this.logoUrl = data.profile.logo_url || '';
+      }
+
+      // This is preview mode (owner view)
+      this.isOwnerView = true;
+
+      this.initializeChat();
+    } catch (error) {
+      console.error('Error loading preview data:', error);
+      this.toastService.show('Error loading preview', 'error');
+    }
+  }
+
+  async loadQuestionnaire(tokenOrId: string) {
+    this.isLoading = true;
+    try {
+      // Check if this is a UUID or a token
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tokenOrId);
+
+      let data;
+      if (isUUID) {
+        data = await this.questionnaireService.fetchQuestionnaireForReview(tokenOrId);
+      } else {
+        data = await this.questionnaireService.fetchQuestionnaireByToken(tokenOrId);
+      }
+
+      if (data) {
+        this.questionnaire = data.questionnaire;
+        this.questions = data.questions;
+        this.options = data.options || [];
+
+        // Load owner's profile theme colors
+        await this.loadOwnerTheme(this.questionnaire.owner_id);
+
+        this.initializeChat();
+      }
+    } catch (error: any) {
+      this.toastService.show(error.message || 'Failed to load questionnaire', 'error');
+    } finally {
+      this.isLoading = false;
+    }
+  }
+
+  async loadOwnerTheme(ownerId: string) {
+    try {
+      const { data, error } = await this.supabaseService.client
+        .from('profiles')
+        .select('brand_primary, brand_secondary, logo_url')
+        .eq('id', ownerId)
+        .single();
+
+      if (!error && data) {
+        this.primaryColor = data.brand_primary || '#199f3a';
+        this.secondaryColor = data.brand_secondary || '#9cbb54';
+        this.logoUrl = data.logo_url || '';
+      }
+    } catch (error) {
+      console.error('Error loading owner theme:', error);
+    }
+  }
+
+  initializeChat() {
+    // Initialize multi-choice responses
+    this.questions.forEach(q => {
+      if (q.question_type === 'multiple_choice' || q.question_type === 'checkbox' || q.question_type === 'multi') {
+        this.multiResponses[q.id] = {};
+      }
+    });
+
+    // Add welcome message with questionnaire name
+    if (this.questionnaire) {
+      const welcomeText = this.lang.currentLanguage === 'he'
+        ? `שלום! ברוך הבא ל${this.questionnaire.title} - כל סוגי השאלות. בואו נתחיל בשאלה הראשונה:`
+        : `Hello! Welcome to ${this.questionnaire.title} - all question types. Let's start with the first question:`;
+
+      this.chatMessages.push({
+        type: 'bot',
+        text: welcomeText
+      });
+    }
+
+    // Add description if available
+    if (this.questionnaire?.description) {
+      this.chatMessages.push({
+        type: 'bot',
+        text: this.questionnaire.description
+      });
+    }
+
+    // Show first question
+    if (this.questions.length > 0) {
+      this.showCurrentQuestion();
+    }
+  }
+
+  showCurrentQuestion() {
+    // Reset file and audio state when showing new question
+    this.uploadedFileName = '';
+    this.uploadedFile = null;
+    this.audioFileName = '';
+    this.audioBlob = null;
+    this.isRecording = false;
+
+    if (this.currentQuestionIndex < this.questions.length) {
+      const question = this.questions[this.currentQuestionIndex];
+      this.chatMessages.push({
+        type: 'bot',
+        text: question.question_text,
+        questionIndex: this.currentQuestionIndex
+      });
+      this.currentAnswer = '';
+
+      // Check if this question has options (choice questions)
+      const hasOptions = this.isSingleChoiceQuestion(question) || this.isMultiChoiceQuestion(question);
+
+      if (hasOptions) {
+        // Show spinner for choice questions
+        this.optionsLoading = true;
+        this.showOptions = true;
+
+        // Wait for DOM to render the options, then scroll
+        setTimeout(() => {
+          this.optionsLoading = false;
+          // Use requestAnimationFrame to ensure DOM is fully updated
+          requestAnimationFrame(() => {
+            setTimeout(() => {
+              this.shouldScrollToBottom = true;
+            }, 50);
+          });
+        }, 400);
+      } else {
+        // For text questions, show immediately and scroll
+        this.optionsLoading = false;
+        this.showOptions = true;
+        setTimeout(() => {
+          this.shouldScrollToBottom = true;
+        }, 100);
+      }
+    }
+  }
+
+  getCurrentQuestion(): Question | null {
+    if (this.currentQuestionIndex < this.questions.length) {
+      return this.questions[this.currentQuestionIndex];
+    }
+    return null;
+  }
+
+  getQuestionOptions(questionId: string): QuestionOption[] {
+    return this.options.filter(opt => opt.question_id === questionId);
+  }
+
+  isMultiChoiceQuestion(question: Question): boolean {
+    return question.question_type === 'multiple_choice' ||
+           question.question_type === 'checkbox' ||
+           question.question_type === 'multi';
+  }
+
+  isSingleChoiceQuestion(question: Question): boolean {
+    return question.question_type === 'single_choice' ||
+           question.question_type === 'radio' ||
+           question.question_type === 'single' ||
+           question.question_type === 'conditional';
+  }
+
+  onOptionClick(question: Question, optionValue: string) {
+    if (this.isSingleChoiceQuestion(question)) {
+      // For single choice, set the response and move to next
+      this.responses[question.id] = optionValue;
+      this.submitCurrentAnswer(optionValue);
+    } else if (this.isMultiChoiceQuestion(question)) {
+      // For multi choice, toggle selection
+      if (!this.multiResponses[question.id]) {
+        this.multiResponses[question.id] = {};
+      }
+      this.multiResponses[question.id][optionValue] = !this.multiResponses[question.id][optionValue];
+    }
+  }
+
+  isOptionSelected(question: Question, optionValue: string): boolean {
+    if (this.isSingleChoiceQuestion(question)) {
+      return this.responses[question.id] === optionValue;
+    } else if (this.isMultiChoiceQuestion(question)) {
+      return this.multiResponses[question.id]?.[optionValue] || false;
+    }
+    return false;
+  }
+
+  submitCurrentAnswer(answerText?: string) {
+    const question = this.getCurrentQuestion();
+    if (!question) return;
+
+    let response: any;
+    let displayText: string;
+
+    if (this.isMultiChoiceQuestion(question)) {
+      // Multi-choice: get selected options
+      const selected = Object.entries(this.multiResponses[question.id] || {})
+        .filter(([_, checked]) => checked)
+        .map(([value, _]) => value);
+
+      if (question.is_required && selected.length === 0) {
+        const message = this.lang.currentLanguage === 'he'
+          ? 'נא לבחור לפחות אפשרות אחת'
+          : 'Please select at least one option';
+        this.toastService.show(message, 'error');
+        return;
+      }
+
+      response = selected;
+      displayText = selected.join(', ');
+    } else if (this.isSingleChoiceQuestion(question)) {
+      // Single choice
+      response = answerText || this.responses[question.id];
+      displayText = response;
+    } else {
+      // Text-based answers
+      response = answerText || this.currentAnswer;
+      displayText = response;
+
+      if (question.is_required && !response) {
+        const message = this.lang.currentLanguage === 'he'
+          ? 'נא להזין תשובה'
+          : 'Please enter an answer';
+        this.toastService.show(message, 'error');
+        return;
+      }
+    }
+
+    // Store the response
+    this.responses[question.id] = response;
+
+    // Add user's answer to chat
+    this.chatMessages.push({
+      type: 'user',
+      text: displayText
+    });
+    // Delay scroll to allow DOM to render the user's message
+    setTimeout(() => {
+      this.shouldScrollToBottom = true;
+    }, 100);
+
+    // Move to next question or finish
+    this.currentQuestionIndex++;
+
+    if (this.currentQuestionIndex < this.questions.length) {
+      setTimeout(() => {
+        this.showCurrentQuestion();
+      }, 300);
+    } else {
+      // All questions answered, submit
+      setTimeout(() => {
+        this.submitAllResponses();
+      }, 300);
+    }
+  }
+
+  async submitAllResponses() {
+    if (!this.questionnaire) return;
+
+    // Don't actually submit in owner view mode
+    if (this.isOwnerView) {
+      this.isSubmitted = true;
+      const thankYouMessage = this.lang.currentLanguage === 'he'
+        ? 'תודה רבה! התשובות שלך נשלחו בהצלחה'
+        : 'Thank you! Your responses have been submitted successfully';
+
+      this.chatMessages.push({
+        type: 'bot',
+        text: thankYouMessage
+      });
+      // Delay scroll to allow DOM to render the thank you message
+      setTimeout(() => {
+        this.shouldScrollToBottom = true;
+      }, 100);
+      return;
+    }
+
+    try {
+      // Prepare response data
+      const responseData: Record<string, any> = {};
+
+      for (const question of this.questions) {
+        responseData[question.id] = this.responses[question.id];
+      }
+
+      // Save to database
+      const { error } = await this.supabaseService.client
+        .from('responses')
+        .insert({
+          questionnaire_id: this.questionnaire.id,
+          response_data: responseData,
+          submitted_at: new Date().toISOString()
+        });
+
+      if (error) throw error;
+
+      this.isSubmitted = true;
+
+      const thankYouMessage = this.lang.currentLanguage === 'he'
+        ? 'תודה רבה! התשובות שלך נשלחו בהצלחה'
+        : 'Thank you! Your responses have been submitted successfully';
+
+      this.chatMessages.push({
+        type: 'bot',
+        text: thankYouMessage
+      });
+      // Delay scroll to allow DOM to render the thank you message
+      setTimeout(() => {
+        this.shouldScrollToBottom = true;
+      }, 100);
+
+    } catch (error: any) {
+      this.toastService.show('Error submitting response: ' + (error.message || 'Unknown error'), 'error');
+      console.error('Submit error:', error);
+    }
+  }
+
+  onKeyPress(event: KeyboardEvent) {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      this.submitCurrentAnswer();
+    }
+  }
+
+  goBackToEdit() {
+    // Clear preview data when navigating away
+    if (this.questionnaire && this.questionnaire.id === 'preview') {
+      sessionStorage.removeItem('preview_questionnaire');
+    }
+
+    // Navigate back to the create/edit questionnaire page
+    if (this.questionnaire && this.questionnaire.id !== 'preview') {
+      this.router.navigate(['/create-questionnaire', this.questionnaire.id]);
+    } else {
+      this.router.navigate(['/questionnaires']);
+    }
+  }
+
+  // Navigation methods for owner view
+  goToPreviousQuestion() {
+    if (this.currentQuestionIndex > 0) {
+      this.currentQuestionIndex--;
+    }
+  }
+
+  goToNextQuestion() {
+    if (this.currentQuestionIndex < this.questions.length - 1) {
+      this.currentQuestionIndex++;
+    }
+  }
+
+  canGoToPrevious(): boolean {
+    return this.currentQuestionIndex > 0;
+  }
+
+  canGoToNext(): boolean {
+    return this.currentQuestionIndex < this.questions.length - 1;
+  }
+
+  // File upload handler
+  onFileSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      this.uploadedFile = input.files[0];
+      this.uploadedFileName = input.files[0].name;
+      this.currentAnswer = `File uploaded: ${this.uploadedFileName}`;
+    }
+  }
+
+  // Audio recording methods
+  async toggleAudioRecording() {
+    if (this.isRecording) {
+      this.stopRecording();
+    } else {
+      await this.startRecording();
+    }
+  }
+
+  async startRecording() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      this.mediaRecorder = new MediaRecorder(stream);
+      this.audioChunks = [];
+
+      this.mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          this.audioChunks.push(event.data);
+        }
+      };
+
+      this.mediaRecorder.onstop = () => {
+        // Run inside Angular zone to ensure change detection works properly
+        this.ngZone.run(() => {
+          this.audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
+          const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+          this.audioFileName = `audio_${timestamp}.webm`;
+          this.currentAnswer = `Audio recorded: ${this.audioFileName}`;
+
+          // Stop all tracks to release microphone
+          stream.getTracks().forEach(track => track.stop());
+        });
+      };
+
+      this.mediaRecorder.start();
+      this.isRecording = true;
+    } catch (error) {
+      console.error('Error accessing microphone:', error);
+      this.toastService.show(
+        this.lang.currentLanguage === 'he'
+          ? 'שגיאה בגישה למיקרופון'
+          : 'Error accessing microphone',
+        'error'
+      );
+    }
+  }
+
+  stopRecording() {
+    if (this.mediaRecorder && this.isRecording) {
+      this.mediaRecorder.stop();
+      this.isRecording = false;
+    }
+  }
+}

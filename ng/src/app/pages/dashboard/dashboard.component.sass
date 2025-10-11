@@ -1,0 +1,572 @@
+.dashboard-container
+  min-height: 100vh
+  background: linear-gradient(135deg, #F9FAFB 0%, #F3F4F6 100%)
+  padding: 2rem
+  max-width: 1400px
+  margin: 0 auto
+
+  &.rtl
+    direction: rtl
+
+// Header Section
+.dashboard-header
+  display: flex
+  align-items: center
+  justify-content: space-between
+  background: white
+  padding: 1.5rem 2rem
+  border-radius: 1.5rem
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08)
+  margin-bottom: 2rem
+  height: 130px
+
+.header-content
+  display: flex
+  align-items: center
+  gap: 1.5rem
+
+.logo-container
+  width: 74px
+  height: 74px
+  background: #E5F5F6
+  border-radius: 50%
+  display: flex
+  align-items: center
+  justify-content: center
+  padding: 15px
+  flex-shrink: 0
+
+  .logo
+    width: 44px
+    height: 44px
+    object-fit: contain
+
+.welcome-box
+  display: flex
+  flex-direction: column
+  gap: 0.25rem
+
+.welcome-title
+  font-size: 2rem
+  font-weight: bold
+  color: #1EB7B7
+  margin: 0
+
+.welcome-subtitle
+  font-size: 1.2rem
+  color: #6B7280
+  margin: 0
+
+.create-btn
+  background: #14B8A6
+  color: white
+  padding: 0.75rem 1.5rem
+  border-radius: 0.75rem
+  font-weight: 600
+  font-size: 1rem
+  border: none
+  cursor: pointer
+  transition: all 0.2s
+  box-shadow: 0 4px 12px rgba(20, 184, 166, 0.3)
+  display: flex
+  align-items: center
+  gap: 0.5rem
+
+  &:hover
+    background: #0F9488
+    transform: translateY(-1px)
+    box-shadow: 0 6px 16px rgba(20, 184, 166, 0.4)
+
+.plus-icon
+  font-size: 1.25rem
+  font-weight: bold
+
+// Compact Summary Stats
+.summary-stats-row
+  display: grid
+  grid-template-columns: repeat(3, 1fr)
+  gap: 1rem
+  margin-bottom: 1rem
+
+.summary-stat-card
+  background: white
+  padding: 1rem
+  border-radius: 1rem
+  text-align: center
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06)
+  transition: all 0.2s
+
+  &:hover
+    transform: translateY(-2px)
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1)
+
+.stat-primary
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(139, 92, 246, 0.05) 100%)
+  border: 1px solid rgba(139, 92, 246, 0.2)
+
+.stat-success
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%)
+  border: 1px solid rgba(16, 185, 129, 0.2)
+
+.stat-purple
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.1) 0%, rgba(168, 85, 247, 0.05) 100%)
+  border: 1px solid rgba(168, 85, 247, 0.2)
+
+.stat-number
+  font-size: 2rem
+  font-weight: bold
+  color: #1F2937
+  margin-bottom: 0.25rem
+
+.stat-label
+  font-size: 0.75rem
+  color: #6B7280
+  font-weight: 500
+  margin-bottom: 0.5rem
+
+.upgrade-btn
+  background: transparent
+  color: #8B5CF6
+  border: 1px solid #8B5CF6
+  padding: 0.375rem 0.75rem
+  border-radius: 0.5rem
+  font-size: 0.75rem
+  font-weight: 600
+  cursor: pointer
+  transition: all 0.2s
+  margin-top: 0.5rem
+
+  &:hover
+    background: #8B5CF6
+    color: white
+
+// Leads Summary Cards
+.leads-summary-row
+  display: grid
+  grid-template-columns: repeat(2, 1fr)
+  gap: 1rem
+  margin-bottom: 1.5rem
+
+.leads-card
+  background: white
+  padding: 1rem
+  border-radius: 1rem
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06)
+  cursor: pointer
+  transition: all 0.2s
+
+  &:hover
+    transform: translateY(-2px)
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12)
+
+.leads-card-primary
+  background: linear-gradient(to left, rgba(139, 92, 246, 0.05) 0%, transparent 100%)
+  border: 1px solid rgba(139, 92, 246, 0.3)
+
+.leads-card-warning
+  background: linear-gradient(to left, rgba(249, 115, 22, 0.05) 0%, transparent 100%)
+  border: 1px solid rgba(249, 115, 22, 0.3)
+
+.leads-card-content
+  display: flex
+  align-items: center
+  justify-content: space-between
+  gap: 1rem
+
+.leads-card-icon
+  width: 48px
+  height: 48px
+  border-radius: 50%
+  display: flex
+  align-items: center
+  justify-content: center
+  flex-shrink: 0
+
+.primary-icon
+  background: rgba(139, 92, 246, 0.2)
+  color: #8B5CF6
+
+.warning-icon
+  background: rgba(249, 115, 22, 0.2)
+  color: #F97316
+
+.leads-card-text
+  flex: 1
+  text-align: right
+
+.leads-card-header
+  display: flex
+  align-items: baseline
+  justify-content: flex-end
+  gap: 0.5rem
+  margin-bottom: 0.25rem
+
+.leads-card-number
+  font-size: 2.5rem
+  font-weight: bold
+  color: #1F2937
+  margin: 0
+
+.leads-card-title
+  font-size: 1.125rem
+  font-weight: 600
+  color: #1F2937
+
+.leads-card-desc
+  font-size: 0.75rem
+  color: #6B7280
+  margin: 0
+
+.leads-card-btn
+  background: #8B5CF6
+  color: white
+  border: none
+  padding: 0.5rem 1rem
+  border-radius: 0.5rem
+  font-size: 0.875rem
+  font-weight: 600
+  cursor: pointer
+  display: flex
+  align-items: center
+  gap: 0.5rem
+  flex-shrink: 0
+  transition: all 0.2s
+
+  &:hover
+    background: #7C3AED
+
+.leads-card-btn-outline
+  background: transparent
+  border: 1px solid rgba(249, 115, 22, 0.3)
+  color: #6B7280
+
+  &:hover
+    background: rgba(249, 115, 22, 0.1)
+    border-color: rgba(249, 115, 22, 0.5)
+
+// Charts Section
+.charts-section
+  display: grid
+  grid-template-columns: repeat(2, 1fr)
+  gap: 1.5rem
+  margin-bottom: 2rem
+
+.chart-card
+  background: white
+  padding: 1.5rem
+  border-radius: 1.25rem
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08)
+
+.chart-title
+  font-size: 1.5rem
+  font-weight: bold
+  color: #1F2937
+  margin: 0 0 1.5rem 0
+  text-align: right
+
+.chart-body
+  display: flex
+  flex-direction: column
+  gap: 1.5rem
+
+.chart-content
+  display: grid
+  grid-template-columns: 1fr 1fr
+  gap: 1rem
+
+.stats-list
+  display: flex
+  flex-direction: column
+  gap: 0.5rem
+
+.stat-item
+  display: flex
+  align-items: center
+  justify-content: space-between
+  padding: 0.75rem
+  border-radius: 0.5rem
+  background: rgba(243, 244, 246, 0.5)
+  border: 1px solid #E5E7EB
+  transition: background 0.2s
+
+  &:hover
+    background: rgba(243, 244, 246, 0.8)
+
+.stat-item-left
+  display: flex
+  align-items: center
+  gap: 0.5rem
+
+.stat-dot
+  width: 12px
+  height: 12px
+  border-radius: 50%
+
+.stat-name
+  font-size: 0.875rem
+  font-weight: 500
+  color: #4B5563
+
+.stat-value
+  font-size: 1.125rem
+  font-weight: bold
+
+.pie-chart-placeholder
+  display: flex
+  align-items: center
+  justify-content: center
+  height: 200px
+
+.pie-chart-svg
+  width: 180px
+  height: 180px
+
+// Partner Stats Grid
+.partner-stats-grid
+  display: grid
+  grid-template-columns: repeat(3, 1fr)
+  gap: 0.75rem
+
+.partner-stat
+  padding: 1rem
+  border-radius: 0.75rem
+  text-align: center
+
+.partner-stat-blue
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%)
+  border: 1px solid rgba(59, 130, 246, 0.2)
+
+.partner-stat-green
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%)
+  border: 1px solid rgba(16, 185, 129, 0.2)
+
+.partner-stat-purple
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.1) 0%, rgba(168, 85, 247, 0.05) 100%)
+  border: 1px solid rgba(168, 85, 247, 0.2)
+
+.partner-stat-number
+  font-size: 1.5rem
+  font-weight: bold
+  margin-bottom: 0.25rem
+
+.partner-stat-blue .partner-stat-number
+  color: #3B82F6
+
+.partner-stat-green .partner-stat-number
+  color: #10B981
+
+.partner-stat-purple .partner-stat-number
+  color: #A855F7
+
+.partner-stat-label
+  font-size: 0.75rem
+  color: #6B7280
+
+// Questionnaires Section
+.questionnaires-section
+  background: transparent
+  padding: 0
+
+.section-title
+  font-size: 1.5rem
+  font-weight: bold
+  color: #1F2937
+  margin: 0 0 1rem 0
+  text-align: right
+
+.loading-state,
+.empty-state
+  text-align: center
+  padding: 3rem
+  color: #9CA3AF
+  background: white
+  border-radius: 1rem
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06)
+
+.create-first-btn
+  background: #14B8A6
+  color: white
+  padding: 0.75rem 2rem
+  border-radius: 0.75rem
+  font-weight: 600
+  border: none
+  cursor: pointer
+  margin-top: 1rem
+  transition: all 0.2s
+  box-shadow: 0 4px 12px rgba(20, 184, 166, 0.3)
+
+  &:hover
+    background: #0F9488
+    transform: translateY(-1px)
+
+.questionnaires-list
+  display: flex
+  flex-direction: column
+  gap: 0.75rem
+
+.questionnaire-card
+  background: white
+  padding: 1rem
+  border-radius: 1rem
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06)
+  cursor: pointer
+  transition: all 0.2s
+
+  &:hover
+    transform: translateY(-2px)
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12)
+
+.questionnaire-card-0
+  background: linear-gradient(to left, rgba(139, 92, 246, 0.1) 0%, rgba(139, 92, 246, 0.05) 100%)
+  border: 1px solid rgba(139, 92, 246, 0.3)
+
+.questionnaire-card-1
+  background: linear-gradient(to left, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%)
+  border: 1px solid rgba(59, 130, 246, 0.3)
+
+.questionnaire-card-2
+  background: linear-gradient(to left, rgba(249, 115, 22, 0.1) 0%, rgba(249, 115, 22, 0.05) 100%)
+  border: 1px solid rgba(249, 115, 22, 0.3)
+
+.questionnaire-card-3
+  background: linear-gradient(to left, rgba(244, 63, 94, 0.1) 0%, rgba(244, 63, 94, 0.05) 100%)
+  border: 1px solid rgba(244, 63, 94, 0.3)
+
+.questionnaire-content
+  display: flex
+  flex-wrap: wrap
+  align-items: center
+  justify-content: space-between
+  gap: 1rem
+
+.questionnaire-info
+  flex: 1
+  min-width: 200px
+
+.questionnaire-header
+  margin-bottom: 0.5rem
+
+.questionnaire-title
+  font-size: 1.125rem
+  font-weight: bold
+  color: #1F2937
+  margin: 0 0 0.25rem 0
+
+.questionnaire-subtitle
+  font-size: 0.875rem
+  color: #6B7280
+  margin: 0
+
+.questionnaire-date
+  display: flex
+  align-items: center
+  gap: 0.375rem
+  font-size: 0.75rem
+  color: #9CA3AF
+
+.questionnaire-stats
+  display: flex
+  gap: 1.5rem
+
+.stat-box
+  text-align: center
+
+.stat-box-value
+  font-size: 1.25rem
+  font-weight: bold
+  color: #8B5CF6
+
+.stat-box-value-blue
+  color: #3B82F6
+
+.stat-box-label
+  font-size: 0.75rem
+  color: #6B7280
+  margin-top: 0.125rem
+
+.questionnaire-meta
+  display: flex
+  gap: 1rem
+  font-size: 0.75rem
+
+.meta-label
+  font-weight: 600
+  color: #6B7280
+
+.meta-value
+  color: #1F2937
+
+.questionnaire-actions
+  display: flex
+  gap: 0.5rem
+  flex-wrap: wrap
+
+.action-btn
+  padding: 0.5rem 1rem
+  border-radius: 0.5rem
+  font-size: 0.875rem
+  font-weight: 500
+  cursor: pointer
+  transition: all 0.2s
+  display: flex
+  align-items: center
+  gap: 0.375rem
+
+.action-btn-outline
+  background: white
+  border: 1px solid #E5E7EB
+  color: #6B7280
+
+  &:hover
+    background: #F9FAFB
+    border-color: #D1D5DB
+
+// Responsive
+@media (max-width: 1024px)
+  .summary-stats-row
+    grid-template-columns: 1fr
+
+  .leads-summary-row
+    grid-template-columns: 1fr
+
+  .charts-section
+    grid-template-columns: 1fr
+
+  .chart-content
+    grid-template-columns: 1fr
+
+  .questionnaire-content
+    flex-direction: column
+    align-items: flex-start
+
+@media (max-width: 768px)
+  .dashboard-header
+    flex-direction: column
+    height: auto
+    gap: 1rem
+
+  .header-content
+    width: 100%
+
+  .create-btn
+    width: 100%
+    justify-content: center
+
+  .leads-card-content
+    flex-direction: column
+    text-align: center
+
+  .leads-card-text
+    text-align: center
+
+  .leads-card-header
+    justify-content: center
+
+  .partner-stats-grid
+    grid-template-columns: 1fr
+
+  .questionnaire-actions
+    width: 100%
+
+  .action-btn
+    flex: 1

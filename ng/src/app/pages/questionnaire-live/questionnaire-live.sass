@@ -1,0 +1,90 @@
+// Questionnaire Live Component Styles
+
+// Focus ring styling with dynamic primary color
+input[style*="--focus-color"]:focus,
+textarea[style*="--focus-color"]:focus
+	outline: 2px solid var(--focus-color) !important
+	outline-offset: 2px
+	border-color: transparent
+
+// Input focus states
+input:focus,
+textarea:focus,
+select:focus
+	&:not([disabled])
+		box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1)
+		transition: box-shadow 0.2s ease-in-out
+
+// Radio and checkbox styling
+input[type="radio"],
+input[type="checkbox"]
+	cursor: pointer
+
+	&:focus
+		outline: 2px solid currentColor
+		outline-offset: 2px
+
+// Card hover effects
+.rounded-lg.shadow-sm
+	transition: box-shadow 0.2s ease-in-out
+
+	&:hover
+		box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)
+
+// Header card styling
+.border-2
+	box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)
+
+// Button transitions
+button
+	transition: all 0.2s ease-in-out
+
+	&:hover:not(:disabled)
+		transform: translateY(-1px)
+		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15)
+
+	&:active:not(:disabled)
+		transform: translateY(0)
+		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1)
+
+// Rating button hover effects
+button.w-10.h-10.rounded-full
+	cursor: pointer
+	font-weight: 600
+
+	&:hover:not(:disabled):not(.selected-rating)
+		opacity: 0.8
+		transform: scale(1.1)
+
+	&.selected-rating
+		font-weight: bold
+		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2)
+
+// Loading animation
+@keyframes spin
+	from
+		transform: rotate(0deg)
+	to
+		transform: rotate(360deg)
+
+.animate-spin
+	animation: spin 1s linear infinite
+
+// Smooth scrolling
+.overflow-y-auto
+	scroll-behavior: smooth
+	scrollbar-width: thin
+	scrollbar-color: rgba(156, 163, 175, 0.5) transparent
+
+	&::-webkit-scrollbar
+		width: 6px
+
+	&::-webkit-scrollbar-track
+		background: transparent
+
+	&::-webkit-scrollbar-thumb
+		background-color: rgba(156, 163, 175, 0.5)
+		border-radius: 3px
+
+		&:hover
+			background-color: rgba(156, 163, 175, 0.7)

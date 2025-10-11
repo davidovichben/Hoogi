@@ -1,0 +1,159 @@
+<div class="min-h-screen bg-gray-50 p-8">
+  <div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-8">
+      <div>
+        <h1 class="text-3xl font-bold text-gray-800">Review & Publish</h1>
+        <p class="text-gray-600 mt-1">Review your questionnaire before publishing</p>
+      </div>
+      <div class="flex gap-3">
+        <button
+          (click)="cancel()"
+          class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+          Cancel
+        </button>
+        <button
+          (click)="backToEdit()"
+          class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+          Back to Edit
+        </button>
+        <button
+          (click)="publish()"
+          [disabled]="isPublishing || validationErrors.length > 0"
+          class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
+          {{ isPublishing ? 'Publishing...' : 'Publish' }}
+        </button>
+      </div>
+    </div>
+
+    <div *ngIf="isLoading" class="text-center py-12">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+      <p class="text-gray-600 mt-4">Loading...</p>
+    </div>
+
+    <div *ngIf="!isLoading && questionnaire" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Left Sidebar - Validation & Info -->
+      <div class="space-y-6">
+        <!-- Questionnaire Info -->
+        <div class="bg-white rounded-lg shadow p-6">
+          <h3 class="text-lg font-semibold mb-4">Questionnaire Info</h3>
+          <div class="space-y-3 text-sm">
+            <div>
+              <span class="font-medium text-gray-700">Title:</span>
+              <p class="text-gray-600 mt-1">{{ questionnaire.title }}</p>
+            </div>
+            <div>
+              <span class="font-medium text-gray-700">Description:</span>
+              <p class="text-gray-600 mt-1">{{ questionnaire.description || 'No description' }}</p>
+            </div>
+            <div>
+              <span class="font-medium text-gray-700">Questions:</span>
+              <p class="text-gray-600 mt-1">{{ questions.length }} questions</p>
+            </div>
+            <div>
+              <span class="font-medium text-gray-700">Language:</span>
+              <p class="text-gray-600 mt-1">{{ questionnaire.meta?.primaryLanguage || 'he' }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Validation Status -->
+        <div class="bg-white rounded-lg shadow p-6">
+          <h3 class="text-lg font-semibold mb-4">Validation Status</h3>
+
+          <!-- Errors -->
+          <div *ngIf="validationErrors.length > 0" class="mb-4">
+            <div class="flex items-center gap-2 mb-2">
+              <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+              <span class="text-sm font-medium text-red-600">Critical Issues ({{ validationErrors.length }})</span>
+            </div>
+            <ul class="space-y-2">
+              <li *ngFor="let error of validationErrors" class="text-sm text-red-600 bg-red-50 p-2 rounded">
+                {{ error }}
+              </li>
+            </ul>
+          </div>
+
+          <!-- Warnings -->
+          <div *ngIf="warnings.length > 0" class="mb-4">
+            <div class="flex items-center gap-2 mb-2">
+              <svg class="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+              </svg>
+              <span class="text-sm font-medium text-yellow-600">Warnings ({{ warnings.length }})</span>
+            </div>
+            <ul class="space-y-2">
+              <li *ngFor="let warning of warnings" class="text-sm text-yellow-600 bg-yellow-50 p-2 rounded">
+                {{ warning }}
+              </li>
+            </ul>
+          </div>
+
+          <!-- Success -->
+          <div *ngIf="validationErrors.length === 0 && warnings.length === 0" class="flex items-center gap-2 text-green-600">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+            <span class="text-sm font-medium">Ready to publish!</span>
+          </div>
+        </div>
+
+        <!-- Template Selection -->
+        <div class="bg-white rounded-lg shadow p-6">
+          <h3 class="text-lg font-semibold mb-4">Template</h3>
+          <div class="space-y-2">
+            <label class="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50"
+                   [class.border-blue-600]="selectedTemplate === 'A'"
+                   [class.bg-blue-50]="selectedTemplate === 'A'">
+              <input type="radio" name="template" value="A"
+                     [checked]="selectedTemplate === 'A'"
+                     (change)="selectTemplate('A')"
+                     class="w-4 h-4 text-blue-600">
+              <div>
+                <div class="font-medium">Template A</div>
+                <div class="text-xs text-gray-500">Simple and clean</div>
+              </div>
+            </label>
+
+            <label class="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50"
+                   [class.border-blue-600]="selectedTemplate === 'B'"
+                   [class.bg-blue-50]="selectedTemplate === 'B'">
+              <input type="radio" name="template" value="B"
+                     [checked]="selectedTemplate === 'B'"
+                     (change)="selectTemplate('B')"
+                     class="w-4 h-4 text-blue-600">
+              <div>
+                <div class="font-medium">Template B</div>
+                <div class="text-xs text-gray-500">Modern with branding</div>
+              </div>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Preview Area -->
+      <div class="lg:col-span-2">
+        <div class="bg-white rounded-lg shadow">
+          <div class="border-b p-4">
+            <h3 class="text-lg font-semibold">Preview</h3>
+            <p class="text-sm text-gray-600">How your questionnaire will appear to users</p>
+          </div>
+
+          <div class="p-6">
+            <app-template-a *ngIf="selectedTemplate === 'A'"
+                           [questionnaire]="questionnaire"
+                           [questions]="questions">
+            </app-template-a>
+
+            <app-template-b *ngIf="selectedTemplate === 'B'"
+                           [questionnaire]="questionnaire"
+                           [questions]="questions">
+            </app-template-b>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

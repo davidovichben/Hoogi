@@ -1,0 +1,246 @@
+<div class="dashboard-container" [class.rtl]="lang.currentLanguage === 'he'">
+  <!-- Header Section with Logo and Greeting -->
+  <div class="dashboard-header">
+	  <div class="header-content">
+		  <div class="logo-container">
+			  <img src="/img/logo.png" alt="Hoogi" class="logo">
+		  </div>
+		  <div class="welcome-box">
+			  <h1 class="welcome-title">
+				  {{ lang.t('dashboard.hello') }} {{ userName }} 👋
+			  </h1>
+			  <p class="welcome-subtitle">העסק שלי: {{ businessName }}</p>
+		  </div>
+	  </div>
+
+    <div>
+      <button (click)="goNew()" class="create-btn">
+        {{ lang.t('dashboard.newQuestionnaire') }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Compact Summary Stats -->
+  <div class="summary-stats-row">
+    <div class="summary-stat-card stat-primary">
+      <div class="stat-number">{{ remainingLeads }}</div>
+      <div class="stat-label">{{ lang.t('dashboard.remainingLeads') }}</div>
+      <button (click)="goToSubscription()" class="upgrade-btn">
+        {{ lang.t('dashboard.buyLeadsUpgrade') }}
+      </button>
+    </div>
+
+    <div class="summary-stat-card stat-success">
+      <div class="stat-number">{{ utilizedLeads }}</div>
+      <div class="stat-label">{{ lang.t('dashboard.utilizedLeads') }}</div>
+    </div>
+
+    <div class="summary-stat-card stat-purple">
+      <div class="stat-number">{{ activeQuestionnairesCount }}</div>
+      <div class="stat-label">{{ lang.t('dashboard.activeQuestionnaires') }}</div>
+    </div>
+  </div>
+
+  <!-- Leads Summary Cards -->
+  <div class="leads-summary-row">
+    <!-- New Leads Card -->
+    <div class="leads-card leads-card-primary" (click)="viewNewLeads()">
+      <div class="leads-card-content">
+        <div class="leads-card-icon primary-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="13 17 18 12 13 7"></polyline><polyline points="6 17 11 12 6 7"></polyline></svg>
+        </div>
+        <div class="leads-card-text">
+          <div class="leads-card-header">
+            <h3 class="leads-card-number">{{ newLeadsCount }}</h3>
+            <span class="leads-card-title">{{ lang.t('dashboard.newLeads') }}</span>
+          </div>
+          <p class="leads-card-desc">{{ lang.t('dashboard.clickToViewNewLeads') }}</p>
+        </div>
+        <button (click)="viewNewLeads(); $event.stopPropagation()" class="leads-card-btn">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+          {{ lang.t('dashboard.viewList') }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Reminder Leads Card -->
+    <div class="leads-card leads-card-warning" (click)="viewReminderLeads()">
+      <div class="leads-card-content">
+        <div class="leads-card-icon warning-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+        </div>
+        <div class="leads-card-text">
+          <div class="leads-card-header">
+            <h3 class="leads-card-number">{{ reminderLeadsCount }}</h3>
+            <span class="leads-card-title">{{ lang.t('dashboard.leadsWaiting') }}</span>
+          </div>
+          <p class="leads-card-desc">{{ lang.t('dashboard.activeReminders') }}</p>
+        </div>
+        <button (click)="viewReminderLeads(); $event.stopPropagation()" class="leads-card-btn leads-card-btn-outline">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+          {{ lang.t('dashboard.toList') }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Visual Charts Section -->
+  <div class="charts-section">
+    <!-- Networks Chart -->
+    <div class="chart-card">
+      <h2 class="chart-title">{{ lang.t('dashboard.leadsByNetwork') }}</h2>
+      <div class="chart-body">
+        <div class="chart-content">
+          <!-- Stats List -->
+          <div class="stats-list">
+            @for (item of networkData; track item.id) {
+              <div class="stat-item">
+                <div class="stat-item-left">
+                  <div class="stat-dot" [style.background-color]="item.color"></div>
+                  <span class="stat-name">{{ item.name }}</span>
+                </div>
+                <span class="stat-value" [style.color]="item.color">{{ item.count }}</span>
+              </div>
+            }
+          </div>
+
+          <!-- Pie Chart Placeholder -->
+          <div class="pie-chart-placeholder">
+            <svg viewBox="0 0 200 200" class="pie-chart-svg">
+              <circle cx="100" cy="100" r="80" fill="#8B5CF6" opacity="0.9"></circle>
+              <path d="M 100 100 L 100 20 A 80 80 0 0 1 171.42 71.42 Z" fill="#EC4899"></path>
+              <path d="M 100 100 L 171.42 71.42 A 80 80 0 0 1 171.42 128.58 Z" fill="#10B981"></path>
+              <path d="M 100 100 L 171.42 128.58 A 80 80 0 0 1 100 180 Z" fill="#3B82F6"></path>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Partners Chart -->
+    <div class="chart-card">
+      <h2 class="chart-title">{{ lang.t('dashboard.leadsByPartner') }}</h2>
+      <div class="chart-body">
+        <div class="chart-content">
+          <!-- Stats List -->
+          <div class="stats-list">
+            @for (item of partnerData; track item.id) {
+              <div class="stat-item">
+                <div class="stat-item-left">
+                  <div class="stat-dot" [style.background-color]="item.color"></div>
+                  <span class="stat-name">{{ item.name }}</span>
+                </div>
+                <span class="stat-value" [style.color]="item.color">{{ item.count }}</span>
+              </div>
+            }
+          </div>
+
+          <!-- Pie Chart Placeholder -->
+          <div class="pie-chart-placeholder">
+            <svg viewBox="0 0 200 200" class="pie-chart-svg">
+              <circle cx="100" cy="100" r="80" fill="#8B5CF6" opacity="0.9"></circle>
+              <path d="M 100 100 L 100 20 A 80 80 0 0 1 151.42 51.42 Z" fill="#EC4899"></path>
+              <path d="M 100 100 L 151.42 51.42 A 80 80 0 0 1 180 100 Z" fill="#10B981"></path>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Additional Stats -->
+        <div class="partner-stats-grid">
+          <div class="partner-stat partner-stat-blue">
+            <div class="partner-stat-number">{{ partnerStats.total }}</div>
+            <div class="partner-stat-label">{{ lang.t('dashboard.totalLeadsCount') }}</div>
+          </div>
+          <div class="partner-stat partner-stat-green">
+            <div class="partner-stat-number">{{ partnerStats.new }}</div>
+            <div class="partner-stat-label">{{ lang.t('dashboard.new') }}</div>
+          </div>
+          <div class="partner-stat partner-stat-purple">
+            <div class="partner-stat-number">{{ partnerStats.average }}</div>
+            <div class="partner-stat-label">{{ lang.t('dashboard.averagePerPartner') }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- My Questionnaires Section -->
+  <div class="questionnaires-section">
+    <h2 class="section-title">{{ lang.t('dashboard.myQuestionnaires') }}</h2>
+
+    @if (loading) {
+      <div class="loading-state">{{ lang.t('common.loading') }}</div>
+    } @else if (questionnaires.length === 0) {
+      <div class="empty-state">
+        <p>{{ lang.t('dashboard.noQuestionnairesYet') }}</p>
+        <button (click)="goNew()" class="create-first-btn">
+          {{ lang.t('dashboard.createFirst') }}
+        </button>
+      </div>
+    } @else {
+      <div class="questionnaires-list">
+        @for (q of questionnaires; track q.id; let idx = $index) {
+          <div class="questionnaire-card" [class]="'questionnaire-card-' + (idx % 4)">
+            <div class="questionnaire-content">
+              <!-- Left side - Title and Date -->
+              <div class="questionnaire-info">
+                <div class="questionnaire-header">
+                  <h3 class="questionnaire-title">{{ q.title }}</h3>
+                  <p class="questionnaire-subtitle">{{ q.subtitle }}</p>
+                </div>
+                <div class="questionnaire-date">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                  <span>{{ q.date }}</span>
+                </div>
+              </div>
+
+              <!-- Stats -->
+              <div class="questionnaire-stats">
+                <div class="stat-box">
+                  <div class="stat-box-value">{{ q.leads.total }}</div>
+                  <div class="stat-box-label">{{ lang.t('dashboard.leads') }}</div>
+                </div>
+                <div class="stat-box">
+                  <div class="stat-box-value stat-box-value-blue">{{ q.leads.new }}</div>
+                  <div class="stat-box-label">{{ lang.t('dashboard.new') }}</div>
+                </div>
+              </div>
+
+              <!-- Sources and Partners -->
+              <div class="questionnaire-meta">
+                <div>
+                  <span class="meta-label">{{ lang.t('dashboard.channels') }}: </span>
+                  <span class="meta-value">{{ q.sources.length }}</span>
+                </div>
+                <div>
+                  <span class="meta-label">{{ lang.t('dashboard.partners') }}: </span>
+                  <span class="meta-value">{{ q.partners.length }}</span>
+                </div>
+              </div>
+
+              <!-- Action Buttons -->
+              <div class="questionnaire-actions">
+                <button (click)="viewQuestionnaireForm(q.id)" class="action-btn action-btn-outline">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                  {{ lang.t('dashboard.view') }}
+                </button>
+                <button (click)="viewQuestionnaireStats(q.id)" class="action-btn action-btn-outline">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+                  {{ lang.t('dashboard.statistics') }}
+                </button>
+                <button (click)="editQuestionnaire(q.id)" class="action-btn action-btn-outline">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                  {{ lang.t('dashboard.edit') }}
+                </button>
+                <button (click)="shareQuestionnaire(q.id)" class="action-btn action-btn-outline">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+                  {{ lang.t('dashboard.share') }}
+                </button>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </div>
+</div>

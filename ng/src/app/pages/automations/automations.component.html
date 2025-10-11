@@ -1,0 +1,262 @@
+<div class="min-h-screen bg-gray-50" [class.rtl]="lang.currentLanguage === 'he'">
+  <!-- Template Dialog -->
+  <app-template-dialog
+    [isOpen]="isTemplateDialogOpen"
+    [editingTemplate]="currentEditingTemplate"
+    (close)="onTemplateDialogClose()"
+    (save)="onTemplateDialogSave($event)">
+  </app-template-dialog>
+
+  <div class="max-w-5xl mx-auto p-6 space-y-6">
+    <!-- Header -->
+    <div class="text-center mb-8">
+      <h1 class="text-3xl font-bold mb-2">{{ lang.t('automations.title') }}</h1>
+      <p class="text-gray-600">{{ lang.currentLanguage === 'he' ? 'ניהול אוטומציות והתראות' : 'Manage automations and notifications' }}</p>
+    </div>
+
+    <!-- Tabs -->
+    <div class="flex gap-2 mb-6">
+      <button
+        [class.active]="activeTab === 'triggers'"
+        (click)="activeTab = 'triggers'"
+        class="tab-button-small flex-1 py-2 rounded-lg transition flex items-center justify-center gap-2 text-sm">
+        <span>🔔</span>
+        {{ lang.currentLanguage === 'he' ? 'טריגרים' : 'Triggers' }}
+      </button>
+      <button
+        [class.active]="activeTab === 'templates'"
+        (click)="activeTab = 'templates'"
+        class="tab-button-small flex-1 py-2 rounded-lg transition flex items-center justify-center gap-2 text-sm">
+        <span>📝</span>
+        {{ lang.currentLanguage === 'he' ? 'תבניות' : 'Templates' }}
+      </button>
+      <button
+        [class.active]="activeTab === 'settings'"
+        (click)="activeTab = 'settings'"
+        class="tab-button-small flex-1 py-2 rounded-lg transition flex items-center justify-center gap-2 text-sm">
+        <span>🔧</span>
+        {{ lang.t('automations.preferences') }}
+      </button>
+    </div>
+
+    <!-- Main Content -->
+    <div class="bg-white rounded-lg shadow-sm border p-8" style="border-color: hsl(186, 30%, 88%);">
+
+      <!-- Templates Tab Content -->
+      @if (activeTab === 'templates') {
+        <!-- Standard Email Template -->
+        <div class="mb-8 p-6 rounded-lg" style="background-color: #e0f2f1;">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="text-blue-500">⭐</span>
+            <h2 class="text-xl font-bold">{{ lang.currentLanguage === 'he' ? 'תבנית סטנדרטית למייל' : 'Standard Email Template' }}</h2>
+          </div>
+          <p class="text-gray-600 mb-4">{{ lang.currentLanguage === 'he' ? 'תבנית ברירת מחדל למענה אוטומטי בדוא״ל' : 'Default template for automatic email response' }}</p>
+
+          <div class="bg-white rounded-lg p-6 border" style="border-color: hsl(186, 30%, 88%);">
+            <div class="mb-4">
+              <span class="font-semibold">{{ lang.currentLanguage === 'he' ? 'נושא' : 'Subject' }}</span>
+              <p class="text-gray-700 mt-1">- {{ lang.currentLanguage === 'he' ? 'לקבלת את השאלון שלך' : 'Received your questionnaire' }} - {{ '{' }}{{ '{' }}businessName{{ '}' }}{{ '}' }}</p>
+            </div>
+
+            <div class="mb-4">
+              <span class="font-semibold">{{ lang.currentLanguage === 'he' ? 'תוכן ההודעה' : 'Message Content' }}</span>
+              <p class="text-gray-700 mt-1">שלום {{ '{' }}{{ '{' }}firstName{{ '}' }}{{ '}' }},</p>
+            </div>
+
+            <div class="mb-4">
+              <p class="text-gray-700">{{ lang.currentLanguage === 'he' ? 'תודה, שמילאת את השאלון שלנו.' : 'Thank you for filling out our questionnaire.' }}</p>
+              <p class="text-gray-700">{{ lang.currentLanguage === 'he' ? 'פנייתך התקבלה ואנו נחזור אליך בקרוב.' : 'Your inquiry has been received and we will get back to you soon.' }}</p>
+            </div>
+
+            <div>
+              <p class="text-gray-700">{{ lang.currentLanguage === 'he' ? 'בברכה,' : 'Best regards,' }}</p>
+              <p class="text-gray-700">{{ '{' }}{{ '{' }}businessName{{ '}' }}{{ '}' }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Template Builder -->
+        <div>
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-bold">{{ lang.t('automations.templateBuilder') }}</h2>
+            <button
+              (click)="addTemplate()"
+              class="px-4 py-2 text-white rounded-lg transition flex items-center gap-2"
+              style="background-color: hsl(186, 74%, 35%);"
+              onmouseover="this.style.backgroundColor='hsl(186, 74%, 30%)'"
+              onmouseout="this.style.backgroundColor='hsl(186, 74%, 35%)'">
+              <span>+</span>
+              {{ lang.currentLanguage === 'he' ? 'תבנית חדשה' : 'New Template' }}
+            </button>
+          </div>
+          <p class="text-gray-600 mb-6">{{ lang.currentLanguage === 'he' ? 'צור תבניות מותאמות אישית למענה אוטומטי' : 'Create custom templates for automatic responses' }}</p>
+
+          <!-- Existing Templates -->
+          <div class="mb-4">
+            <h3 class="font-semibold mb-3">{{ lang.currentLanguage === 'he' ? 'תבניות קיימות' : 'Existing Templates' }}</h3>
+          </div>
+
+          <div class="space-y-3">
+            @for (template of templates; track template.id) {
+              <div class="border rounded-lg p-4 flex items-center justify-between hover:bg-gray-50 transition" style="border-color: hsl(186, 30%, 88%);">
+                <div class="flex items-center gap-3">
+                  @if (template.isDefault) {
+                    <span class="text-yellow-500">⭐</span>
+                  }
+                  <div>
+                    <div class="font-semibold">{{ template.name }}</div>
+                    <div class="text-sm text-gray-600">
+                      {{ template.channel }} • {{ template.type }}
+                    </div>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <button (click)="editTemplate(template)" class="p-2 hover:bg-gray-100 rounded" title="{{ lang.currentLanguage === 'he' ? 'ערוך' : 'Edit' }}">
+                    ✏️
+                  </button>
+                  <button (click)="removeTemplate(template.id)" class="p-2 hover:bg-gray-100 rounded text-red-600" title="{{ lang.currentLanguage === 'he' ? 'מחק' : 'Delete' }}">
+                    🗑️
+                  </button>
+                  @if (!template.isDefault) {
+                    <button (click)="setDefaultTemplate(template.id)" class="p-2 hover:bg-gray-100 rounded" title="{{ lang.t('templates.setAsDefault') }}">
+                      ⭐
+                    </button>
+                  }
+                </div>
+              </div>
+            }
+
+            @if (templates.length === 0) {
+              <div class="text-center py-8 text-gray-500">
+                {{ lang.t('templates.noActiveTemplates') }}
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- Triggers Tab Content -->
+      @if (activeTab === 'triggers') {
+      <!-- New Question Trigger Section -->
+      <div class="mb-8">
+        <div class="flex items-center gap-2 mb-4">
+          <span class="text-xl">⏱️</span>
+          <h2 class="text-xl font-bold">{{ lang.currentLanguage === 'he' ? 'טריגר לשאלון חדש' : 'New Question Trigger' }}</h2>
+        </div>
+        <p class="text-gray-600 mb-6">{{ lang.currentLanguage === 'he' ? 'מענה אוטומטי לליקוח לאחר מילוי השאלון' : 'Automatic response to customer after filling questionnaire' }}</p>
+
+        <!-- Enable Toggle -->
+        <div class="flex items-center justify-between mb-6 pb-6 border-b" style="border-color: hsl(186, 30%, 88%);">
+          <span class="font-medium">{{ lang.currentLanguage === 'he' ? 'הפעל מענה אוטומטי' : 'Enable automatic response' }}</span>
+          <label class="toggle-switch">
+            <input type="checkbox" [(ngModel)]="newQuestionTrigger.enabled">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+
+        @if (newQuestionTrigger.enabled) {
+          <!-- Channel Selection -->
+          <div class="mb-6">
+            <label class="block font-medium mb-3">{{ lang.currentLanguage === 'he' ? 'ערוצי מענה' : 'Response Channels' }}</label>
+            <div class="flex gap-4">
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" [(ngModel)]="newQuestionTrigger.channels.email" class="w-5 h-5 rounded" style="accent-color: hsl(186, 74%, 35%);">
+                <span>{{ lang.currentLanguage === 'he' ? 'מייל' : 'Email' }}</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" [(ngModel)]="newQuestionTrigger.channels.whatsapp" class="w-5 h-5 rounded" style="accent-color: hsl(186, 74%, 35%);">
+                <span>{{ lang.currentLanguage === 'he' ? 'וואטסאפ' : 'WhatsApp' }}</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" [(ngModel)]="newQuestionTrigger.channels.sms" class="w-5 h-5 rounded" style="accent-color: hsl(186, 74%, 35%);">
+                <span>{{ lang.t('automations.sms') }}</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Send Address -->
+          <div class="mb-6">
+            <label class="block font-medium mb-3">{{ lang.currentLanguage === 'he' ? 'תווען שליחה' : 'Send Address' }}</label>
+            <select [(ngModel)]="newQuestionTrigger.sendAddress" class="w-full px-4 py-2 border rounded-lg" style="border-color: hsl(186, 30%, 88%);">
+              <option value="immediate">{{ lang.currentLanguage === 'he' ? 'מיידי' : 'Immediate' }}</option>
+              <option value="1hour">{{ lang.currentLanguage === 'he' ? 'שעה אחת' : '1 Hour' }}</option>
+              <option value="24hours">{{ lang.t('automations.24Hours') }}</option>
+            </select>
+          </div>
+        }
+      </div>
+
+      <!-- Response Triggers Section -->
+      <div>
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-2">
+            <span class="text-xl">📊</span>
+            <h2 class="text-xl font-bold">{{ lang.currentLanguage === 'he' ? 'טריגרים לתזכורות' : 'Reminder Triggers' }}</h2>
+          </div>
+          <button
+            (click)="addTrigger()"
+            class="px-4 py-2 text-white rounded-lg transition flex items-center gap-2"
+            style="background-color: hsl(186, 74%, 35%);"
+            onmouseover="this.style.backgroundColor='hsl(186, 74%, 30%)'"
+            onmouseout="this.style.backgroundColor='hsl(186, 74%, 35%)'">
+            <span>+</span>
+            {{ lang.t('automations.addReminder') }}
+          </button>
+        </div>
+        <p class="text-gray-600 mb-6">{{ lang.currentLanguage === 'he' ? 'תזכורות אוטומציות על בסיס טופס לידי ותוכן' : 'Automatic reminders based on lead form and content' }}</p>
+
+        <!-- Triggers List -->
+        <div class="space-y-4">
+          @for (trigger of responseTriggers; track trigger.id) {
+            <div class="border rounded-lg p-4" style="border-color: hsl(186, 30%, 88%);">
+              <!-- Trigger Header -->
+              <div class="flex items-center justify-between mb-4">
+                <span class="font-semibold">{{ trigger.name }}</span>
+                <button class="text-red-600 hover:text-red-700">🗑️</button>
+              </div>
+
+              <!-- Condition -->
+              <div class="mb-3">
+                <label class="text-sm text-gray-600 mb-2 block">{{ lang.currentLanguage === 'he' ? 'תנאי בתכן' : 'Condition' }}</label>
+                <select [(ngModel)]="trigger.condition" class="w-full px-4 py-2 border rounded-lg text-sm" style="border-color: hsl(186, 30%, 88%);">
+                  <option value="">{{ lang.t('automations.selectCondition') }}</option>
+                </select>
+              </div>
+
+              <!-- Status Type -->
+              <div class="mb-3">
+                <label class="text-sm text-gray-600 mb-2 block">{{ lang.currentLanguage === 'he' ? 'סטטוס ליד' : 'Lead Status' }}</label>
+                <select [(ngModel)]="trigger.status" class="w-full px-4 py-2 border rounded-lg text-sm" style="border-color: hsl(186, 30%, 88%);">
+                  <option value="new">{{ lang.currentLanguage === 'he' ? 'חדש' : 'New' }}</option>
+                  <option value="active">{{ lang.currentLanguage === 'he' ? 'פעיל' : 'Active' }}</option>
+                  <option value="converted">{{ lang.t('automations.converted') }}</option>
+                </select>
+              </div>
+
+              <!-- Send Address -->
+              <div class="mb-3">
+                <label class="text-sm text-gray-600 mb-2 block">{{ lang.currentLanguage === 'he' ? 'תווען שליחה' : 'Send Address' }}</label>
+                <select [(ngModel)]="trigger.timing" class="w-full px-4 py-2 border rounded-lg text-sm" style="border-color: hsl(186, 30%, 88%);">
+                  <option value="immediate">{{ lang.currentLanguage === 'he' ? 'תווען זמן וותמאס' : 'Immediate' }}</option>
+                </select>
+              </div>
+
+              <!-- Footer -->
+              <div class="flex items-center justify-between pt-3 border-t" style="border-color: hsl(186, 30%, 88%);">
+                <span class="text-sm text-gray-600">{{ lang.currentLanguage === 'he' ? 'מספר ימים' : 'Days count' }}</span>
+                <span class="text-sm font-medium">{{ lang.currentLanguage === 'he' ? 'שעת שליחה' : 'Send time' }}</span>
+              </div>
+            </div>
+          }
+
+          @if (responseTriggers.length === 0) {
+            <div class="text-center py-8 text-gray-500">
+              {{ lang.t('automations.noActiveTriggers') }}
+            </div>
+          }
+        </div>
+      </div>
+      }
+    </div>
+  </div>
+</div>

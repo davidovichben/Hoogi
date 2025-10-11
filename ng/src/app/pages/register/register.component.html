@@ -1,0 +1,162 @@
+<div class="register-page">
+  <!-- Landing Hero Section -->
+  <app-landing-hero variant="signup"></app-landing-hero>
+
+  <!-- Form Section -->
+  <div class="form-container">
+    <h2 class="form-title">{{ lang.t('register.formTitle') }}</h2>
+    <form (ngSubmit)="handleRegister()" class="register-form">
+      <!-- Full Name -->
+      <div class="form-group">
+        <label for="fullName" class="form-label">{{ lang.t('register.fullName') }}</label>
+        <input
+          type="text"
+          id="fullName"
+          [(ngModel)]="fullName"
+          name="fullName"
+          class="form-input"
+          [disabled]="isLoading"
+          required
+        >
+      </div>
+
+      <!-- Email Row -->
+      <div class="form-row">
+        <div class="form-group-half">
+          <label for="email" class="form-label">{{ lang.t('register.email') }}</label>
+          <input
+            type="email"
+            id="email"
+            [(ngModel)]="email"
+            name="email"
+            class="form-input"
+            [class.error]="emailError"
+            (blur)="onEmailBlur()"
+            [disabled]="isLoading"
+            required
+          >
+          @if (emailError) {
+            <span class="error-message">{{ emailError }}</span>
+          }
+        </div>
+        <div class="form-group-half">
+          <label for="emailConfirm" class="form-label">{{ lang.t('register.emailConfirm') }}</label>
+          <input
+            type="email"
+            id="emailConfirm"
+            [(ngModel)]="emailConfirm"
+            name="emailConfirm"
+            class="form-input"
+            [class.error]="emailConfirmError"
+            (blur)="onEmailConfirmBlur()"
+            [disabled]="isLoading"
+            required
+          >
+          @if (emailConfirmError) {
+            <span class="error-message">{{ emailConfirmError }}</span>
+          }
+        </div>
+      </div>
+
+      <!-- Password Row -->
+      <div class="form-row">
+        <div class="form-group-half">
+          <label for="password" class="form-label">{{ lang.t('register.password') }}</label>
+          <input
+            type="password"
+            id="password"
+            [(ngModel)]="password"
+            name="password"
+            class="form-input"
+            [disabled]="isLoading"
+            required
+          >
+        </div>
+        <div class="form-group-half">
+          <label for="passwordConfirm" class="form-label">{{ lang.t('register.passwordConfirm') }}</label>
+          <input
+            type="password"
+            id="passwordConfirm"
+            [(ngModel)]="passwordConfirm"
+            name="passwordConfirm"
+            class="form-input"
+            [disabled]="isLoading"
+            required
+          >
+        </div>
+      </div>
+
+      <!-- Language Dropdown -->
+      <div class="form-group">
+        <label for="language" class="form-label">{{ lang.t('register.language') }}</label>
+        <select
+          id="language"
+          [(ngModel)]="language"
+          name="language"
+          class="form-select"
+          [disabled]="isLoading"
+        >
+          <option value="עברית">{{ lang.t('register.languageHe') }}</option>
+          <option value="English">{{ lang.t('register.languageEn') }}</option>
+        </select>
+      </div>
+
+      <!-- Checkboxes -->
+      <div class="checkbox-group">
+        <input
+          type="checkbox"
+          id="agreeToTerms"
+          [(ngModel)]="agreeToTerms"
+          name="agreeToTerms"
+          class="checkbox-input"
+          [disabled]="isLoading"
+          required
+        >
+        <label for="agreeToTerms" class="checkbox-label">
+          {{ lang.t('register.agreeToPrefix') }}
+          <button
+            type="button"
+            (click)="openTerms()"
+            class="terms-link"
+          >
+            {{ lang.t('register.termsOfService') }}
+          </button>
+          <span class="required-mark">*</span>
+        </label>
+      </div>
+
+      <div class="checkbox-group">
+        <input
+          type="checkbox"
+          id="agreeToMarketing"
+          [(ngModel)]="agreeToMarketing"
+          name="agreeToMarketing"
+          class="checkbox-input"
+          [disabled]="isLoading"
+        >
+        <label for="agreeToMarketing" class="checkbox-label">
+          {{ lang.t('register.agreeToMarketing') }}
+        </label>
+      </div>
+
+      <!-- Submit Button -->
+      <button
+        type="submit"
+        class="submit-btn"
+        [disabled]="isLoading || !agreeToTerms"
+      >
+        {{ isLoading ? lang.t('register.submitting') : lang.t('register.submit') }}
+      </button>
+
+      <!-- Login Link -->
+      <button
+        type="button"
+        class="login-btn"
+        (click)="navigateToLogin()"
+        [disabled]="isLoading"
+      >
+        {{ lang.t('register.alreadyRegistered') }}
+      </button>
+    </form>
+  </div>
+</div>

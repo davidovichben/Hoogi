@@ -1,0 +1,450 @@
+// Distribution Page Styles
+.distribution-page
+  display: flex
+  flex-direction: column
+  width: 100%
+  padding: 1rem
+  background: #f9fafb
+
+  @media (min-width: 768px)
+    padding: 2rem
+
+.back-button-container
+  display: flex
+  align-items: center
+  margin-bottom: 0.5rem
+
+.btn-back
+  display: flex
+  align-items: center
+  gap: 0.5rem
+  padding: 0.5rem 1rem
+  background: transparent
+  border: none
+  color: #6b7280
+  cursor: pointer
+  font-size: 0.875rem
+  transition: color 0.2s
+
+  &:hover
+    color: #1f2937
+
+.arrow-icon
+  font-size: 1rem
+
+// Header
+.page-header
+  display: flex
+  flex-direction: column
+  align-items: flex-start
+  justify-content: space-between
+  gap: 1rem
+  margin-bottom: 1.5rem
+
+  @media (min-width: 768px)
+    flex-direction: row
+    align-items: center
+
+.header-content
+  text-align: right
+
+.page-title
+  display: flex
+  align-items: center
+  justify-content: flex-end
+  gap: 0.5rem
+  font-size: 1.5rem
+  font-weight: 700
+  color: #1f2937
+  margin-bottom: 0.25rem
+
+  @media (min-width: 768px)
+    font-size: 1.875rem
+
+.title-icon
+  font-size: 1.5rem
+
+.page-subtitle
+  font-size: 0.875rem
+  color: #6b7280
+  text-align: right
+  margin-top: 0.25rem
+
+  @media (min-width: 768px)
+    font-size: 1rem
+
+// Tabs
+.tabs-container
+  width: 100%
+
+.tabs-list
+  display: grid
+  grid-template-columns: repeat(3, 1fr)
+  gap: 0.5rem
+  margin-bottom: 1.5rem
+
+.tab-trigger
+  display: flex
+  align-items: center
+  justify-content: center
+  gap: 0.5rem
+  padding: 0.75rem 1rem
+  background: white
+  border: 1px solid #e5e7eb
+  border-radius: 0.5rem
+  cursor: pointer
+  transition: all 0.2s
+  font-size: 0.875rem
+  color: #6b7280
+
+  &:hover
+    background: #f9fafb
+
+  &.active
+    background: #17a2b8
+    border-color: #17a2b8
+    color: white
+
+.tab-icon
+  font-size: 1rem
+
+.tab-content
+  width: 100%
+
+// Main Card
+.main-card
+  background: white
+  border: 1px solid #e5e7eb
+  border-radius: 1rem
+  padding: 1.25rem
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05)
+
+  @media (min-width: 768px)
+    padding: 2rem
+
+// Survey Selection
+.survey-selection-card
+  background: rgba(243, 244, 246, 0.5)
+  border: 1px solid #e5e7eb
+  border-radius: 0.75rem
+  padding: 1rem
+  margin-bottom: 1.5rem
+
+  @media (min-width: 768px)
+    padding: 1.5rem
+
+.section-title
+  font-size: 1.125rem
+  font-weight: 600
+  color: #1f2937
+  margin-bottom: 1rem
+
+.select-input
+  width: 100%
+  padding: 0.75rem 1rem
+  border: 1px solid #e5e7eb
+  border-radius: 0.5rem
+  font-size: 0.875rem
+  background: white
+  cursor: pointer
+  color: #1f2937
+
+  &:focus
+    outline: none
+    border-color: #17a2b8
+    box-shadow: 0 0 0 3px rgba(23, 162, 184, 0.1)
+
+  &:disabled
+    background: #f9fafb
+    cursor: not-allowed
+    opacity: 0.6
+
+// Customer Response Card
+.customer-response-card
+  background: white
+  border: 1px solid #e5e7eb
+  border-radius: 0.75rem
+  padding: 1rem
+  margin-bottom: 1.5rem
+
+  @media (min-width: 768px)
+    padding: 1.5rem
+
+.card-header-row
+  display: flex
+  justify-content: space-between
+  align-items: center
+  margin-bottom: 1rem
+  flex-wrap: wrap
+  gap: 0.5rem
+
+.section-subtitle
+  font-size: 1.125rem
+  font-weight: 600
+  color: #1f2937
+
+.btn-create-template
+  display: flex
+  align-items: center
+  gap: 0.5rem
+  padding: 0.5rem 1rem
+  background: #17a2b8
+  border: 1px solid #17a2b8
+  border-radius: 0.5rem
+  color: white
+  font-size: 0.875rem
+  cursor: pointer
+  transition: all 0.2s
+
+  &:hover:not(:disabled)
+    background: #138496
+
+  &:disabled
+    opacity: 0.5
+    cursor: not-allowed
+
+.plus-icon
+  font-size: 1rem
+
+.external-icon
+  font-size: 0.75rem
+
+// Template Selection
+.template-selection
+  margin-bottom: 1.5rem
+
+.template-header
+  display: flex
+  justify-content: space-between
+  align-items: center
+  margin-bottom: 0.5rem
+
+.template-label
+  display: block
+  font-size: 0.875rem
+  font-weight: 600
+  color: #374151
+
+// Channels Section
+.channels-section
+  margin-bottom: 1rem
+
+.channels-label
+  display: block
+  font-size: 0.875rem
+  font-weight: 600
+  color: #374151
+  margin-bottom: 0.75rem
+
+.channels-grid
+  display: grid
+  grid-template-columns: 1fr
+  gap: 0.75rem
+
+  @media (min-width: 640px)
+    grid-template-columns: repeat(3, 1fr)
+
+.channel-card
+  display: flex
+  flex-direction: column
+  align-items: center
+  padding: 0.75rem
+  border-radius: 0.5rem
+  cursor: pointer
+  transition: all 0.2s
+  position: relative
+
+  &.disabled
+    opacity: 0.5
+    cursor: not-allowed
+    pointer-events: none
+
+.channel-checkbox
+  position: absolute
+  top: 0.5rem
+  left: 0.5rem
+  width: 1rem
+  height: 1rem
+  cursor: pointer
+
+.channel-icon-container
+  width: 2.5rem
+  height: 2.5rem
+  border-radius: 0.5rem
+  display: flex
+  align-items: center
+  justify-content: center
+  margin-bottom: 0.5rem
+  margin-top: 0.5rem
+
+.channel-icon
+  font-size: 1.25rem
+
+.channel-label
+  font-size: 0.875rem
+  font-weight: 500
+  text-align: center
+  cursor: pointer
+
+// WhatsApp Card
+.whatsapp-card
+  background: #dcfce7
+  border: 1px solid #bbf7d0
+
+  &:hover:not(.disabled)
+    background: #bbf7d0
+
+.whatsapp-icon
+  background: #22c55e
+
+.whatsapp-card .channel-label
+  color: #166534
+
+// Email Card
+.email-card
+  background: #dbeafe
+  border: 1px solid #bfdbfe
+
+  &:hover:not(.disabled)
+    background: #bfdbfe
+
+.email-icon
+  background: #3b82f6
+
+.email-card .channel-label
+  color: #1e40af
+
+// SMS Card
+.sms-card
+  background: #f3e8ff
+  border: 1px solid #e9d5ff
+
+  &:hover:not(.disabled)
+    background: #e9d5ff
+
+.sms-icon
+  background: #a855f7
+
+.sms-card .channel-label
+  color: #6b21a8
+
+// Help Text
+.help-text
+  font-size: 0.75rem
+  color: #9ca3af
+  margin-top: 1rem
+
+// Success Message
+.success-message
+  margin-top: 1rem
+  padding: 0.75rem
+  background: rgba(23, 162, 184, 0.1)
+  border: 1px solid rgba(23, 162, 184, 0.2)
+  border-radius: 0.5rem
+
+.success-text
+  font-size: 0.875rem
+  color: #1f2937
+
+// Quick Links Section
+.quick-links-section
+  margin-bottom: 1.5rem
+
+.link-cards-grid
+  display: grid
+  grid-template-columns: 1fr
+  gap: 1rem
+  margin-top: 1rem
+
+  @media (min-width: 768px)
+    grid-template-columns: repeat(3, 1fr)
+
+.link-card
+  padding: 2rem
+  border-radius: 1rem
+  text-align: center
+  cursor: pointer
+  transition: all 0.3s
+
+  &:hover
+    transform: translateY(-4px)
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1)
+
+.qr-card
+  background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%)
+  border: 1px solid #fca5a5
+
+.chat-card
+  background: linear-gradient(135deg, #fde68a 0%, #fbbf24 100%)
+  border: 1px solid #fbbf24
+
+.form-card
+  background: linear-gradient(135deg, #99f6e4 0%, #5eead4 100%)
+  border: 1px solid #5eead4
+
+.link-card-icon
+  font-size: 3rem
+  margin-bottom: 1rem
+
+.link-card-title
+  font-size: 1.125rem
+  font-weight: 600
+  color: #1f2937
+  margin-bottom: 0.5rem
+
+.link-card-description
+  font-size: 0.875rem
+  color: #4b5563
+
+// Preview Section
+.preview-section
+  margin-top: 1.5rem
+  padding: 1rem
+  background: #f9fafb
+  border: 1px solid #e5e7eb
+  border-radius: 0.5rem
+
+.preview-header
+  display: flex
+  justify-content: space-between
+  align-items: center
+  margin-bottom: 1rem
+  flex-wrap: wrap
+  gap: 0.5rem
+
+.btn-copy
+  padding: 0.5rem 1rem
+  background: #17a2b8
+  border: none
+  border-radius: 0.375rem
+  color: white
+  font-size: 0.875rem
+  cursor: pointer
+  transition: background 0.2s
+
+  &:hover
+    background: #138496
+
+.preview-url
+  padding: 1rem
+  background: white
+  border: 1px solid #e5e7eb
+  border-radius: 0.375rem
+
+  code
+    font-family: monospace
+    font-size: 0.875rem
+    color: #1f2937
+    word-break: break-all
+
+// Placeholder Content
+.placeholder-content
+  padding: 3rem 1rem
+  text-align: center
+  background: white
+  border: 1px solid #e5e7eb
+  border-radius: 1rem
+
+  p
+    font-size: 1rem
+    color: #6b7280

@@ -1,0 +1,308 @@
+<div class="h-screen w-1/3 mx-auto flex flex-col overflow-hidden">
+  <!-- Back Button (Owner View Only) -->
+  @if (isOwnerView) {
+    <div class="mb-3 flex-shrink-0" [style.direction]="lang.currentLanguage === 'he' ? 'rtl' : 'ltr'">
+      <button
+        (click)="goBackToEdit()"
+        class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all shadow-sm flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="19" y1="12" x2="5" y2="12"></line>
+          <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+        {{ lang.currentLanguage === 'he' ? 'חזרה לעריכה' : 'Back to Edit' }}
+      </button>
+    </div>
+  }
+
+  <div class="chat-container flex-1 bg-gray-50 relative">
+  <!-- Loading State -->
+  @if (isLoading) {
+    <div class="flex items-center justify-center h-full">
+      <p class="text-gray-600">{{ lang.t('questionnaireLive.loadingQuestionnaire') }}</p>
+    </div>
+  }
+
+  <!-- Chat Interface -->
+  @if (!isLoading && questionnaire) {
+    <!-- Header -->
+    <div class="chat-header p-4 shadow-md z-20"  [style.background-color]="primaryColor">
+      <div class="flex items-center gap-4" [style.direction]="lang.currentLanguage === 'he' ? 'rtl' : 'ltr'">
+        @if (logoUrl) {
+          <img [src]="logoUrl" alt="Logo" class="h-10 w-10 rounded-full object-cover bg-white flex-shrink-0" />
+        }
+        <div class="flex-1 text-white">
+          <h1 class="text-xl font-bold">{{ questionnaire.title }}</h1>
+          @if (questionnaire.meta?.subtitle) {
+            <p class="text-sm opacity-90">{{ questionnaire.meta?.subtitle }}</p>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Messages Area -->
+    <div #messagesContainer class="p-4 overflow-y-auto" style="height: calc(100vh - 200px);">
+      <div class="space-y-4" [style.direction]="lang.currentLanguage === 'he' ? 'rtl' : 'ltr'">
+        @for (message of chatMessages; track $index) {
+          @if (message.type === 'bot') {
+            <!-- Bot Message -->
+            <div class="flex items-start gap-3 justify-start">
+              <div class="w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center text-2xl" [style.background-color]="secondaryColor">
+                {{ logoUrl ? '' : '🤖' }}
+                @if (logoUrl) {
+                  <img [src]="logoUrl" alt="Bot" class="w-full h-full rounded-full object-cover" />
+                }
+              </div>
+              <div class="bg-white rounded-2xl px-5 py-3 shadow-md max-w-md"
+                   [class.rounded-tl-sm]="lang.currentLanguage === 'he'"
+                   [class.rounded-tr-sm]="lang.currentLanguage !== 'he'">
+                <p class="text-gray-800">{{ message.text }}</p>
+              </div>
+            </div>
+            <!-- Progress Indicator under question -->
+            @if (message.questionIndex !== undefined && !isSubmitted && questions.length > 0) {
+              <div class="text-center py-2 text-sm" [style.color]="primaryColor">
+                {{ lang.currentLanguage === 'he' ? 'שאלה' : 'Question' }} {{ message.questionIndex + 1 }} {{ lang.currentLanguage === 'he' ? 'מתוך' : 'of' }} {{ questions.length }}
+              </div>
+            }
+          } @else {
+            <!-- User Message -->
+            <div class="flex justify-end">
+              <div class="bg-white rounded-2xl px-5 py-3 shadow-md max-w-md"
+                   [class.rounded-tr-sm]="lang.currentLanguage === 'he'"
+                   [class.rounded-tl-sm]="lang.currentLanguage !== 'he'">
+                <p class="text-gray-800">{{ message.text }}</p>
+              </div>
+            </div>
+          }
+        }
+
+        <!-- Current Question Options (for choice questions) -->
+        @if (!isSubmitted && getCurrentQuestion() && showOptions) {
+          @if (isSingleChoiceQuestion(getCurrentQuestion()!) || isMultiChoiceQuestion(getCurrentQuestion()!)) {
+            <!-- Loading Spinner -->
+            @if (optionsLoading) {
+              <div class="flex justify-center items-center mt-4 py-6">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2" [style.border-color]="primaryColor"></div>
+              </div>
+            }
+
+            <!-- Options (shown after loading) -->
+            @if (!optionsLoading) {
+              <div class="flex flex-col items-end gap-2 mt-4">
+                @for (option of getQuestionOptions(getCurrentQuestion()!.id); track option.value) {
+                  <button
+                    (click)="onOptionClick(getCurrentQuestion()!, option.value)"
+                    class="px-6 py-3 rounded-xl shadow-md transition-all max-w-md w-full bg-white hover:shadow-lg"
+                    [class.option-selected]="isOptionSelected(getCurrentQuestion()!, option.value)"
+                    [style.border]="'2px solid ' + (isOptionSelected(getCurrentQuestion()!, option.value) ? primaryColor : 'transparent')">
+                    <span [style.color]="isOptionSelected(getCurrentQuestion()!, option.value) ? primaryColor : '#374151'">
+                      {{ option.label }}
+                    </span>
+                  </button>
+                }
+
+                <!-- Submit button for multi-choice -->
+                @if (isMultiChoiceQuestion(getCurrentQuestion()!)) {
+                  <button
+                    (click)="submitCurrentAnswer()"
+                    class="px-8 py-3 rounded-xl text-white font-semibold shadow-md hover:shadow-lg transition-all mt-2"
+                    [style.background-color]="primaryColor">
+                    {{ lang.currentLanguage === 'he' ? 'המשך' : 'Continue' }}
+                  </button>
+                }
+              </div>
+            }
+          }
+        }
+      </div>
+    </div>
+
+    <!-- Input Area (for text-based questions) -->
+
+	  @if (!isSubmitted && getCurrentQuestion() && !isSingleChoiceQuestion(getCurrentQuestion()!) && !isMultiChoiceQuestion(getCurrentQuestion()!)) {
+      <div class="bg-white border-t border-gray-200 p-4 shadow-lg">
+        <div class="flex items-center gap-3" [style.direction]="lang.currentLanguage === 'he' ? 'rtl' : 'ltr'">
+          @if (getCurrentQuestion()!.question_type === 'file') {
+            <!-- File Upload -->
+            <div class="flex-1">
+              <input
+                #fileInput
+                type="file"
+                (change)="onFileSelected($event)"
+                class="hidden"
+                id="chatFileInput" />
+              <button
+                (click)="fileInput.click()"
+                class="w-full px-4 py-3 border-2 border-dashed rounded-lg transition-all hover:border-solid"
+                [style.border-color]="primaryColor"
+                [style.color]="primaryColor">
+                <div class="flex items-center justify-center gap-3">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+                  </svg>
+                  <span class="font-medium">{{ uploadedFileName || lang.t('questionnaireLive.uploadFile') }}</span>
+                </div>
+              </button>
+            </div>
+            <button
+              (click)="submitCurrentAnswer()"
+              [disabled]="!uploadedFileName"
+              class="w-12 h-12 rounded-lg flex items-center justify-center text-white shadow-md hover:shadow-lg transition flex-shrink-0"
+              [class.opacity-50]="!uploadedFileName"
+              [style.background-color]="primaryColor">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+              </svg>
+            </button>
+          } @else if (getCurrentQuestion()!.question_type === 'audio') {
+            <!-- Audio Recording -->
+            <div class="flex-1">
+              <button
+                (click)="toggleAudioRecording()"
+                class="w-full px-4 py-3 border-2 rounded-lg transition-all"
+                [class.border-dashed]="!isRecording"
+                [class.border-solid]="isRecording"
+                [style.border-color]="primaryColor"
+                [style.background-color]="isRecording ? primaryColor + '22' : 'transparent'"
+                [style.color]="primaryColor">
+                <div class="flex items-center justify-center gap-3">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                    <line x1="12" y1="19" x2="12" y2="22"></line>
+                  </svg>
+                  <span class="font-medium">
+                    @if (isRecording) {
+                      {{ lang.currentLanguage === 'he' ? 'הקלטה... לחץ לעצירה' : 'Recording... Click to stop' }}
+                    } @else if (audioFileName) {
+                      {{ audioFileName }}
+                    } @else {
+                      {{ lang.t('questionnaireLive.clickToRecord') }}
+                    }
+                  </span>
+                </div>
+              </button>
+            </div>
+            <button
+              (click)="submitCurrentAnswer()"
+              [disabled]="!audioFileName"
+              class="w-12 h-12 rounded-lg flex items-center justify-center text-white shadow-md hover:shadow-lg transition flex-shrink-0"
+              [class.opacity-50]="!audioFileName"
+              [style.background-color]="primaryColor">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+              </svg>
+            </button>
+          } @else if (getCurrentQuestion()!.question_type === 'textarea') {
+            <textarea
+              [(ngModel)]="currentAnswer"
+              (keydown)="onKeyPress($event)"
+              rows="3"
+              class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 resize-none"
+              [style.--focus-color]="primaryColor"
+              [placeholder]="lang.t('questionnaireLive.enterAnswer')"></textarea>
+          } @else if (getCurrentQuestion()!.question_type === 'email') {
+            <input
+              type="email"
+              [(ngModel)]="currentAnswer"
+              (keydown)="onKeyPress($event)"
+              class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2"
+              [style.--focus-color]="primaryColor"
+              [placeholder]="lang.t('questionnaireLive.enterAnswer')" />
+          } @else if (getCurrentQuestion()!.question_type === 'phone') {
+            <input
+              type="tel"
+              [(ngModel)]="currentAnswer"
+              (keydown)="onKeyPress($event)"
+              class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2"
+              [style.--focus-color]="primaryColor"
+              [placeholder]="lang.t('questionnaireLive.enterPhone')" />
+          } @else if (getCurrentQuestion()!.question_type === 'number') {
+            <input
+              type="number"
+              [(ngModel)]="currentAnswer"
+              (keydown)="onKeyPress($event)"
+              class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2"
+              [style.--focus-color]="primaryColor"
+              [placeholder]="lang.t('questionnaireLive.enterNumber')" />
+          } @else if (getCurrentQuestion()!.question_type === 'date') {
+            <input
+              type="date"
+              [(ngModel)]="currentAnswer"
+              class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2"
+              [style.--focus-color]="primaryColor" />
+          } @else {
+            <input
+              type="text"
+              [(ngModel)]="currentAnswer"
+              (keydown)="onKeyPress($event)"
+              class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2"
+              [style.--focus-color]="primaryColor"
+              [placeholder]="lang.t('questionnaireLive.enterAnswer')" />
+          }
+
+          @if (getCurrentQuestion()!.question_type !== 'file' && getCurrentQuestion()!.question_type !== 'audio') {
+            <button
+              (click)="submitCurrentAnswer()"
+              class="w-12 h-12 rounded-lg flex items-center justify-center text-white shadow-md hover:shadow-lg transition flex-shrink-0"
+              [style.background-color]="primaryColor">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+              </svg>
+            </button>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- Navigation buttons for owner view -->
+    @if (isOwnerView && !isSubmitted) {
+      <div class="bg-white border-t border-gray-200 p-4 shadow-lg flex items-center justify-between gap-4">
+        <button
+          (click)="goToPreviousQuestion()"
+          [disabled]="!canGoToPrevious()"
+          class="px-6 py-3 rounded-lg font-semibold shadow-md hover:shadow-lg transition"
+          [class.opacity-50]="!canGoToPrevious()"
+          [class.cursor-not-allowed]="!canGoToPrevious()"
+          [style.background-color]="canGoToPrevious() ? primaryColor : '#cccccc'"
+          [style.color]="'white'">
+          {{ lang.currentLanguage === 'he' ? 'קודם' : 'Previous' }}
+        </button>
+        <div class="text-sm" [style.color]="primaryColor">
+          {{ lang.currentLanguage === 'he' ? 'שאלה' : 'Question' }} {{ currentQuestionIndex + 1 }} / {{ questions.length }}
+        </div>
+        <button
+          (click)="goToNextQuestion()"
+          [disabled]="!canGoToNext()"
+          class="px-6 py-3 rounded-lg font-semibold shadow-md hover:shadow-lg transition"
+          [class.opacity-50]="!canGoToNext()"
+          [class.cursor-not-allowed]="!canGoToNext()"
+          [style.background-color]="canGoToNext() ? primaryColor : '#cccccc'"
+          [style.color]="'white'">
+          {{ lang.currentLanguage === 'he' ? 'הבא' : 'Next' }}
+        </button>
+      </div>
+    }
+
+    <!-- Success Message -->
+    @if (isSubmitted) {
+      <div class="bg-white border-t border-gray-200 p-6 text-center">
+        <div class="text-4xl mb-2" [style.color]="primaryColor">✓</div>
+        <p class="text-lg font-semibold text-gray-800">
+          {{ lang.t('questionnaireLive.thankYou') }}
+        </p>
+      </div>
+    }
+  }
+
+  <!-- Error State -->
+  @if (!isLoading && !questionnaire) {
+    <div class="flex items-center justify-center h-full">
+      <p class="text-red-600">{{ lang.t('questionnaireLive.failedToLoad') }}</p>
+    </div>
+  }
+  </div>
+</div>

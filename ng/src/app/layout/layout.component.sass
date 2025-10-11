@@ -1,0 +1,57 @@
+// Layout component styles
+
+$primary-color: hsl(186, 74%, 35%)
+$border-color: hsl(186, 30%, 88%)
+$inactive-color: hsl(220, 25%, 40%)
+$sidebar-bg: #f8f9fa
+$border-light: hsl(0, 0%, 90%)
+$logout-color: hsl(0, 70%, 50%)
+
+// Main container
+.layout-container
+  background-color: hsl(0, 0%, 100%)
+
+// Mobile header
+.mobile-header
+  border-color: $border-color
+
+  h1
+    color: $primary-color
+
+// Sidebar
+aside
+  background: $sidebar-bg
+  border-color: $border-light
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)
+
+  .logo-section
+    border-color: $border-light
+
+// Navigation items
+.nav-item
+  background: white
+  border: 2px solid transparent
+  transition: all 0.2s
+
+  &:hover:not(.nav-item-active)
+    transform: scale(1.05)
+
+  .nav-text
+    color: $inactive-color
+
+.nav-item-active
+  border: 2px solid $primary-color
+
+  .nav-text
+    color: $primary-color
+
+// Logout button
+.logout-btn
+  color: $logout-color
+
+// Main content
+main
+  > div
+    margin: 3% 20px
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)
+    border-radius: 12px

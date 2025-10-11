@@ -1,0 +1,462 @@
+<div class="business-form-container" [class.rtl]="lang.currentLanguage === 'he'" [class.ltr]="lang.currentLanguage === 'en'">
+
+  <!-- HoogiTip -->
+  <div class="hoogi-tip">
+    <span class="tip-icon">💡</span>
+    <p>{{ lang.t('profile.hoogiTip') }}</p>
+  </div>
+
+  <!-- Card 1: Basic Business Details -->
+  <div class="form-card card-primary">
+    <h2 class="card-title">
+      <div class="title-icon icon-primary">
+        <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+        </svg>
+      </div>
+      {{ lang.t('profile.basicBusinessDetails') }}
+    </h2>
+
+    <div class="card-content">
+      <!-- Business Name -->
+      <div class="form-field">
+        <label class="form-label">
+          {{ lang.t('profile.businessName') }} <span class="required">*</span>
+        </label>
+        <input
+          type="text"
+          [(ngModel)]="formData.businessName"
+          (input)="clearError('businessName')"
+          [placeholder]="lang.t('profile.businessNamePlaceholder')"
+          class="form-input"
+          [class.error]="errors.businessName">
+        @if (errors.businessName) {
+          <p class="error-message">{{ lang.t('profile.requiredField') }}</p>
+        }
+      </div>
+
+      <!-- Mobile and Email -->
+      <div class="grid-2">
+        <div class="form-field">
+          <label class="form-label">
+            {{ lang.t('profile.whatsapp') }} <span class="required">*</span>
+          </label>
+          <input
+            type="tel"
+            [(ngModel)]="formData.mobile"
+            (input)="clearError('mobile')"
+            [placeholder]="lang.t('profile.mobilePlaceholder')"
+            class="form-input"
+            [class.error]="errors.mobile">
+          @if (errors.mobile) {
+            <p class="error-message">{{ lang.t('profile.requiredField') }}</p>
+          }
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">
+            {{ lang.t('profile.email') }} <span class="required">*</span>
+          </label>
+          <input
+            type="email"
+            [(ngModel)]="formData.email"
+            (input)="clearError('email')"
+            [placeholder]="lang.t('profile.emailPlaceholder')"
+            class="form-input"
+            [class.error]="errors.email">
+          @if (errors.email) {
+            <p class="error-message">{{ lang.t('profile.requiredField') }}</p>
+          }
+        </div>
+      </div>
+
+      <!-- Category, Subcategory, Main Service -->
+      <div class="grid-3">
+        <div class="form-field">
+          <label class="form-label">
+            {{ lang.t('profile.occupation') }} <span class="required">*</span>
+          </label>
+          <select
+            [(ngModel)]="formData.occupation"
+            (change)="clearError('occupation'); formData.subOccupation = ''"
+            class="form-input"
+            [class.error]="errors.occupation">
+            <option value="">{{ lang.t('profile.selectCategory') }}</option>
+            @for (key of occupationKeys; track key) {
+              <option [value]="key">{{ key }}</option>
+            }
+            <option [value]="OTHER">{{ lang.t('common.other') }}</option>
+          </select>
+          @if (formData.occupation === OTHER) {
+            <input
+              type="text"
+              [(ngModel)]="formData.occupationFree"
+              (input)="clearError('occupation')"
+              [placeholder]="lang.t('profile.specifyOccupation')"
+              class="form-input form-input-secondary"
+              [class.error]="errors.occupation">
+          }
+          @if (errors.occupation) {
+            <p class="error-message">{{ lang.t('profile.requiredField') }}</p>
+          }
+        </div>
+
+        @if (formData.occupation && formData.occupation !== OTHER && subOccupations.length > 0) {
+          <div class="form-field">
+            <label class="form-label">
+              {{ lang.t('profile.subOccupation') }} <span class="required">*</span>
+            </label>
+            <select
+              [(ngModel)]="formData.subOccupation"
+              (change)="clearError('subOccupation')"
+              class="form-input"
+              [class.error]="errors.subOccupation">
+              <option value="">{{ lang.t('profile.selectCategory') }}</option>
+              @for (sub of subOccupations; track sub) {
+                <option [value]="sub">{{ sub }}</option>
+              }
+              <option [value]="OTHER">{{ lang.t('common.other') }}</option>
+            </select>
+            @if (formData.subOccupation === OTHER) {
+              <input
+                type="text"
+                [(ngModel)]="formData.subOccupationFree"
+                (input)="clearError('subOccupation')"
+                [placeholder]="lang.t('profile.specifySubOccupation')"
+                class="form-input form-input-secondary"
+                [class.error]="errors.subOccupation">
+            }
+            @if (errors.subOccupation) {
+              <p class="error-message">{{ lang.t('profile.requiredField') }}</p>
+            }
+          </div>
+        }
+
+        <div class="form-field">
+          <label class="form-label">
+            {{ lang.t('profile.mainService') }} <span class="required">*</span>
+          </label>
+          <input
+            type="text"
+            [(ngModel)]="formData.primaryService"
+            [placeholder]="lang.t('profile.mainServicePlaceholder')"
+            class="form-input">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 2: Images and Media -->
+  <div class="form-card card-secondary">
+    <h2 class="card-title">
+      <div class="title-icon icon-secondary">
+        <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        </svg>
+      </div>
+      {{ lang.t('profile.imagesAndMedia') }}
+    </h2>
+
+    <div class="card-content">
+      <div class="grid-2">
+        <!-- Logo Upload -->
+        <div class="upload-card">
+          <h3 class="upload-title">{{ lang.t('profile.businessLogo') }}</h3>
+          <div class="upload-preview" [class.has-image]="formData.logoUrl">
+            @if (formData.logoUrl) {
+              <img [src]="formData.logoUrl" [alt]="lang.t('profile.businessLogo')" class="preview-img">
+            } @else {
+              <div class="upload-placeholder">
+                <svg class="placeholder-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                <p class="placeholder-text">{{ lang.t('profile.uploadLogo') }}</p>
+                <p class="placeholder-hint">{{ lang.t('profile.recommendedSize') }}</p>
+              </div>
+            }
+          </div>
+          <input
+            type="file"
+            (change)="onFileSelected($event)"
+            accept="image/*"
+            class="file-input"
+            #fileInput>
+          <button
+            (click)="fileInput.click()"
+            type="button"
+            class="upload-btn btn-primary">
+            <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+            </svg>
+            {{ lang.t('profile.uploadLogo') }}
+          </button>
+        </div>
+
+        <!-- Profile Image Upload -->
+        <div class="upload-card">
+          <h3 class="upload-title">{{ lang.t('profile.profileImage') }}</h3>
+          <div class="upload-preview" [class.has-image]="formData.imageUrl">
+            @if (formData.imageUrl) {
+              <img [src]="formData.imageUrl" [alt]="lang.t('profile.profileImage')" class="preview-img preview-img-round">
+            } @else {
+              <div class="upload-placeholder">
+                <svg class="placeholder-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                <p class="placeholder-text">{{ lang.t('profile.uploadProfileImage') }}</p>
+                <p class="placeholder-hint">{{ lang.t('profile.recommendedSize') }}</p>
+              </div>
+            }
+          </div>
+          <input
+            type="file"
+            (change)="onImageSelected($event)"
+            accept="image/*"
+            class="file-input"
+            #imageInput>
+          <button
+            (click)="imageInput.click()"
+            type="button"
+            class="upload-btn btn-secondary">
+            <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+            </svg>
+            {{ lang.t('profile.uploadImage') }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 3: Brand Colors -->
+  <div class="form-card card-purple">
+    <h2 class="card-title">
+      <div class="title-icon icon-purple">
+        <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+        </svg>
+      </div>
+      {{ lang.t('profile.brandColors') }}
+    </h2>
+
+    <div class="card-content">
+      <div class="grid-3">
+        <div class="color-card">
+          <label class="color-label">{{ lang.t('profile.primaryColor') }}</label>
+          <div class="color-input-group">
+            <input
+              type="color"
+              [(ngModel)]="formData.primaryColor"
+              class="color-picker">
+            <input
+              type="text"
+              [(ngModel)]="formData.primaryColor"
+              class="color-text">
+          </div>
+        </div>
+
+        <div class="color-card">
+          <label class="color-label">{{ lang.t('profile.secondaryColor') }}</label>
+          <div class="color-input-group">
+            <input
+              type="color"
+              [(ngModel)]="formData.secondaryColor"
+              class="color-picker">
+            <input
+              type="text"
+              [(ngModel)]="formData.secondaryColor"
+              class="color-text">
+          </div>
+        </div>
+
+        <div class="color-card">
+          <label class="color-label">{{ lang.t('profile.backgroundColor') }}</label>
+          <div class="color-input-group">
+            <input
+              type="color"
+              [(ngModel)]="formData.brandColor"
+              class="color-picker">
+            <input
+              type="text"
+              [(ngModel)]="formData.brandColor"
+              class="color-text">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 4: Social Networks -->
+  <div class="form-card card-blue">
+    <h2 class="card-title">
+      <div class="title-icon icon-blue">
+        <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+        </svg>
+      </div>
+      {{ lang.t('profile.socialNetworks') }}
+    </h2>
+
+    <div class="card-content">
+      <!-- First row: 3 networks -->
+      <div class="grid-3">
+        <div class="social-card">
+          <label class="social-label">
+            <svg class="social-icon icon-facebook" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+            </svg>
+            Facebook
+          </label>
+          <input
+            type="text"
+            [(ngModel)]="formData.socialMedia!.facebook"
+            placeholder="https://facebook.com/..."
+            class="form-input">
+        </div>
+
+        <div class="social-card">
+          <label class="social-label">
+            <svg class="social-icon icon-instagram" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+            </svg>
+            Instagram
+          </label>
+          <input
+            type="text"
+            [(ngModel)]="formData.socialMedia!.instagram"
+            placeholder="https://instagram.com/..."
+            class="form-input">
+        </div>
+
+        <div class="social-card">
+          <label class="social-label">
+            <svg class="social-icon icon-linkedin" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+            </svg>
+            LinkedIn
+          </label>
+          <input
+            type="text"
+            [(ngModel)]="formData.socialMedia!.linkedin"
+            placeholder="https://linkedin.com/in/..."
+            class="form-input">
+        </div>
+      </div>
+
+      <!-- Second row: 2 networks -->
+      <div class="grid-2">
+        <div class="social-card">
+          <label class="social-label">
+            <svg class="social-icon icon-tiktok" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
+            </svg>
+            TikTok
+          </label>
+          <input
+            type="text"
+            [(ngModel)]="formData.socialMedia!.tiktok"
+            placeholder="https://tiktok.com/@..."
+            class="form-input">
+        </div>
+
+        <div class="social-card">
+          <label class="social-label">
+            <svg class="social-icon icon-youtube" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+            </svg>
+            YouTube
+          </label>
+          <input
+            type="text"
+            [(ngModel)]="formData.socialMedia!.youtube"
+            placeholder="https://youtube.com/@..."
+            class="form-input">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 5: Additional Information -->
+  <div class="form-card card-green">
+    <h2 class="card-title">
+      <div class="title-icon icon-green">
+        <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      </div>
+      {{ lang.t('profile.additionalInfo') }}
+    </h2>
+
+    <div class="card-content">
+      <!-- Website -->
+      <div class="info-card">
+        <label class="info-label">{{ lang.t('profile.businessWebsite') }}</label>
+        <input
+          type="url"
+          [(ngModel)]="formData.website"
+          [placeholder]="lang.t('profile.websitePlaceholder')"
+          class="form-input">
+      </div>
+
+      <!-- Information Sources -->
+      <div class="info-card">
+        <label class="info-label">{{ lang.t('profile.infoSources') }}</label>
+
+        <div class="add-link-section">
+          <p class="section-hint">{{ lang.t('profile.addLink') }}</p>
+          <div class="add-link-input">
+            <input
+              type="url"
+              [(ngModel)]="newLink"
+              [placeholder]="lang.t('profile.linkPlaceholder')"
+              class="form-input"
+              (keyup.enter)="addLink()">
+            <button
+              (click)="addLink()"
+              type="button"
+              class="add-btn">
+              <svg class="btn-icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        @if (formData.urlSources && formData.urlSources.length > 0) {
+          <div class="sources-display">
+            <p class="sources-title">{{ lang.t('profile.sourcesAdded') }}</p>
+            <div class="sources-list">
+              @for (url of formData.urlSources; track $index) {
+                <div class="source-badge">
+                  <svg class="badge-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span class="badge-text">{{ url.length > 30 ? url.substring(0, 30) + '...' : url }}</span>
+                  <button
+                    (click)="removeLink($index)"
+                    type="button"
+                    class="remove-btn">
+                    <svg class="remove-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Save Button -->
+  <div class="save-section">
+    <button
+      (click)="saveProfile()"
+      [disabled]="saving"
+      type="button"
+      class="save-btn">
+      {{ saving ? lang.t('profile.saving') : lang.t('profile.saveProfile') }}
+    </button>
+  </div>
+</div>

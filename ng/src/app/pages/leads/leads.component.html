@@ -1,0 +1,311 @@
+<div class="h-screen flex flex-col" [class.rtl]="lang.currentLanguage === 'he'">
+  <!-- Header with tabs -->
+  <div class="bg-white border-b px-6 py-4" style="border-color: hsl(186, 30%, 88%);">
+    <div class="flex items-center justify-between">
+      <h1 class="text-2xl font-bold">{{ lang.t('leads.title') }}</h1>
+      <div class="flex items-center gap-4">
+        <input
+          type="text"
+          [(ngModel)]="searchQuery"
+          [placeholder]="lang.t('leads.searchPlaceholder')"
+          class="px-4 py-2 border rounded-lg w-80"
+          style="border-color: hsl(186, 30%, 88%);">
+        <button
+          class="px-6 py-2 text-white rounded-lg transition"
+          style="background-color: hsl(186, 74%, 35%);"
+          onmouseover="this.style.backgroundColor='hsl(186, 74%, 30%)'"
+          onmouseout="this.style.backgroundColor='hsl(186, 74%, 35%)'">
+          {{ lang.t('leads.exportLeads') }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="flex gap-4 mt-4">
+      <button
+        [class.active]="activeTab === 'leads'"
+        (click)="activeTab = 'leads'"
+        class="tab-button px-6 py-2 rounded-lg transition">
+        {{ lang.t('questionnaires.leads') }}
+      </button>
+      <button
+        [class.active]="activeTab === 'responses'"
+        (click)="activeTab = 'responses'"
+        class="tab-button px-6 py-2 rounded-lg transition">
+        {{ lang.t('questionnaires.responses') }}
+      </button>
+      <button
+        [class.active]="activeTab === 'leadAnalysis'"
+        (click)="activeTab = 'leadAnalysis'"
+        class="tab-button px-6 py-2 rounded-lg transition">
+        {{ lang.t('leads.leadAnalysis') }}
+      </button>
+      <button
+        [class.active]="activeTab === 'responseAnalysis'"
+        (click)="activeTab = 'responseAnalysis'"
+        class="tab-button px-6 py-2 rounded-lg transition">
+        {{ lang.t('leads.responseAnalysis') }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Automation notification -->
+  @if (showAutomationBanner) {
+    <div class="bg-blue-50 border-b px-6 py-3 flex items-center justify-between" style="border-color: hsl(186, 30%, 88%);">
+      <div class="flex items-center gap-3">
+        <img src="/assets/hoogi-avatar.png" alt="Hoogi" class="w-10 h-10" onerror="this.style.display='none'">
+        <span>{{ lang.t('leads.setAutomationType') }}</span>
+      </div>
+      <button (click)="showAutomationBanner = false" class="text-gray-500 hover:text-gray-700">✕</button>
+    </div>
+  }
+
+  <!-- Main content area -->
+  <div class="flex-1 overflow-hidden">
+    <div class="h-full overflow-y-auto px-6 py-4">
+
+      <!-- Lead Analysis Tab Content -->
+      @if (activeTab === 'leadAnalysis') {
+        <div class="space-y-6">
+          <!-- Summary Stats Row -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Left Column: Lead Stats -->
+            <div class="bg-white rounded-lg border p-6" style="border-color: hsl(186, 30%, 88%);">
+              <h2 class="text-xl font-bold mb-4">{{ lang.t('leads.leadSummary') }}</h2>
+
+              <div class="grid grid-cols-2 gap-4">
+                <!-- Total Leads -->
+                <div class="bg-blue-50 rounded-lg p-4">
+                  <div class="text-sm text-gray-600 mb-1">{{ lang.t('leads.totalLeads') }}</div>
+                  <div class="text-3xl font-bold text-blue-700">{{ totalLeads }}</div>
+                </div>
+
+                <!-- Active Leads -->
+                <div class="bg-green-50 rounded-lg p-4">
+                  <div class="text-sm text-gray-600 mb-1">{{ lang.t('leads.activeLeads') }}</div>
+                  <div class="text-3xl font-bold text-green-700">{{ activeLeads }}</div>
+                </div>
+
+                <!-- Conversion Rate -->
+                <div class="bg-purple-50 rounded-lg p-4">
+                  <div class="text-sm text-gray-600 mb-1">{{ lang.t('leads.conversionRate') }}</div>
+                  <div class="text-3xl font-bold text-purple-700">{{ conversionRate }}%</div>
+                </div>
+
+                <!-- Average Response Time -->
+                <div class="bg-orange-50 rounded-lg p-4">
+                  <div class="text-sm text-gray-600 mb-1">{{ lang.t('leads.avgResponseTime') }}</div>
+                  <div class="text-2xl font-bold text-orange-700">{{ lang.t('leads.avgResponseTimeValue') }}</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Column: Lead Sources -->
+            <div class="bg-white rounded-lg border p-6" style="border-color: hsl(186, 30%, 88%);">
+              <h2 class="text-xl font-bold mb-4">{{ lang.t('leads.leadSources') }}</h2>
+
+              <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                  <span class="text-gray-700">{{ lang.t('leads.facebookAds') }}</span>
+                  <div class="flex items-center gap-3 flex-1 mx-4">
+                    <div class="flex-1 bg-gray-200 rounded-full h-2">
+                      <div class="bg-blue-600 h-2 rounded-full" style="width: 90%;"></div>
+                    </div>
+                    <span class="font-bold text-blue-600 w-8">18</span>
+                  </div>
+                </div>
+
+                <div class="flex items-center justify-between">
+                  <span class="text-gray-700">{{ lang.t('questionnaires.whatsapp') }}</span>
+                  <div class="flex items-center gap-3 flex-1 mx-4">
+                    <div class="flex-1 bg-gray-200 rounded-full h-2">
+                      <div class="bg-blue-600 h-2 rounded-full" style="width: 75%;"></div>
+                    </div>
+                    <span class="font-bold text-blue-600 w-8">15</span>
+                  </div>
+                </div>
+
+                <div class="flex items-center justify-between">
+                  <span class="text-gray-700">{{ lang.t('leads.email') }}</span>
+                  <div class="flex items-center gap-3 flex-1 mx-4">
+                    <div class="flex-1 bg-gray-200 rounded-full h-2">
+                      <div class="bg-blue-600 h-2 rounded-full" style="width: 60%;"></div>
+                    </div>
+                    <span class="font-bold text-blue-600 w-8">12</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Improvement Tips -->
+          <div class="bg-white rounded-lg border p-6" style="border-color: hsl(186, 30%, 88%);">
+            <h2 class="text-xl font-bold mb-4">{{ lang.t('leads.improvementTips') }}</h2>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <!-- Tip 1 -->
+              <div class="bg-blue-50 rounded-lg p-4 border-r-4 border-blue-500">
+                <div class="font-semibold text-blue-900 mb-2">
+                  {{ lang.t('leads.increaseLeadVolume') }}
+                </div>
+                <div class="text-sm text-blue-800">
+                  {{ lang.currentLanguage === 'he'
+                    ? 'הוספת טופס פאר קצר בכל יוער בולט יכולה להגדיל את כמות הלידים ב-30%>'
+                    : 'Adding a short form on every prominent page can increase leads by 30%+' }}
+                </div>
+              </div>
+
+              <!-- Tip 2 -->
+              <div class="bg-green-50 rounded-lg p-4 border-r-4 border-green-500">
+                <div class="font-semibold text-green-900 mb-2">
+                  {{ lang.t('leads.improveResponseTime') }}
+                </div>
+                <div class="text-sm text-green-800">
+                  {{ lang.currentLanguage === 'he'
+                    ? 'מעונה תוך שעה מגדיל קבלת הלידים הללו להגדיל את האימייל-האקציה ל-70%'
+                    : 'Responding within an hour can increase lead-to-action rate to 70%' }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Leads Table (for non-analysis tabs) -->
+      @if (activeTab !== 'leadAnalysis' && activeTab !== 'responseAnalysis') {
+      <!-- Table header -->
+      <div class="bg-white rounded-t-lg border border-b-0" style="border-color: hsl(186, 30%, 88%);">
+        <div class="grid grid-cols-12 gap-4 px-6 py-3 text-sm font-semibold text-gray-600">
+          <div class="col-span-1 text-center">
+            <input type="checkbox" class="w-4 h-4 rounded" style="accent-color: hsl(186, 74%, 35%);">
+          </div>
+          <div class="col-span-2">{{ lang.t('leads.detailsAndId') }}</div>
+          <div class="col-span-2">{{ lang.t('leads.contactDetails') }}</div>
+          <div class="col-span-2">{{ lang.t('leads.automation') }}</div>
+          <div class="col-span-2">{{ lang.t('leads.tags') }}</div>
+          <div class="col-span-2">{{ lang.t('leads.actions') }}</div>
+          <div class="col-span-1"></div>
+        </div>
+      </div>
+
+      <!-- Leads list -->
+      <div class="bg-white border rounded-b-lg" style="border-color: hsl(186, 30%, 88%);">
+        @if (leads.length === 0) {
+          <!-- Empty state -->
+          <div class="py-16 text-center">
+            <p class="text-lg font-semibold text-gray-600 mb-2">
+              {{ lang.t('leads.noLeadsToDisplay') }}
+            </p>
+            <p class="text-sm text-gray-500">
+              {{ lang.t('leads.newLeadsAppear') }}
+            </p>
+          </div>
+        }
+
+        @for (lead of leads; track lead.id) {
+          <div class="grid grid-cols-12 gap-4 px-6 py-4 border-b hover:bg-gray-50 transition items-center" style="border-color: hsl(186, 30%, 88%);">
+            <!-- Checkbox -->
+            <div class="col-span-1 text-center">
+              <input type="checkbox" class="w-4 h-4 rounded" style="accent-color: hsl(186, 74%, 35%);">
+            </div>
+
+            <!-- Details & ID -->
+            <div class="col-span-2">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-semibold">
+                  {{ lead.name.charAt(0) }}
+                </div>
+                <div>
+                  <div class="font-semibold">{{ lead.name }}</div>
+                  <div class="flex items-center gap-2 text-xs text-gray-500">
+                    <span [class.badge-new]="lead.status === 'new'"
+                          [class.badge-active]="lead.status === 'active'"
+                          [class.badge-waiting]="lead.status === 'waiting'"
+                          [class.badge-converted]="lead.status === 'converted'"
+                          class="badge">
+                      {{ getStatusLabel(lead.status) }}
+                    </span>
+                    <span>{{ lead.date }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Contact Details -->
+            <div class="col-span-2">
+              <div class="space-y-1 text-sm">
+                <div class="flex items-center gap-2 text-blue-600">
+                  <span>📧</span>
+                  <a [href]="'mailto:' + lead.email" class="hover:underline">{{ lead.email }}</a>
+                </div>
+                <div class="flex items-center gap-2 text-blue-600">
+                  <span>📞</span>
+                  <a [href]="'tel:' + lead.phone" class="hover:underline">{{ lead.phone }}</a>
+                </div>
+                @if (lead.whatsapp) {
+                  <div class="flex items-center gap-2 text-green-600">
+                    <span>💬</span>
+                    <span>WhatsApp</span>
+                  </div>
+                }
+              </div>
+            </div>
+
+            <!-- Automation -->
+            <div class="col-span-2">
+              <select class="w-full px-3 py-1.5 text-sm border rounded-lg" style="border-color: hsl(186, 30%, 88%);">
+                <option>{{ lang.t('leads.email') }}</option>
+                <option>{{ lang.t('leads.sms') }}</option>
+                <option>{{ lang.currentLanguage === 'he' ? 'WhatsApp' : 'WhatsApp' }}</option>
+              </select>
+            </div>
+
+            <!-- Tags -->
+            <div class="col-span-2">
+              <span class="text-sm text-gray-500">
+                {{ lang.t('leads.noTags') }}
+              </span>
+            </div>
+
+            <!-- Actions -->
+            <div class="col-span-2">
+              <div class="flex items-center gap-2">
+                <button class="action-button" title="{{ lang.t('common.edit') }}">
+                  ✏️
+                </button>
+                <button class="action-button" title="{{ lang.currentLanguage === 'he' ? 'הצג' : 'View' }}">
+                  👁️
+                </button>
+                <button class="action-button" title="{{ lang.t('common.submit') }}">
+                  ↗️
+                </button>
+              </div>
+            </div>
+
+            <!-- More menu -->
+            <div class="col-span-1 text-center">
+              <button class="action-button">⋯</button>
+            </div>
+          </div>
+        }
+      </div>
+      }
+    </div>
+  </div>
+
+  <!-- Hoogi assistant (bottom right) -->
+  <div class="fixed bottom-6 right-6 bg-white rounded-lg shadow-lg p-4 max-w-sm border" style="border-color: hsl(186, 30%, 88%);">
+    <div class="flex items-start gap-3">
+      <img src="/assets/hoogi-avatar.png" alt="Hoogi" class="w-12 h-12" onerror="this.style.display='none'">
+      <div class="flex-1">
+        <div class="font-semibold mb-1">
+          {{ lang.t('leads.hoogiMessage') }}
+        </div>
+        <div class="text-sm text-gray-600">
+          {{ lang.t('leads.hoogiTip') }}
+        </div>
+      </div>
+      <button (click)="dismissHoogiTip()" class="text-gray-400 hover:text-gray-600">✕</button>
+    </div>
+  </div>
+</div>

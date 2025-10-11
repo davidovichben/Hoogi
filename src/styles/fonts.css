@@ -1,8 +1,0 @@
-/* Optional Hebrew-friendly font.
-   If the ZIP already provides fonts, you can remove this import. */
-@import url('https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap');
-
-:root{
-  --zip-font-family: "Heebo", system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
-}
-html, body { font-family: var(--zip-font-family); }

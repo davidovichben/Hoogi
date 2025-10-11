@@ -1,0 +1,36 @@
+<div [class]="containerClass" class="mx-auto px-4">
+  <!-- Logo and Title -->
+  <div class="text-center" [class.mb-8]="variant === 'landing'" [class.mb-10]="variant === 'signup'">
+    <div class="flex justify-center mb-4">
+      <img src="/img/logo.png" alt="Hoogi" [class]="logoClass">
+    </div>
+    <h1 [class]="titleClass">
+      <span>{{ lang.t('landingHero.welcomeTo') }} </span>
+      <span class="text-primary">Hoogi</span>
+    </h1>
+    <p [class]="subtitleClass">
+      {{ lang.t(subtitleKey) }}
+    </p>
+  </div>
+
+  <!-- Benefits Grid -->
+  <div class="grid md-grid-cols-2" [class.gap-6]="variant === 'landing'" [class.gap-4]="variant === 'signup'" [class.mb-12]="variant === 'landing'" [class.mb-10]="variant === 'signup'">
+    @for (benefit of benefits; track benefit.titleKey) {
+      <div [class]="cardClass">
+        <div class="flex items-start gap-4">
+          <div [class]="iconContainerClass">
+            @if (benefit.iconSvg) {
+              <svg [class]="iconClass" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" [innerHTML]="benefit.iconSvg"></svg>
+            } @else if (benefit.iconEmoji) {
+              <span [class]="iconClass">{{ benefit.iconEmoji }}</span>
+            }
+          </div>
+          <div [class]="textContainerClass">
+            <h3 [class]="benefitTitleClass">{{ lang.t(benefit.titleKey) }}</h3>
+            <p [class]="benefitDescClass">{{ lang.t(benefit.descKey) }}</p>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+</div>

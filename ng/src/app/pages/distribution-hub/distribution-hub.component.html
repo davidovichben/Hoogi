@@ -1,0 +1,230 @@
+<div class="distribution-page">
+  <!-- Back Button -->
+  <div class="back-button-container">
+    <button class="btn-back" (click)="goBack()">
+      <span class="arrow-icon">←</span>
+      {{ lang.t('common.back') }}
+    </button>
+  </div>
+
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <h1 class="page-title">
+        <span class="title-icon">📤</span>
+        {{ lang.t('distribution.title') }}
+      </h1>
+      <p class="page-subtitle">
+        {{ lang.t('distribution.subtitle') }}
+      </p>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs-container">
+    <div class="tabs-list">
+      <button
+        class="tab-trigger"
+        [class.active]="activeTab === 'triggers'"
+        (click)="setActiveTab('triggers')">
+        <span class="tab-icon">🔔</span>
+        <span>{{ lang.t('distribution.tabs.triggers') }}</span>
+      </button>
+      <button
+        class="tab-trigger"
+        [class.active]="activeTab === 'response'"
+        (click)="setActiveTab('response')">
+        <span class="tab-icon">💬</span>
+        <span>{{ lang.t('distribution.tabs.response') }}</span>
+      </button>
+      <button
+        class="tab-trigger"
+        [class.active]="activeTab === 'preferences'"
+        (click)="setActiveTab('preferences')">
+        <span class="tab-icon">⚙️</span>
+        <span>{{ lang.t('distribution.tabs.preferences') }}</span>
+      </button>
+    </div>
+
+    <!-- Triggers Tab Content -->
+    @if (activeTab === 'triggers') {
+      <div class="tab-content">
+        <div class="placeholder-content">
+          <p>{{ lang.t('distribution.triggersPlaceholder') }}</p>
+        </div>
+      </div>
+    }
+
+    <!-- Response Tab Content -->
+    @if (activeTab === 'response') {
+      <div class="tab-content">
+        <div class="main-card">
+          <!-- Survey Selection -->
+          <div class="survey-selection-card">
+            <h2 class="section-title">{{ lang.t('distribution.chooseQuestionnaire') }}</h2>
+            <select
+              [(ngModel)]="selectedQuestionnaire"
+              (ngModelChange)="onQuestionnaireChange()"
+              class="select-input"
+              name="questionnaire">
+              <option value="">{{ lang.t('distribution.selectPlaceholder') }}</option>
+              @for (q of questionnaires; track q.id) {
+                <option [value]="q.id">{{ q.title }}</option>
+              }
+            </select>
+          </div>
+
+          <!-- Customer Response Section -->
+          <div class="customer-response-card">
+            <div class="card-header-row">
+              <h3 class="section-subtitle">{{ lang.t('distribution.customerResponseTitle') }}</h3>
+              <button
+                class="btn-create-template"
+                [disabled]="!selectedQuestionnaire"
+                (click)="navigateToAutomations()">
+                <span class="plus-icon">+</span>
+                {{ lang.t('distribution.addTemplate') }}
+                <span class="external-icon">↗</span>
+              </button>
+            </div>
+
+            <!-- Template Selection -->
+            <div class="template-selection">
+              <div class="template-header">
+                <label class="template-label">{{ lang.t('distribution.chooseTemplate') }}</label>
+              </div>
+              <select
+                [(ngModel)]="selectedTemplate"
+                class="select-input"
+                name="template"
+                [disabled]="!selectedQuestionnaire">
+                <option value="">
+                  {{ selectedQuestionnaire ? lang.t('distribution.selectTemplate') : lang.t('distribution.selectQuestionnaireFirst') }}
+                </option>
+              </select>
+            </div>
+
+            <!-- Channel Selection -->
+            <div class="channels-section">
+              <label class="channels-label">{{ lang.t('distribution.channels') }}</label>
+
+              <div class="channels-grid">
+                <!-- WhatsApp -->
+                <div
+                  class="channel-card whatsapp-card"
+                  [class.disabled]="!selectedQuestionnaire"
+                  (click)="toggleChannel('whatsapp')">
+                  <input
+                    type="checkbox"
+                    [checked]="enableWhatsApp"
+                    [disabled]="!selectedQuestionnaire"
+                    class="channel-checkbox">
+                  <div class="channel-icon-container whatsapp-icon">
+                    <span class="channel-icon">💬</span>
+                  </div>
+                  <label class="channel-label">WhatsApp</label>
+                </div>
+
+                <!-- Email -->
+                <div
+                  class="channel-card email-card"
+                  [class.disabled]="!selectedQuestionnaire"
+                  (click)="toggleChannel('email')">
+                  <input
+                    type="checkbox"
+                    [checked]="enableEmail"
+                    [disabled]="!selectedQuestionnaire"
+                    class="channel-checkbox">
+                  <div class="channel-icon-container email-icon">
+                    <span class="channel-icon">✉️</span>
+                  </div>
+                  <label class="channel-label">{{ lang.t('distribution.email') }}</label>
+                </div>
+
+                <!-- SMS -->
+                <div
+                  class="channel-card sms-card"
+                  [class.disabled]="!selectedQuestionnaire"
+                  (click)="toggleChannel('sms')">
+                  <input
+                    type="checkbox"
+                    [checked]="enableSMS"
+                    [disabled]="!selectedQuestionnaire"
+                    class="channel-checkbox">
+                  <div class="channel-icon-container sms-icon">
+                    <span class="channel-icon">📱</span>
+                  </div>
+                  <label class="channel-label">{{ lang.t('distribution.sms') }}</label>
+                </div>
+              </div>
+            </div>
+
+            @if (!selectedQuestionnaire) {
+              <p class="help-text">{{ lang.t('distribution.selectQuestionnaireToEnable') }}</p>
+            }
+
+            @if (enabledChannels.length > 0 && selectedTemplate && selectedQuestionnaire) {
+              <div class="success-message">
+                <p class="success-text">
+                  ✓ {{ lang.t('distribution.autoResponseEnabled') }} {{ enabledChannels.join(', ') }}
+                </p>
+              </div>
+            }
+          </div>
+
+          <!-- Quick Links Section -->
+          <div class="quick-links-section">
+            <h3 class="section-subtitle">{{ lang.t('distribution.createLinks') }}</h3>
+
+            <div class="link-cards-grid">
+              <!-- QR Code -->
+              <div class="link-card qr-card" (click)="handleBuildLink('qr')">
+                <div class="link-card-icon">📱</div>
+                <h4 class="link-card-title">{{ lang.t('distribution.qrCode') }}</h4>
+                <p class="link-card-description">{{ lang.t('distribution.qrDescription') }}</p>
+              </div>
+
+              <!-- Interactive Chat -->
+              <div class="link-card chat-card" (click)="handleBuildLink('chat')">
+                <div class="link-card-icon">💬</div>
+                <h4 class="link-card-title">{{ lang.t('distribution.interactiveChat') }}</h4>
+                <p class="link-card-description">{{ lang.t('distribution.chatDescription') }}</p>
+              </div>
+
+              <!-- Classic Form -->
+              <div class="link-card form-card" (click)="handleBuildLink('form')">
+                <div class="link-card-icon">📋</div>
+                <h4 class="link-card-title">{{ lang.t('distribution.classicForm') }}</h4>
+                <p class="link-card-description">{{ lang.t('distribution.formDescription') }}</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Preview Section -->
+          @if (currentMode && currentUrl) {
+            <div #previewSection class="preview-section">
+              <div class="preview-header">
+                <h3 class="section-subtitle">{{ lang.t('distribution.preview') }}</h3>
+                <button class="btn-copy" (click)="handleCopyUrl()">
+                  {{ lang.t('distribution.copyLink') }}
+                </button>
+              </div>
+              <div class="preview-url">
+                <code>{{ currentUrl }}</code>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- Preferences Tab Content -->
+    @if (activeTab === 'preferences') {
+      <div class="tab-content">
+        <div class="placeholder-content">
+          <p>{{ lang.t('distribution.preferencesPlaceholder') }}</p>
+        </div>
+      </div>
+    }
+  </div>
+</div>

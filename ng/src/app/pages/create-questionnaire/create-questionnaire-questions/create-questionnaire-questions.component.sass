@@ -1,0 +1,35 @@
+.questions-container
+  width: 100%
+
+.question-type-select
+  option
+    color: #000
+    font-size: 14px
+
+  // Make icons smaller using first character styling
+  option::first-letter
+    font-size: 12px
+    color: #000
+
+// Style for Material Select dropdown panel
+::ng-deep .mat-mdc-select-panel
+  background-color: white !important
+
+::ng-deep .mat-mdc-option
+  background-color: white !important
+
+::ng-deep .mat-mdc-option:hover
+  background-color: #f3f4f6 !important
+
+// Preview button
+.preview-btn
+  padding: 0.75rem 1.5rem
+  color: white
+  background: #7e22ce
+  border-radius: 0.5rem
+  transition: background-color 0.2s
+  border: none
+  cursor: pointer
+
+  &:hover
+    background: #6b21a8

@@ -1,0 +1,77 @@
+<div class="min-h-screen layout-container">
+  <!-- Mobile overlay -->
+  @if (sidebarOpen) {
+    <div
+      class="fixed inset-0 bg-black/50 z-40 lg:hidden"
+      (click)="toggleSidebar()">
+    </div>
+  }
+
+  <!-- Mobile header -->
+  <div class="mobile-header lg:hidden flex items-center justify-between p-4 border-b bg-white/95 backdrop-blur-sm">
+    <button
+      (click)="toggleSidebar()"
+      class="p-2 hover:bg-gray-100 rounded-lg">
+      <span class="text-xl">☰</span>
+    </button>
+    <h1 class="font-bold text-lg">iHoogi</h1>
+    <div class="w-10"></div>
+  </div>
+
+  <div class="flex">
+    <!-- Sidebar -->
+    <aside
+      [class.translate-x-0]="sidebarOpen"
+      [class.-translate-x-full]="!sidebarOpen"
+      class="fixed left-0 top-0 h-full w-48 border-r z-50 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:z-auto flex flex-col">
+
+      <!-- Logo -->
+      <div class="logo-section flex items-center justify-center py-6 border-b">
+        <img src="/img/logo.png" alt="Logo" class="w-24 h-24 object-contain">
+        <button
+          (click)="toggleSidebar()"
+          class="lg:hidden absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-lg">
+          <span class="text-xl">✕</span>
+        </button>
+      </div>
+
+      <!-- Navigation Grid (2 columns) -->
+      <nav class="flex-1 py-6 px-3">
+        <div class="grid grid-cols-2 gap-3">
+	        @for (item of navigation; track item) {
+          <a
+            [routerLink]="item.href"
+            class="flex flex-col items-center justify-center rounded-xl transition-all duration-200 h-20"
+            [class.bg-white]="isActive(item.href)"
+            [class.shadow-lg]="isActive(item.href)"
+            [style.border]="isActive(item.href) ? '2px solid hsl(186, 74%, 35%)' : '2px solid transparent'"
+            [style.background]="!isActive(item.href) ? 'white' : ''"
+            onmouseover="if(!this.classList.contains('shadow-lg')) { this.style.transform='scale(1.05)'; }"
+            onmouseout="if(!this.classList.contains('shadow-lg')) { this.style.transform='scale(1)'; }">
+            <span class="text-2xl mb-1">{{ item.icon }}</span>
+            <span class="text-xs text-center font-bold" [style.color]="isActive(item.href) ? 'hsl(186, 74%, 35%)' : 'hsl(220, 25%, 40%)'">{{ lang.t(item.name) }}</span>
+          </a>
+	        }
+        </div>
+      </nav>
+
+      <!-- Logout button -->
+      <div class="px-3 pb-4">
+        <button
+          (click)="logout()"
+          class="w-full flex items-center justify-center gap-2 p-3 rounded-xl transition-all duration-200 bg-white hover:bg-red-50 border-2 border-transparent hover:border-red-400"
+          style="color: hsl(0, 70%, 50%);">
+          <span class="text-2xl">🚪</span>
+          <span class="text-sm font-medium">{{ lang.t('nav.logout') }}</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main content -->
+    <main class="flex-1 layout-bg">
+	    <div class="white-bg p-5">
+		    <router-outlet></router-outlet>
+	    </div>
+    </main>
+  </div>
+</div>

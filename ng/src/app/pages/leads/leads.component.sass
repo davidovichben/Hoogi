@@ -1,0 +1,54 @@
+.rtl
+  direction: rtl
+  text-align: right
+
+.tab-button
+  border: 1px solid hsl(186, 30%, 88%)
+  background: white
+  color: hsl(186, 74%, 35%)
+
+  &:hover
+    background-color: hsl(186, 74%, 95%)
+
+  &.active
+    background-color: hsl(186, 74%, 35%)
+    color: white
+    border-color: hsl(186, 74%, 35%)
+
+  &.disabled
+    opacity: 0.5
+    cursor: not-allowed
+
+.badge
+  display: inline-block
+  padding: 2px 8px
+  border-radius: 4px
+  font-size: 0.75rem
+  font-weight: 500
+
+  &-new
+    background-color: #3b82f6
+    color: white
+
+  &-active
+    background-color: #10b981
+    color: white
+
+  &-waiting
+    background-color: #f59e0b
+    color: white
+
+  &-converted
+    background-color: #6b7280
+    color: white
+
+.action-button
+  padding: 4px 8px
+  border: 1px solid hsl(186, 30%, 88%)
+  background: white
+  border-radius: 6px
+  transition: all 0.2s
+
+  &:hover
+    background-color: hsl(186, 74%, 95%)
+    border-color: hsl(186, 74%, 35%)

@@ -1,0 +1,87 @@
+<div class="min-h-screen bg-gray-50 flex items-center justify-center p-4" [class.text-right]="lang.currentLanguage === 'he'" [class.text-left]="lang.currentLanguage === 'en'">
+  <div class="w-full max-w-md">
+    <!-- Hoogi Logo -->
+    <div class="text-center mb-6">
+      <img src="/img/logo.png" alt="Hoogi" class="h-24 mx-auto mb-2">
+      <h1 class="text-3xl font-bold">
+	      <span>{{ lang.t('auth.loginTo') }}</span>
+	      <span class="text-primary">Hoogi</span>
+      </h1>
+    </div>
+
+    <!-- Forms Container -->
+    <div class="bg-white rounded-lg shadow-md p-8">
+      <!-- Login Form -->
+      @if (activeTab === 'login') {
+        <form (submit)="handleLogin(); $event.preventDefault()" class="space-y-6">
+          <div>
+            <label class="block text-gray-700 mb-2">{{ lang.t('auth.email') }}</label>
+            <input
+              type="email"
+              [(ngModel)]="email"
+              name="email"
+              required
+              placeholder="example@email.com"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
+          </div>
+
+          <div>
+            <label class="block text-gray-700 mb-2">{{ lang.t('auth.password') }}</label>
+            <input
+              [type]="showPassword ? 'text' : 'password'"
+              [(ngModel)]="password"
+              name="password"
+              required
+              [placeholder]="lang.t('auth.enterPassword')"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
+          </div>
+
+          <div>
+            <button type="button" (click)="activeTab = 'forgot'" class="text-teal-500 hover:underline text-sm">
+              {{ lang.t('auth.forgotPassword') }}
+            </button>
+          </div>
+
+          <button
+            type="submit"
+            [disabled]="isLoading"
+            class="w-full py-3 text-white rounded-lg font-medium disabled:opacity-50 transition btn-primary">
+            {{ isLoading ? lang.t('auth.loggingIn') : lang.t('auth.login') }}
+          </button>
+
+          <div class="text-center text-gray-600 text-sm">
+            {{ lang.t('auth.notRegistered') }} <a routerLink="/register" class="text-teal-500 hover:underline">{{ lang.t('auth.registerNow') }}</a>
+          </div>
+        </form>
+      }
+
+      <!-- Forgot Password Form -->
+      @if (activeTab === 'forgot') {
+        <form (submit)="handleForgotPassword(); $event.preventDefault()" class="space-y-6">
+          <div>
+            <label class="block text-gray-700 mb-2">{{ lang.t('auth.email') }}</label>
+            <input
+              type="email"
+              [(ngModel)]="email"
+              name="email"
+              required
+              placeholder="example@email.com"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
+          </div>
+
+          <button
+            type="submit"
+            [disabled]="isLoading"
+            class="w-full py-3 text-white rounded-lg font-medium disabled:opacity-50 transition btn-primary">
+            {{ isLoading ? lang.t('auth.sending') : lang.t('auth.sendResetLink') }}
+          </button>
+
+          <div class="text-center text-gray-600 text-sm">
+            {{ lang.t('auth.rememberedPassword') }} <button type="button" (click)="activeTab = 'login'" class="text-teal-500 hover:underline">{{ lang.t('auth.loginNow') }}</button>
+          </div>
+        </form>
+      }
+
+    </div>
+  </div>
+</div>
