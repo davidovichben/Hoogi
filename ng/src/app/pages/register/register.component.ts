@@ -139,7 +139,6 @@ export class RegisterComponent {
             .upsert({
               id: data.user.id,
               email: this.email,
-              company: this.fullName,
               locale: locale,
               created_at: new Date().toISOString()
             });

@@ -29,9 +29,6 @@ interface ProfileFormData {
   imageUrl?: string;
   occupation?: string;
   subOccupation?: string;
-  occupationFree?: string;
-  subOccupationFree?: string;
-  primaryService?: string;
   urlSources?: string[];
   socialMedia?: SocialMedia;
 }
@@ -57,9 +54,6 @@ export class ProfileDetailsComponent implements OnInit {
     imageUrl: '',
     occupation: '',
     subOccupation: '',
-    occupationFree: '',
-    subOccupationFree: '',
-    primaryService: '',
     urlSources: [],
     socialMedia: {
       facebook: '',
@@ -77,6 +71,10 @@ export class ProfileDetailsComponent implements OnInit {
   selectedFileName = '';
   selectedImageFileName = '';
   newLink = '';
+
+  // Custom text fields for "Other" option
+  customOccupation = '';
+  customSubOccupation = '';
 
   // Error tracking for required fields
   errors = {
@@ -136,53 +134,38 @@ export class ProfileDetailsComponent implements OnInit {
         this.formData.brandColor = data.background_color || '#b0a0a4';
         this.formData.logoUrl = data.logo_url || '';
         this.formData.imageUrl = data.image_url || '';
-        this.formData.primaryService = data.primary_service || '';
 
         // Handle occupation
         const occupation = data.occupation || '';
         const suboccupation = data.suboccupation || '';
 
-        // Check if occupation is actually a sub-occupation
-        let mainOccupation = '';
-        let actualSubOccupation = '';
-
-        if (occupation && !this.occupationKeys.includes(occupation)) {
-          // Check if it's a sub-occupation under any main occupation
-          let found = false;
-          for (const [mainOcc, subOccs] of Object.entries(OCCUPATIONS)) {
-            if (subOccs.includes(occupation)) {
-              mainOccupation = mainOcc;
-              actualSubOccupation = occupation;
-              found = true;
-              break;
-            }
-          }
-
-          if (!found) {
-            // It's truly custom - set to "אחר" and populate free text
-            this.formData.occupation = OTHER;
-            this.formData.occupationFree = occupation;
-          } else {
-            // It was a sub-occupation stored in occupation field
-            this.formData.occupation = mainOccupation;
-            this.formData.subOccupation = actualSubOccupation;
-          }
-        } else {
+        // Check if occupation is a predefined category or custom value
+        if (occupation && this.occupationKeys.includes(occupation)) {
+          // It's a predefined occupation
           this.formData.occupation = occupation;
 
           // Handle suboccupation
-          if (suboccupation && this.formData.occupation && this.formData.occupation !== OTHER) {
+          if (suboccupation && this.formData.occupation) {
             const validSubOccupations = OCCUPATIONS[this.formData.occupation] || [];
-            if (!validSubOccupations.includes(suboccupation)) {
-              // Custom suboccupation - set to "אחר" and populate free text
-              this.formData.subOccupation = OTHER;
-              this.formData.subOccupationFree = suboccupation;
-            } else {
+            if (validSubOccupations.includes(suboccupation)) {
+              // It's a predefined sub-occupation
               this.formData.subOccupation = suboccupation;
+            } else {
+              // It's a custom sub-occupation - set to OTHER and populate custom field
+              this.formData.subOccupation = OTHER;
+              this.customSubOccupation = suboccupation;
             }
           } else {
             this.formData.subOccupation = suboccupation;
           }
+        } else if (occupation) {
+          // It's a custom occupation - set to OTHER and populate custom field
+          this.formData.occupation = OTHER;
+          this.customOccupation = occupation;
+          this.formData.subOccupation = '';
+        } else {
+          this.formData.occupation = '';
+          this.formData.subOccupation = '';
         }
 
         this.formData.urlSources = data.url_sources || [];
@@ -199,16 +182,18 @@ export class ProfileDetailsComponent implements OnInit {
     }
   }
 
+  onOccupationChange() {
+    this.clearError('occupation');
+    this.formData.subOccupation = '';
+    this.customSubOccupation = '';
+  }
+
+  onSubOccupationChange() {
+    this.clearError('subOccupation');
+  }
+
   clearError(field: keyof typeof this.errors) {
-    if (field === 'occupation' && this.formData.occupation) {
-      const hasValue = this.formData.occupation !== OTHER || !!(this.formData.occupationFree || '').trim();
-      if (hasValue) this.errors[field] = false;
-    } else if (field === 'subOccupation' && this.formData.subOccupation) {
-      const hasValue = this.formData.subOccupation !== OTHER || !!(this.formData.subOccupationFree || '').trim();
-      if (hasValue) this.errors[field] = false;
-    } else {
-      this.errors[field] = false;
-    }
+    this.errors[field] = false;
   }
 
   validateProfile(): boolean {
@@ -216,15 +201,15 @@ export class ProfileDetailsComponent implements OnInit {
     const hasEmail = !!(this.formData.email || '').trim();
     const hasMobile = !!(this.formData.mobile || '').trim();
 
-    // Check occupation - if OTHER, check free text field
-    const occOk = !!(this.formData.occupation || '').trim() &&
-                  (this.formData.occupation !== OTHER ? true : !!(this.formData.occupationFree || '').trim());
+    // Check occupation - if OTHER, check custom field
+    const occOk = this.formData.occupation === OTHER
+                  ? !!(this.customOccupation || '').trim()
+                  : !!(this.formData.occupation || '').trim();
 
-    // Check suboccupation - only required if occupation is NOT "אחר"
-    // If occupation is "אחר", suboccupation is optional
-    const subOk = this.formData.occupation === OTHER ? true :
+    // Check suboccupation - only required if occupation is a predefined category
+    const subOk = this.formData.occupation === OTHER || !this.occupationKeys.includes(this.formData.occupation || '') ? true :
                   (this.formData.subOccupation === OTHER
-                    ? !!(this.formData.subOccupationFree || '').trim()
+                    ? !!(this.customSubOccupation || '').trim()
                     : !!(this.formData.subOccupation || '').trim());
 
     this.errors = {
@@ -389,9 +374,8 @@ export class ProfileDetailsComponent implements OnInit {
         background_color: this.formData.brandColor,
         logo_url: this.formData.logoUrl,
         image_url: this.formData.imageUrl,
-        occupation: this.formData.occupation === OTHER ? this.formData.occupationFree : this.formData.occupation,
-        suboccupation: this.formData.subOccupation === OTHER ? this.formData.subOccupationFree : this.formData.subOccupation,
-        primary_service: this.formData.primaryService,
+        occupation: this.formData.occupation === OTHER ? this.customOccupation : this.formData.occupation,
+        suboccupation: this.formData.subOccupation === OTHER ? this.customSubOccupation : this.formData.subOccupation,
         url_sources: this.formData.urlSources,
         social_networks: this.formData.socialMedia
       };

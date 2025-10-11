@@ -30,6 +30,8 @@ export class QuestionnaireLive implements OnInit {
   backgroundColor = '#b0a0a4';
   logoUrl = '';
   imageUrl = '';
+  showLogo = true;
+  showProfileImage = true;
 
   // Preview-specific data
   isPreviewMode = false;
@@ -100,6 +102,10 @@ export class QuestionnaireLive implements OnInit {
       this.isPreviewMode = true; // Enable preview mode
       this.questionnaireDate = new Date();
 
+      // Load showLogo and showProfileImage from preview data
+      this.showLogo = data.questionnaire.show_logo ?? true;
+      this.showProfileImage = data.questionnaire.show_profile_image ?? true;
+
       // Apply theme from preview data
       if (data.profile) {
         this.primaryColor = data.profile.brand_primary || '#199f3a';
@@ -147,6 +153,10 @@ export class QuestionnaireLive implements OnInit {
         this.questionnaire = data.questionnaire;
         this.questions = data.questions;
         this.options = data.options || [];
+
+        // Load showLogo and showProfileImage settings from questionnaire
+        this.showLogo = data.questionnaire.show_logo ?? true;
+        this.showProfileImage = data.questionnaire.show_profile_image ?? true;
 
         console.log('Questions loaded:', this.questions.length);
         console.log('Options loaded:', this.options.length);
@@ -249,7 +259,17 @@ export class QuestionnaireLive implements OnInit {
         }
       }
 
-      // Prepare response data
+      // For owner view, just mark as submitted without saving to database
+      if (this.isOwner) {
+        this.isSubmitted = true;
+        this.toastService.show(
+          this.lang.currentLanguage === 'he' ? 'בדיקה הושלמה - לא נשמר במסד הנתונים' : 'Test completed - not saved to database',
+          'success'
+        );
+        return;
+      }
+
+      // Prepare response data for guest view
       const responseData: Record<string, any> = {};
 
       for (const question of this.questions) {
@@ -264,7 +284,7 @@ export class QuestionnaireLive implements OnInit {
         }
       }
 
-      // Save to database
+      // Save to database for guest view
       const { error } = await this.supabaseService.client
         .from('responses')
         .insert({
@@ -275,18 +295,12 @@ export class QuestionnaireLive implements OnInit {
 
       if (error) throw error;
 
+      // Show success message for guest view
       this.toastService.show(
         this.lang.currentLanguage === 'he' ? 'השאלון נשלח בהצלחה' : 'Response submitted successfully!',
         'success'
       );
-
-      // For guest view, mark as submitted and stay on page
-      if (!this.isOwner) {
-        this.isSubmitted = true;
-      } else {
-        // For owner, navigate back
-        this.router.navigate(['/questionnaires']);
-      }
+      this.isSubmitted = true;
     } catch (error: any) {
       this.toastService.show('Error submitting response: ' + (error.message || 'Unknown error'), 'error');
       console.error('Submit error:', error);
@@ -298,10 +312,34 @@ export class QuestionnaireLive implements OnInit {
   }
 
   backToCreation() {
-    window.close();
+    // If in preview mode from a popup, close the window
+    if (this.isPreviewMode) {
+      window.close();
+    } else {
+      // Otherwise navigate back to questionnaires list
+      this.router.navigate(['/questionnaires']);
+    }
   }
 
   toggleViewMode(mode: 'form' | 'chat') {
     this.viewMode = mode;
+  }
+
+  resetForm() {
+    this.responses = {};
+    this.multiResponses = {};
+    this.isSubmitted = false;
+
+    // Re-initialize multi-choice responses
+    this.questions.forEach(q => {
+      if (q.question_type === 'multiple_choice' || q.question_type === 'checkbox' || q.question_type === 'multi') {
+        this.multiResponses[q.id] = {};
+      }
+    });
+
+    this.toastService.show(
+      this.lang.currentLanguage === 'he' ? 'הטופס אופס' : 'Form reset',
+      'success'
+    );
   }
 }

@@ -278,6 +278,8 @@ export class CreateQuestionnaireComponent implements OnInit {
         this.formData.language = questionnaire.language || 'he';
         this.formData.linkUrl = questionnaire.link_url || '';
         this.formData.attachmentUrl = questionnaire.attachment_url || '';
+        this.formData.showLogo = questionnaire.show_logo ?? true;
+        this.formData.showProfileImage = questionnaire.show_profile_image ?? true;
         this.formData.questions = convertedQuestions;
 
         // Set attachment file name if attachment exists
@@ -325,7 +327,9 @@ export class CreateQuestionnaireComponent implements OnInit {
           secondaryColor: this.formData.secondaryColor,
           brandColor: this.formData.brandColor,
           logoUrl: this.formData.logoUrl,
-          imageUrl: this.formData.imageUrl
+          imageUrl: this.formData.imageUrl,
+          showLogo: this.formData.showLogo,
+          showProfileImage: this.formData.showProfileImage
         }
       },
       disableClose: false
@@ -397,7 +401,9 @@ export class CreateQuestionnaireComponent implements OnInit {
         owner_id: this.currentUserId,
         is_active: status === 'published',
         link_url: this.formData.linkUrl || null,
-        attachment_url: this.formData.attachmentUrl || null
+        attachment_url: this.formData.attachmentUrl || null,
+        show_logo: this.formData.showLogo ?? true,
+        show_profile_image: this.formData.showProfileImage ?? true
       };
 
       if (this.questionnaireId) {

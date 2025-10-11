@@ -15,7 +15,7 @@
           <!-- Header Card -->
           <div class="rounded-lg shadow-lg p-8 border-2" [style.border-color]="primaryColor" [style.background-color]="backgroundColor">
             <div class="flex items-center justify-between gap-4 mb-4">
-              @if (logoUrl) {
+              @if (logoUrl && showLogo) {
                 <img [src]="logoUrl" alt="Logo" class="h-16 w-auto object-contain flex-shrink-0" />
               }
               <div class="flex-1 text-center">
@@ -23,7 +23,7 @@
                   {{ questionnaire.title || 'Untitled Questionnaire' }}
                 </h1>
               </div>
-              @if (imageUrl) {
+              @if (imageUrl && showProfileImage) {
                 <img [src]="imageUrl" alt="Profile" class="h-16 w-16 rounded-full object-cover flex-shrink-0 border-4" [style.border-color]="secondaryColor" />
               }
             </div>
@@ -247,9 +247,8 @@
 
       <!-- Questionnaire Form (Preview Mode) -->
       @if (!isLoading && questionnaire) {
-        <!-- Preview Header (only in preview mode) -->
-        @if (isPreviewMode) {
-          <div class="bg-white border-b shadow-sm mb-6">
+        <!-- Preview Header (shown in all owner views) -->
+        <div class="bg-white border-b shadow-sm mb-6">
             <div class="max-w-4xl mx-auto px-4 py-4">
               <div class="flex items-center justify-between" [dir]="lang.currentLanguage === 'he' ? 'rtl' : 'ltr'">
                 <!-- Left side: Back button and Title/Description -->
@@ -333,7 +332,6 @@
               </div>
             </div>
           </div>
-        }
 
         <div class="overflow-y-auto flex-1" [style.direction]="lang.currentLanguage === 'he' ? 'rtl' : 'ltr'">
           <!-- Form View -->
@@ -342,7 +340,7 @@
               <!-- Header Card -->
               <div class="rounded-lg shadow-lg p-8 border-2" [style.border-color]="primaryColor" [style.background-color]="backgroundColor">
                 <div class="flex items-center justify-between gap-4 mb-4">
-                  @if (logoUrl) {
+                  @if (logoUrl && showLogo) {
                     <img [src]="logoUrl" alt="Logo" class="h-16 w-auto object-contain flex-shrink-0" />
                   }
                   <div class="flex-1 text-center">
@@ -350,7 +348,7 @@
                       {{ questionnaire.title || 'Untitled Questionnaire' }}
                     </h1>
                   </div>
-                  @if (imageUrl) {
+                  @if (imageUrl && showProfileImage) {
                     <img [src]="imageUrl" alt="Profile" class="h-16 w-16 rounded-full object-cover flex-shrink-0 border-4" [style.border-color]="secondaryColor" />
                   }
                 </div>
@@ -377,9 +375,11 @@
                     @if (question.question_type === 'text' || question.question_type === 'email') {
                       <input
                         [type]="question.question_type"
+                        [(ngModel)]="responses[question.id]"
+                        [name]="'question_' + question.id"
                         [placeholder]="lang.t('questionnaireLive.enterAnswer')"
-                        disabled
-                        class="w-full p-3 border border-gray-300 rounded-lg bg-gray-50"
+                        class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 transition-all"
+                        [style.--focus-color]="primaryColor"
                       />
                     }
 
@@ -387,9 +387,11 @@
                     @if (question.question_type === 'phone') {
                       <input
                         type="tel"
+                        [(ngModel)]="responses[question.id]"
+                        [name]="'question_' + question.id"
                         [placeholder]="lang.t('questionnaireLive.enterPhone')"
-                        disabled
-                        class="w-full p-3 border border-gray-300 rounded-lg bg-gray-50"
+                        class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 transition-all"
+                        [style.--focus-color]="primaryColor"
                       />
                     }
 
@@ -397,9 +399,11 @@
                     @if (question.question_type === 'number') {
                       <input
                         type="number"
+                        [(ngModel)]="responses[question.id]"
+                        [name]="'question_' + question.id"
                         [placeholder]="lang.t('questionnaireLive.enterNumber')"
-                        disabled
-                        class="w-full p-3 border border-gray-300 rounded-lg bg-gray-50"
+                        class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 transition-all"
+                        [style.--focus-color]="primaryColor"
                       />
                     }
 
@@ -407,9 +411,11 @@
                     @if (question.question_type === 'textarea') {
                       <textarea
                         rows="3"
+                        [(ngModel)]="responses[question.id]"
+                        [name]="'question_' + question.id"
                         [placeholder]="lang.t('questionnaireLive.enterAnswer')"
-                        disabled
-                        class="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 resize-none"
+                        class="w-full p-3 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 transition-all"
+                        [style.--focus-color]="primaryColor"
                       ></textarea>
                     }
 
@@ -417,13 +423,14 @@
                     @if (question.question_type === 'single_choice' || question.question_type === 'radio' || question.question_type === 'single' || question.question_type === 'conditional') {
                       <div class="space-y-2">
                         @for (option of getQuestionOptions(question.id); track option.id) {
-                          <label class="flex items-center gap-3">
+                          <label class="flex items-center gap-3 cursor-pointer">
                             <input
                               type="radio"
+                              [(ngModel)]="responses[question.id]"
                               [name]="'question_' + question.id"
                               [value]="option.value"
-                              disabled
                               class="w-4 h-4"
+                              [style.accent-color]="primaryColor"
                             />
                             <span class="text-gray-900">{{ option.label }}</span>
                           </label>
@@ -435,11 +442,13 @@
                     @if (question.question_type === 'multiple_choice' || question.question_type === 'checkbox' || question.question_type === 'multi') {
                       <div class="space-y-2">
                         @for (option of getQuestionOptions(question.id); track option.id) {
-                          <label class="flex items-center gap-3">
+                          <label class="flex items-center gap-3 cursor-pointer">
                             <input
                               type="checkbox"
-                              disabled
+                              [(ngModel)]="multiResponses[question.id][option.value]"
+                              [name]="'question_' + question.id + '_' + option.value"
                               class="w-4 h-4 rounded"
+                              [style.accent-color]="primaryColor"
                             />
                             <span class="text-gray-900">{{ option.label }}</span>
                           </label>
@@ -459,10 +468,12 @@
                         @for (rating of getRatingRange(question); track rating) {
                           <button
                             type="button"
-                            disabled
-                            class="w-10 h-10 rounded-full border-2 transition-all bg-gray-50"
+                            (click)="responses[question.id] = rating"
+                            class="w-10 h-10 rounded-full border-2 transition-all"
+                            [class.selected-rating]="responses[question.id] === rating"
                             [style.border-color]="primaryColor"
-                            [style.color]="primaryColor">
+                            [style.color]="responses[question.id] === rating ? 'white' : primaryColor"
+                            [style.background-color]="responses[question.id] === rating ? primaryColor : 'transparent'">
                             {{ rating }}
                           </button>
                         }
@@ -474,8 +485,7 @@
                       <div class="space-y-3">
                         <button
                           type="button"
-                          disabled
-                          class="w-full p-4 border-2 border-dashed rounded-lg bg-gray-50"
+                          class="w-full p-4 border-2 border-dashed rounded-lg transition-all hover:border-solid"
                           [style.border-color]="primaryColor"
                           [style.color]="primaryColor">
                           <div class="flex items-center justify-center gap-3">
@@ -495,8 +505,7 @@
                       <div class="space-y-3">
                         <button
                           type="button"
-                          disabled
-                          class="w-full p-4 border-2 border-dashed rounded-lg bg-gray-50"
+                          class="w-full p-4 border-2 border-dashed rounded-lg transition-all hover:border-solid"
                           [style.border-color]="primaryColor"
                           [style.color]="primaryColor">
                           <div class="flex items-center justify-center gap-3">
@@ -509,6 +518,36 @@
                       </div>
                     }
                   </div>
+                </div>
+              }
+            </div>
+
+            <!-- Submit Button for Owner Testing -->
+            <div class="flex justify-center pt-6">
+              @if (!isSubmitted) {
+                <button
+                  type="submit"
+                  (click)="submitResponse($event)"
+                  class="px-8 py-3 text-white rounded-lg transition-opacity hover:opacity-90 font-semibold"
+                  [style.background-color]="primaryColor">
+                  {{ lang.t('questionnaireLive.submitQuestionnaire') }}
+                </button>
+              }
+
+              <!-- Success Message -->
+              @if (isSubmitted) {
+                <div class="text-center py-6">
+                  <div class="text-2xl mb-2" [style.color]="primaryColor">✓</div>
+                  <p class="text-lg font-semibold text-gray-800">
+                    {{ lang.currentLanguage === 'he' ? 'שאלון נשלח בהצלחה (מצב בדיקה)' : 'Questionnaire submitted successfully (test mode)' }}
+                  </p>
+                  <button
+                    (click)="resetForm()"
+                    class="mt-4 px-6 py-2 border-2 rounded-lg font-medium transition-all hover:bg-gray-50"
+                    [style.border-color]="primaryColor"
+                    [style.color]="primaryColor">
+                    {{ lang.currentLanguage === 'he' ? 'נסה שוב' : 'Try Again' }}
+                  </button>
                 </div>
               }
             </div>

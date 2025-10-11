@@ -33,6 +33,9 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
   primaryColor = '#199f3a';
   secondaryColor = '#9cbb54';
   logoUrl = '';
+  imageUrl = '';
+  showLogo = true;
+  showProfileImage = true;
 
   // Store responses
   responses: Record<string, any> = {};
@@ -141,11 +144,16 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
       this.questions = data.questions;
       this.options = data.options || [];
 
+      // Load showLogo and showProfileImage from preview data
+      this.showLogo = data.questionnaire.show_logo ?? true;
+      this.showProfileImage = data.questionnaire.show_profile_image ?? true;
+
       // Apply theme from preview data
       if (data.profile) {
         this.primaryColor = data.profile.brand_primary || '#199f3a';
         this.secondaryColor = data.profile.brand_secondary || '#9cbb54';
         this.logoUrl = data.profile.logo_url || '';
+        this.imageUrl = data.profile.image_url || '';
       }
 
       // This is preview mode (owner view)
@@ -176,6 +184,10 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
         this.questions = data.questions;
         this.options = data.options || [];
 
+        // Load showLogo and showProfileImage settings from questionnaire
+        this.showLogo = data.questionnaire.show_logo ?? true;
+        this.showProfileImage = data.questionnaire.show_profile_image ?? true;
+
         // Load owner's profile theme colors
         await this.loadOwnerTheme(this.questionnaire.owner_id);
 
@@ -192,7 +204,7 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
     try {
       const { data, error } = await this.supabaseService.client
         .from('profiles')
-        .select('brand_primary, brand_secondary, logo_url')
+        .select('brand_primary, brand_secondary, logo_url, image_url')
         .eq('id', ownerId)
         .single();
 
@@ -200,6 +212,7 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
         this.primaryColor = data.brand_primary || '#199f3a';
         this.secondaryColor = data.brand_secondary || '#9cbb54';
         this.logoUrl = data.logo_url || '';
+        this.imageUrl = data.image_url || '';
       }
     } catch (error) {
       console.error('Error loading owner theme:', error);
@@ -214,7 +227,25 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
       }
     });
 
-    // Add welcome message with questionnaire name
+    // In owner view, just show a simple instruction message
+    if (this.isOwnerView) {
+      if (this.questionnaire) {
+        this.chatMessages.push({
+          type: 'bot',
+          text: this.lang.currentLanguage === 'he'
+            ? 'מצב תצוגה מקדימה - השתמש בכפתורים למטה לניווט בין שאלות'
+            : 'Preview mode - Use buttons below to navigate between questions'
+        });
+      }
+
+      // Show first question
+      if (this.questions.length > 0) {
+        this.showCurrentQuestion();
+      }
+      return;
+    }
+
+    // For guest view: Add welcome message with questionnaire name
     if (this.questionnaire) {
       const welcomeText = this.lang.currentLanguage === 'he'
         ? `שלום! ברוך הבא ל${this.questionnaire.title} - כל סוגי השאלות. בואו נתחיל בשאלה הראשונה:`
@@ -377,7 +408,16 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
     // Store the response
     this.responses[question.id] = response;
 
-    // Add user's answer to chat
+    // In owner view, don't auto-advance - let them use navigation buttons
+    if (this.isOwnerView) {
+      this.toastService.show(
+        this.lang.currentLanguage === 'he' ? 'תשובה נשמרה' : 'Answer saved',
+        'success'
+      );
+      return;
+    }
+
+    // For guest view: Add user's answer to chat and auto-advance
     this.chatMessages.push({
       type: 'user',
       text: displayText
@@ -488,12 +528,58 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
   goToPreviousQuestion() {
     if (this.currentQuestionIndex > 0) {
       this.currentQuestionIndex--;
+      if (this.isOwnerView) {
+        this.updateOwnerViewQuestion();
+      }
     }
   }
 
   goToNextQuestion() {
     if (this.currentQuestionIndex < this.questions.length - 1) {
       this.currentQuestionIndex++;
+      if (this.isOwnerView) {
+        this.updateOwnerViewQuestion();
+      }
+    }
+  }
+
+  updateOwnerViewQuestion() {
+    // In owner view, clear current answer and file/audio state for the new question
+    const question = this.getCurrentQuestion();
+    if (!question) return;
+
+    // Clear chat messages and show only the preview message and current question
+    this.chatMessages = [];
+    this.chatMessages.push({
+      type: 'bot',
+      text: this.lang.currentLanguage === 'he'
+        ? 'מצב תצוגה מקדימה - השתמש בכפתורים למטה לניווט בין שאלות'
+        : 'Preview mode - Use buttons below to navigate between questions'
+    });
+    this.chatMessages.push({
+      type: 'bot',
+      text: question.question_text,
+      questionIndex: this.currentQuestionIndex
+    });
+
+    this.currentAnswer = this.responses[question.id] || '';
+    this.uploadedFileName = '';
+    this.uploadedFile = null;
+    this.audioFileName = '';
+    this.audioBlob = null;
+    this.isRecording = false;
+
+    // Update options loading state for choice questions
+    const hasOptions = this.isSingleChoiceQuestion(question) || this.isMultiChoiceQuestion(question);
+    if (hasOptions) {
+      this.optionsLoading = true;
+      this.showOptions = true;
+      setTimeout(() => {
+        this.optionsLoading = false;
+        this.cdr.detectChanges();
+      }, 100);
+    } else {
+      this.showOptions = true;
     }
   }
 

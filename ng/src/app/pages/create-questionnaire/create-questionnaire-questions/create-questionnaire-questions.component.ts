@@ -48,6 +48,8 @@ export interface QuestionDialogData {
     brandColor?: string;
     logoUrl?: string;
     imageUrl?: string;
+    showLogo?: boolean;
+    showProfileImage?: boolean;
   };
 }
 
@@ -68,6 +70,8 @@ export class CreateQuestionnaireQuestionsComponent implements OnInit {
     brandColor?: string;
     logoUrl?: string;
     imageUrl?: string;
+    showLogo?: boolean;
+    showProfileImage?: boolean;
   };
 
   editingQuestion: Question | null = null;
@@ -307,7 +311,9 @@ export class CreateQuestionnaireQuestionsComponent implements OnInit {
         title: this.profile?.businessName || 'Preview',
         description: '',
         language: this.lang.currentLanguage,
-        owner_id: 'preview-user'
+        owner_id: 'preview-user',
+        show_logo: this.branding?.showLogo ?? true,
+        show_profile_image: this.branding?.showProfileImage ?? true
       },
       questions: previewQuestions,
       options: [],

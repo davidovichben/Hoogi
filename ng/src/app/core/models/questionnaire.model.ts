@@ -28,6 +28,13 @@ export interface Questionnaire {
   meta?: QuestionnaireMeta;
   created_at?: string;
   updated_at?: string;
+  show_logo?: boolean;
+  show_profile_image?: boolean;
+  status?: string;
+  is_active?: boolean;
+  user_id?: string;
+  language?: string;
+  token?: string;
 }
 
 export interface Question {

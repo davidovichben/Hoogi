@@ -70,15 +70,15 @@
         </div>
       </div>
 
-      <!-- Category, Subcategory, Main Service -->
-      <div class="grid-3">
+      <!-- Category and Subcategory -->
+      <div [class]="(formData.subOccupation === OTHER && formData.occupation && formData.occupation !== OTHER) ? 'grid-3' : 'grid-2'">
         <div class="form-field">
           <label class="form-label">
             {{ lang.t('profile.occupation') }} <span class="required">*</span>
           </label>
           <select
             [(ngModel)]="formData.occupation"
-            (change)="clearError('occupation'); formData.subOccupation = ''"
+            (change)="onOccupationChange()"
             class="form-input"
             [class.error]="errors.occupation">
             <option value="">{{ lang.t('profile.selectCategory') }}</option>
@@ -87,15 +87,6 @@
             }
             <option [value]="OTHER">{{ lang.t('common.other') }}</option>
           </select>
-          @if (formData.occupation === OTHER) {
-            <input
-              type="text"
-              [(ngModel)]="formData.occupationFree"
-              (input)="clearError('occupation')"
-              [placeholder]="lang.t('profile.specifyOccupation')"
-              class="form-input form-input-secondary"
-              [class.error]="errors.occupation">
-          }
           @if (errors.occupation) {
             <p class="error-message">{{ lang.t('profile.requiredField') }}</p>
           }
@@ -108,7 +99,7 @@
             </label>
             <select
               [(ngModel)]="formData.subOccupation"
-              (change)="clearError('subOccupation')"
+              (change)="onSubOccupationChange()"
               class="form-input"
               [class.error]="errors.subOccupation">
               <option value="">{{ lang.t('profile.selectCategory') }}</option>
@@ -117,31 +108,47 @@
               }
               <option [value]="OTHER">{{ lang.t('common.other') }}</option>
             </select>
-            @if (formData.subOccupation === OTHER) {
-              <input
-                type="text"
-                [(ngModel)]="formData.subOccupationFree"
-                (input)="clearError('subOccupation')"
-                [placeholder]="lang.t('profile.specifySubOccupation')"
-                class="form-input form-input-secondary"
-                [class.error]="errors.subOccupation">
-            }
             @if (errors.subOccupation) {
               <p class="error-message">{{ lang.t('profile.requiredField') }}</p>
             }
           </div>
         }
 
-        <div class="form-field">
-          <label class="form-label">
-            {{ lang.t('profile.mainService') }} <span class="required">*</span>
-          </label>
-          <input
-            type="text"
-            [(ngModel)]="formData.primaryService"
-            [placeholder]="lang.t('profile.mainServicePlaceholder')"
-            class="form-input">
-        </div>
+        @if (formData.occupation === OTHER) {
+          <div class="form-field">
+            <label class="form-label">
+              {{ lang.currentLanguage === 'he' ? 'שירות עיקרי' : 'Primary Service' }} <span class="required">*</span>
+            </label>
+            <input
+              type="text"
+              [(ngModel)]="customOccupation"
+              (input)="clearError('occupation')"
+              [placeholder]="lang.t('profile.mainServicePlaceholder')"
+              class="form-input"
+              [class.error]="errors.occupation">
+            @if (errors.occupation) {
+              <p class="error-message">{{ lang.t('profile.requiredField') }}</p>
+            }
+          </div>
+        }
+
+        @if (formData.subOccupation === OTHER) {
+          <div class="form-field">
+            <label class="form-label">
+              {{ lang.currentLanguage === 'he' ? 'שירות עיקרי' : 'Primary Service' }} <span class="required">*</span>
+            </label>
+            <input
+              type="text"
+              [(ngModel)]="customSubOccupation"
+              (input)="clearError('subOccupation')"
+              [placeholder]="lang.t('profile.mainServicePlaceholder')"
+              class="form-input"
+              [class.error]="errors.subOccupation">
+            @if (errors.subOccupation) {
+              <p class="error-message">{{ lang.t('profile.requiredField') }}</p>
+            }
+          </div>
+        }
       </div>
     </div>
   </div>
