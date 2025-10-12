@@ -6,6 +6,8 @@ import { QuestionnaireService } from '../../core/services/questionnaire.service'
 import { ToastService } from '../../core/services/toast.service';
 import { SupabaseService } from '../../core/services/supabase.service';
 import { LanguageService } from '../../core/services/language.service';
+import { ReferralTrackingService } from '../../core/services/referral-tracking.service';
+import { AutomationService } from '../../core/services/automation.service';
 import { Questionnaire, Question, QuestionOption } from '../../core/models/questionnaire.model';
 
 @Component({
@@ -50,16 +52,25 @@ export class QuestionnaireLive implements OnInit {
   private mediaRecorders: Record<string, MediaRecorder> = {};
   private audioChunks: Record<string, Blob[]> = {};
 
+  // Referral tracking
+  private detectedChannel: string = 'direct';
+
   constructor(
     private questionnaireService: QuestionnaireService,
     private toastService: ToastService,
     private supabaseService: SupabaseService,
     public lang: LanguageService,
     private router: Router,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private referralTracking: ReferralTrackingService,
+    private automationService: AutomationService
   ) {}
 
   ngOnInit() {
+    // Detect referral source/channel
+    this.detectedChannel = this.referralTracking.detectChannel();
+    console.log('Detected channel:', this.detectedChannel);
+
     const id = this.route.snapshot.paramMap.get('id');
 
     // Determine view mode based on route path
@@ -286,7 +297,7 @@ export class QuestionnaireLive implements OnInit {
         questionnaire_id: this.questionnaire.id,
         client_name: clientName,
         partner_id: null, // Will be assigned later by admin/user
-        channel: 'website', // Form view channel
+        channel: this.detectedChannel, // Detected from referral source
         status: 'new',
         sub_status: null,
         automations: [], // Empty array, will be configured by admin
@@ -465,9 +476,60 @@ export class QuestionnaireLive implements OnInit {
         }
       }
 
+      // Validate all email fields (beyond the first 3 questions)
+      for (let i = 3; i < this.questions.length; i++) {
+        const question = this.questions[i];
+        if (question.question_type === 'email') {
+          const emailValue = this.responses[question.id] || '';
+          // Only validate if there's a value (required check happens separately)
+          if (emailValue) {
+            const emailValidation = this.validateEmail(emailValue);
+            if (!emailValidation.valid) {
+              this.toastService.show(emailValidation.message, 'error');
+              return;
+            }
+          } else if (question.is_required) {
+            // If required and empty
+            const message = this.lang.currentLanguage === 'he'
+              ? `נא לענות: ${question.question_text}`
+              : `Please answer: ${question.question_text}`;
+            this.toastService.show(message, 'error');
+            return;
+          }
+        }
+      }
+
+      // Validate all phone fields (beyond the first 3 questions)
+      for (let i = 3; i < this.questions.length; i++) {
+        const question = this.questions[i];
+        if (question.question_type === 'phone') {
+          const phoneValue = this.responses[question.id] || '';
+          // Only validate if there's a value (required check happens separately)
+          if (phoneValue) {
+            const phoneValidation = this.validateIsraeliPhone(phoneValue);
+            if (!phoneValidation.valid) {
+              this.toastService.show(phoneValidation.message, 'error');
+              return;
+            }
+          } else if (question.is_required) {
+            // If required and empty
+            const message = this.lang.currentLanguage === 'he'
+              ? `נא לענות: ${question.question_text}`
+              : `Please answer: ${question.question_text}`;
+            this.toastService.show(message, 'error');
+            return;
+          }
+        }
+      }
+
       // Validate required fields for remaining questions
       for (const question of this.questions) {
         if (question.is_required) {
+          // Skip email and phone as they're already validated above
+          if (question.question_type === 'email' || question.question_type === 'phone') {
+            continue;
+          }
+
           if (question.question_type === 'multiple_choice' || question.question_type === 'checkbox' || question.question_type === 'multi') {
             const selected = Object.values(this.multiResponses[question.id] || {}).some(v => v);
             if (!selected) {
@@ -527,6 +589,20 @@ export class QuestionnaireLive implements OnInit {
 
       // Extract lead data and save to leads table
       await this.saveLeadData(responseData, responseInsert?.id);
+
+      // Execute automation if configured
+      if (this.questionnaire.automation_template_id) {
+        await this.automationService.executeAutomation(
+          {
+            id: this.questionnaire.id,
+            owner_id: this.questionnaire.owner_id,
+            automation_template_id: this.questionnaire.automation_template_id,
+            title: this.questionnaire.title
+          },
+          responseData,
+          this.questions
+        );
+      }
 
       // Show success message for guest view
       this.toastService.show(

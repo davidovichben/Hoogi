@@ -104,7 +104,7 @@ const MyHoogi = () => {
           </div>
 
           {/* Compact Summary Stats */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
             <Card className="border-0 shadow-md bg-gradient-to-br from-primary/10 to-primary/5">
               <CardContent className="p-3 text-center">
                 <div className="text-2xl font-bold text-primary mb-1">180</div>

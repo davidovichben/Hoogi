@@ -1,9 +1,12 @@
 .dashboard-container
   min-height: 100vh
-  background: linear-gradient(135deg, #F9FAFB 0%, #F3F4F6 100%)
-  padding: 2rem
+  background: linear-gradient(to bottom right, hsl(var(--background)) 0%, hsl(var(--muted) / 0.2) 100%)
+  padding: 1rem
   max-width: 1400px
   margin: 0 auto
+
+  @media (min-width: 768px)
+    padding: 2rem
 
   &.rtl
     direction: rtl
@@ -13,12 +16,18 @@
   display: flex
   align-items: center
   justify-content: space-between
-  background: white
-  padding: 1.5rem 2rem
-  border-radius: 1.5rem
+  background: rgba(255, 255, 255, 0.5)
+  backdrop-filter: blur(8px)
+  padding: 1.5rem
+  border-radius: 1rem
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08)
+  border: 1px solid rgba(255, 255, 255, 0.8)
   margin-bottom: 2rem
-  height: 130px
+  gap: 1.5rem
+
+  @media (max-width: 768px)
+    flex-direction: column
+    gap: 1rem
 
 .header-content
   display: flex
@@ -26,20 +35,27 @@
   gap: 1.5rem
 
 .logo-container
-  width: 74px
-  height: 74px
-  background: #E5F5F6
+  width: 64px
+  height: 64px
+  background: rgba(139, 92, 246, 0.1)
   border-radius: 50%
   display: flex
   align-items: center
   justify-content: center
-  padding: 15px
   flex-shrink: 0
 
+  @media (min-width: 768px)
+    width: 80px
+    height: 80px
+
   .logo
-    width: 44px
-    height: 44px
+    width: 48px
+    height: 48px
     object-fit: contain
+
+    @media (min-width: 768px)
+      width: 64px
+      height: 64px
 
 .welcome-box
   display: flex
@@ -47,18 +63,27 @@
   gap: 0.25rem
 
 .welcome-title
-  font-size: 2rem
+  font-size: 1.875rem
   font-weight: bold
-  color: #1EB7B7
+  background: linear-gradient(to left, #8B5CF6 0%, rgba(139, 92, 246, 0.6) 100%)
+  -webkit-background-clip: text
+  -webkit-text-fill-color: transparent
+  background-clip: text
   margin: 0
 
+  @media (min-width: 768px)
+    font-size: 2.25rem
+
 .welcome-subtitle
-  font-size: 1.2rem
+  font-size: 1.125rem
   color: #6B7280
   margin: 0
 
+  @media (min-width: 768px)
+    font-size: 1.25rem
+
 .create-btn
-  background: #14B8A6
+  background: #8B5CF6
   color: white
   padding: 0.75rem 1.5rem
   border-radius: 0.75rem
@@ -67,15 +92,15 @@
   border: none
   cursor: pointer
   transition: all 0.2s
-  box-shadow: 0 4px 12px rgba(20, 184, 166, 0.3)
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4)
   display: flex
   align-items: center
   gap: 0.5rem
 
   &:hover
-    background: #0F9488
+    background: #7C3AED
     transform: translateY(-1px)
-    box-shadow: 0 6px 16px rgba(20, 184, 166, 0.4)
+    box-shadow: 0 6px 16px rgba(139, 92, 246, 0.5)
 
 .plus-icon
   font-size: 1.25rem
@@ -84,33 +109,38 @@
 // Compact Summary Stats
 .summary-stats-row
   display: grid
-  grid-template-columns: repeat(3, 1fr)
-  gap: 1rem
-  margin-bottom: 1rem
+  grid-template-columns: repeat(1, 1fr)
+  gap: 0.75rem
+  margin-bottom: 2rem
+
+  @media (min-width: 640px)
+    grid-template-columns: repeat(3, 1fr)
+    gap: 1rem
 
 .summary-stat-card
   background: white
-  padding: 1rem
+  padding: 0.75rem
   border-radius: 1rem
   text-align: center
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06)
   transition: all 0.2s
+  border: none
 
   &:hover
     transform: translateY(-2px)
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1)
 
 .stat-primary
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(139, 92, 246, 0.05) 100%)
-  border: 1px solid rgba(139, 92, 246, 0.2)
+  background: linear-gradient(to bottom right, rgba(139, 92, 246, 0.1) 0%, rgba(139, 92, 246, 0.05) 100%)
+  border: none
 
 .stat-success
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%)
-  border: 1px solid rgba(16, 185, 129, 0.2)
+  background: linear-gradient(to bottom right, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%)
+  border: none
 
 .stat-purple
-  background: linear-gradient(135deg, rgba(168, 85, 247, 0.1) 0%, rgba(168, 85, 247, 0.05) 100%)
-  border: 1px solid rgba(168, 85, 247, 0.2)
+  background: linear-gradient(to bottom right, rgba(168, 85, 247, 0.1) 0%, rgba(168, 85, 247, 0.05) 100%)
+  border: none
 
 .stat-number
   font-size: 2rem
@@ -247,15 +277,19 @@
 // Charts Section
 .charts-section
   display: grid
-  grid-template-columns: repeat(2, 1fr)
+  grid-template-columns: repeat(1, 1fr)
   gap: 1.5rem
   margin-bottom: 2rem
 
+  @media (min-width: 1024px)
+    grid-template-columns: repeat(2, 1fr)
+
 .chart-card
-  background: white
+  background: linear-gradient(to bottom right, white 0%, rgba(255, 255, 255, 0.5) 100%)
   padding: 1.5rem
   border-radius: 1.25rem
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08)
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08)
+  border: none
 
 .chart-title
   font-size: 1.5rem
@@ -410,27 +444,39 @@
   border-radius: 1rem
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06)
   cursor: pointer
-  transition: all 0.2s
+  transition: all 0.3s ease
 
   &:hover
     transform: translateY(-2px)
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12)
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15)
 
 .questionnaire-card-0
   background: linear-gradient(to left, rgba(139, 92, 246, 0.1) 0%, rgba(139, 92, 246, 0.05) 100%)
   border: 1px solid rgba(139, 92, 246, 0.3)
 
+  &:hover
+    box-shadow: 0 6px 20px rgba(139, 92, 246, 0.2)
+
 .questionnaire-card-1
   background: linear-gradient(to left, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%)
   border: 1px solid rgba(59, 130, 246, 0.3)
+
+  &:hover
+    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.2)
 
 .questionnaire-card-2
   background: linear-gradient(to left, rgba(249, 115, 22, 0.1) 0%, rgba(249, 115, 22, 0.05) 100%)
   border: 1px solid rgba(249, 115, 22, 0.3)
 
+  &:hover
+    box-shadow: 0 6px 20px rgba(249, 115, 22, 0.2)
+
 .questionnaire-card-3
   background: linear-gradient(to left, rgba(244, 63, 94, 0.1) 0%, rgba(244, 63, 94, 0.05) 100%)
   border: 1px solid rgba(244, 63, 94, 0.3)
+
+  &:hover
+    box-shadow: 0 6px 20px rgba(244, 63, 94, 0.2)
 
 .questionnaire-content
   display: flex
@@ -523,15 +569,6 @@
 
 // Responsive
 @media (max-width: 1024px)
-  .summary-stats-row
-    grid-template-columns: 1fr
-
-  .leads-summary-row
-    grid-template-columns: 1fr
-
-  .charts-section
-    grid-template-columns: 1fr
-
   .chart-content
     grid-template-columns: 1fr
 
@@ -540,20 +577,23 @@
     align-items: flex-start
 
 @media (max-width: 768px)
-  .dashboard-header
-    flex-direction: column
-    height: auto
-    gap: 1rem
-
   .header-content
     width: 100%
+    flex-direction: column
+    text-align: center
+
+  .welcome-box
+    align-items: center
 
   .create-btn
     width: 100%
     justify-content: center
 
+  .leads-summary-row
+    grid-template-columns: 1fr
+
   .leads-card-content
-    flex-direction: column
+    flex-direction: column-reverse
     text-align: center
 
   .leads-card-text
@@ -567,6 +607,8 @@
 
   .questionnaire-actions
     width: 100%
+    justify-content: stretch
 
   .action-btn
     flex: 1
+    justify-content: center

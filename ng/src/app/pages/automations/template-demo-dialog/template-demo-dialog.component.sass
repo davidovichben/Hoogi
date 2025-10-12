@@ -1,0 +1,139 @@
+// Modal overlay
+.modal-overlay
+  position: fixed
+  inset: 0
+  background: rgba(0, 0, 0, 0.5)
+  display: flex
+  align-items: center
+  justify-content: center
+  z-index: 1000
+  padding: 1rem
+
+.modal-content
+  background: white
+  border-radius: 1rem
+  padding: 1.5rem
+  max-width: 42rem
+  width: 100%
+  max-height: 90vh
+  overflow-y: auto
+  box-shadow: 0 20px 25px rgba(0, 0, 0, 0.15)
+
+.modal-header
+  display: flex
+  align-items: center
+  justify-content: space-between
+  margin-bottom: 1.5rem
+
+  h2
+    font-size: 1.25rem
+    font-weight: 600
+    text-align: right
+
+.modal-close
+  background: transparent
+  border: none
+  font-size: 1.5rem
+  cursor: pointer
+  color: #6B7280
+  transition: color 0.2s
+
+  &:hover
+    color: #374151
+
+.modal-body
+  padding: 1rem 0
+
+// Channel header
+.demo-channel-header
+  display: flex
+  align-items: center
+  gap: 0.75rem
+  padding: 0.75rem
+  background: #F9FAFB
+  border-radius: 0.5rem
+  margin-bottom: 1rem
+
+.channel-icon
+  width: 20px
+  height: 20px
+
+  &.gray
+    color: #4B5563
+
+  &.purple
+    color: #7C3AED
+
+  &.green
+    color: #16A34A
+
+  &.blue
+    color: #2563EB
+
+.channel-name
+  font-weight: 500
+
+// Template type
+.demo-type
+  font-size: 0.875rem
+  color: #6B7280
+  margin-bottom: 1rem
+
+// Demo content box
+.demo-content-box
+  border: 1px solid #E5E7EB
+  border-radius: 0.5rem
+  padding: 1rem
+  background: white
+  margin-bottom: 1rem
+
+.demo-preview
+  display: flex
+  flex-direction: column
+  gap: 0.75rem
+
+.demo-title
+  font-size: 1.125rem
+  font-weight: 600
+
+.demo-text
+  color: #6B7280
+
+// AI content
+.demo-ai-content
+  background: #EFF6FF
+  padding: 0.75rem
+  border-radius: 0.5rem
+
+.demo-ai-text
+  font-size: 0.875rem
+  color: #1E40AF
+
+// Personal content
+.demo-personal-content
+  background: #F0FDF4
+  padding: 0.75rem
+  border-radius: 0.5rem
+
+.demo-personal-text
+  font-size: 0.875rem
+  color: #166534
+
+// Section labels
+.demo-section-label
+  font-size: 0.875rem
+  font-weight: 600
+  margin-bottom: 0.5rem
+  color: #374151
+
+// Channel format info
+.channel-format-info
+  font-size: 0.75rem
+  color: #6B7280
+  background: #F9FAFB
+  padding: 0.5rem
+  border-radius: 0.375rem
+  text-align: center
+
+  span
+    display: block

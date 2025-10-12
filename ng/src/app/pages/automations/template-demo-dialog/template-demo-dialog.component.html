@@ -1,0 +1,163 @@
+@if (isOpen) {
+  <div class="modal-overlay" (click)="onOverlayClick($event)">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>{{ lang.t('automations.demo') }} - {{ getChannelName(channel) }}</h2>
+        <button (click)="onClose()" class="modal-close">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Channel header -->
+        <div class="demo-channel-header">
+          @if (channel === 'general') {
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="channel-icon gray">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+            </svg>
+          }
+          @if (channel === 'message') {
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="channel-icon purple">
+              <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+            </svg>
+          }
+          @if (channel === 'whatsapp') {
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="channel-icon green">
+              <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+            </svg>
+          }
+          @if (channel === 'email') {
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="channel-icon blue">
+              <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+              <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
+            </svg>
+          }
+          <span class="channel-name">{{ getChannelName(channel) }}</span>
+        </div>
+
+        <!-- Template type -->
+        <div class="demo-type">
+          {{ getTemplateTypeName() }}
+        </div>
+
+        <!-- Demo content -->
+        <div class="demo-content-box">
+          @if (templateType === 'standard') {
+            <div class="demo-preview">
+              <div class="demo-title">{{ defaultMessageTitle }}</div>
+              <div class="demo-text" style="white-space: pre-line;">{{ defaultMessageContent }}</div>
+            </div>
+          }
+
+          @if (templateType === 'ai') {
+            <div class="demo-preview">
+              @if (emailSubject) {
+                <div class="demo-title">{{ emailSubject }}</div>
+              }
+              <div class="demo-text">{{ lang.t('automations.personalizedAiResponse') }}</div>
+              <div class="demo-ai-content">
+                <div class="demo-ai-text">
+                  "{{ lang.t('automations.aiResponseExample') }}"
+                </div>
+              </div>
+              @if (customAiMessage) {
+                <div class="demo-text" style="margin-top: 1rem;">{{ customAiMessage }}</div>
+              }
+            </div>
+          }
+
+          @if (templateType === 'personal') {
+            <div class="demo-preview">
+              @if (emailSubject) {
+                <div class="demo-title">{{ emailSubject }}</div>
+              }
+              <div class="demo-text">{{ lang.t('automations.personalFeedback') }}</div>
+              <div class="demo-personal-content">
+                <div class="demo-personal-text" style="white-space: pre-line;">
+                  {{ messageBody || lang.t('automations.enterMessageContent') }}
+                </div>
+              </div>
+            </div>
+          }
+
+          @if (templateType === 'combined') {
+            <div class="demo-preview">
+              @if (emailSubject) {
+                <div class="demo-title">{{ emailSubject }}</div>
+              }
+              <div class="demo-text">{{ lang.t('automations.combinedAiAndPersonal') }}</div>
+
+              @if (aiPosition === 'start') {
+                <div class="demo-ai-content" style="margin-bottom: 1rem;">
+                  <div class="demo-section-label">{{ lang.t('automations.aiPart') }}</div>
+                  <div class="demo-ai-text">
+                    {{ customAiMessage || lang.t('automations.personalizedAiResponse') }}
+                  </div>
+                </div>
+                <div class="demo-personal-content">
+                  <div class="demo-section-label">{{ lang.t('automations.personalPart') }}</div>
+                  <div class="demo-personal-text" style="white-space: pre-line;">
+                    {{ messageBody || lang.t('automations.enterYourPersonalPart') }}
+                  </div>
+                </div>
+              }
+
+              @if (aiPosition === 'middle') {
+                <div class="demo-personal-content" style="margin-bottom: 1rem;">
+                  <div class="demo-section-label">{{ lang.t('automations.personalPart') }}</div>
+                  <div class="demo-personal-text" style="white-space: pre-line;">
+                    {{ messageBody || lang.t('automations.enterYourPersonalPart') }}
+                  </div>
+                </div>
+                <div class="demo-ai-content" style="margin-bottom: 1rem;">
+                  <div class="demo-section-label">{{ lang.t('automations.aiPart') }}</div>
+                  <div class="demo-ai-text">
+                    {{ customAiMessage || lang.t('automations.personalizedAiResponse') }}
+                  </div>
+                </div>
+                <div class="demo-personal-content">
+                  <div class="demo-section-label">{{ lang.t('automations.personalPart') }}</div>
+                  <div class="demo-personal-text" style="white-space: pre-line;">
+                    {{ messageBody || lang.t('automations.enterYourPersonalPart') }}
+                  </div>
+                </div>
+              }
+
+              @if (aiPosition === 'end') {
+                <div class="demo-personal-content" style="margin-bottom: 1rem;">
+                  <div class="demo-section-label">{{ lang.t('automations.personalPart') }}</div>
+                  <div class="demo-personal-text" style="white-space: pre-line;">
+                    {{ messageBody || lang.t('automations.enterYourPersonalPart') }}
+                  </div>
+                </div>
+                <div class="demo-ai-content">
+                  <div class="demo-section-label">{{ lang.t('automations.aiPart') }}</div>
+                  <div class="demo-ai-text">
+                    {{ customAiMessage || lang.t('automations.personalizedAiResponse') }}
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+
+        <!-- Channel-specific formatting info -->
+        <div class="channel-format-info">
+          @if (channel === 'email') {
+            <span>📧 {{ lang.t('automations.emailFormat') }}</span>
+          }
+          @if (channel === 'whatsapp') {
+            <span>💬 {{ lang.t('automations.whatsappFormat') }}</span>
+          }
+          @if (channel === 'message') {
+            <span>📱 {{ lang.t('automations.messageFormat') }}</span>
+          }
+          @if (channel === 'general') {
+            <span>📄 {{ lang.t('automations.generalFormat') }}</span>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+}

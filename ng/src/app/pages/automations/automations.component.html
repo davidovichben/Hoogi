@@ -1,262 +1,775 @@
-<div class="min-h-screen bg-gray-50" [class.rtl]="lang.currentLanguage === 'he'">
-  <!-- Template Dialog -->
-  <app-template-dialog
-    [isOpen]="isTemplateDialogOpen"
-    [editingTemplate]="currentEditingTemplate"
-    (close)="onTemplateDialogClose()"
-    (save)="onTemplateDialogSave($event)">
-  </app-template-dialog>
-
-  <div class="max-w-5xl mx-auto p-6 space-y-6">
-    <!-- Header -->
-    <div class="text-center mb-8">
-      <h1 class="text-3xl font-bold mb-2">{{ lang.t('automations.title') }}</h1>
-      <p class="text-gray-600">{{ lang.currentLanguage === 'he' ? 'ניהול אוטומציות והתראות' : 'Manage automations and notifications' }}</p>
+<div class="min-h-screen automation-container" [class.rtl]="lang.currentLanguage === 'he'">
+  <!-- Header with business name -->
+  <div class="mb-6">
+    <div class="business-header">
+      <div class="text-center">
+        <h1 class="text-xl md:text-2xl font-bold text-foreground">
+          {{ businessName }} - {{ subCategory }}
+        </h1>
+      </div>
     </div>
+  </div>
 
+  <div class="max-w-4xl mx-auto w-full">
     <!-- Tabs -->
-    <div class="flex gap-2 mb-6">
-      <button
-        [class.active]="activeTab === 'triggers'"
-        (click)="activeTab = 'triggers'"
-        class="tab-button-small flex-1 py-2 rounded-lg transition flex items-center justify-center gap-2 text-sm">
-        <span>🔔</span>
-        {{ lang.currentLanguage === 'he' ? 'טריגרים' : 'Triggers' }}
-      </button>
-      <button
-        [class.active]="activeTab === 'templates'"
-        (click)="activeTab = 'templates'"
-        class="tab-button-small flex-1 py-2 rounded-lg transition flex items-center justify-center gap-2 text-sm">
-        <span>📝</span>
-        {{ lang.currentLanguage === 'he' ? 'תבניות' : 'Templates' }}
-      </button>
-      <button
-        [class.active]="activeTab === 'settings'"
-        (click)="activeTab = 'settings'"
-        class="tab-button-small flex-1 py-2 rounded-lg transition flex items-center justify-center gap-2 text-sm">
-        <span>🔧</span>
-        {{ lang.t('automations.preferences') }}
-      </button>
-    </div>
+    <div class="tabs-container">
+      <div class="tabs-list">
+        <button
+          [class.active]="activeTab === 'templates'"
+          (click)="activeTab = 'templates'"
+          class="tab-button">
+          <span>📝</span>
+          <span>{{ lang.t('automations.customerResponse') }}</span>
+        </button>
 
-    <!-- Main Content -->
-    <div class="bg-white rounded-lg shadow-sm border p-8" style="border-color: hsl(186, 30%, 88%);">
+        <button
+          [class.active]="activeTab === 'my-templates'"
+          (click)="activeTab = 'my-templates'"
+          class="tab-button">
+          <span>📋</span>
+          <span>{{ lang.t('automations.myTemplates') }}</span>
+        </button>
 
-      <!-- Templates Tab Content -->
+        <button
+          [class.active]="activeTab === 'notifications'"
+          (click)="activeTab = 'notifications'"
+          class="tab-button">
+          <span>🔔</span>
+          <span>{{ lang.t('automations.myNotifications') }}</span>
+        </button>
+      </div>
+
+      <!-- Templates Tab -->
       @if (activeTab === 'templates') {
-        <!-- Standard Email Template -->
-        <div class="mb-8 p-6 rounded-lg" style="background-color: #e0f2f1;">
-          <div class="flex items-center gap-2 mb-3">
-            <span class="text-blue-500">⭐</span>
-            <h2 class="text-xl font-bold">{{ lang.currentLanguage === 'he' ? 'תבנית סטנדרטית למייל' : 'Standard Email Template' }}</h2>
-          </div>
-          <p class="text-gray-600 mb-4">{{ lang.currentLanguage === 'he' ? 'תבנית ברירת מחדל למענה אוטומטי בדוא״ל' : 'Default template for automatic email response' }}</p>
+        <div class="tab-content">
+          <div class="space-y-6">
+            <!-- פרטים בסיסיים -->
+            <div class="form-section basic-section">
+              <h3 class="section-title">{{ lang.t('automations.basicDetails') }}</h3>
 
-          <div class="bg-white rounded-lg p-6 border" style="border-color: hsl(186, 30%, 88%);">
-            <div class="mb-4">
-              <span class="font-semibold">{{ lang.currentLanguage === 'he' ? 'נושא' : 'Subject' }}</span>
-              <p class="text-gray-700 mt-1">- {{ lang.currentLanguage === 'he' ? 'לקבלת את השאלון שלך' : 'Received your questionnaire' }} - {{ '{' }}{{ '{' }}businessName{{ '}' }}{{ '}' }}</p>
-            </div>
+              <div class="space-y-4">
+                <div>
+                  <label class="form-label">{{ lang.t('automations.templateName') }}</label>
+                  <input
+                    type="text"
+                    [(ngModel)]="templateName"
+                    [placeholder]="lang.t('automations.templateNamePlaceholder')"
+                    class="form-input" />
+                </div>
 
-            <div class="mb-4">
-              <span class="font-semibold">{{ lang.currentLanguage === 'he' ? 'תוכן ההודעה' : 'Message Content' }}</span>
-              <p class="text-gray-700 mt-1">שלום {{ '{' }}{{ '{' }}firstName{{ '}' }}{{ '}' }},</p>
-            </div>
+                <div>
+                  <label class="form-label">{{ lang.t('automations.templateType') }}</label>
+                  <select [(ngModel)]="templateType" class="form-select">
+                    <option value="standard">⭐ {{ lang.t('automations.standard') }}</option>
+                    <option value="ai">🤖 AI</option>
+                    <option value="personal">👥 {{ lang.t('automations.personalFeedback') }}</option>
+                    <option value="combined">✨ {{ lang.t('automations.combinedAiPersonal') }}</option>
+                  </select>
+                </div>
 
-            <div class="mb-4">
-              <p class="text-gray-700">{{ lang.currentLanguage === 'he' ? 'תודה, שמילאת את השאלון שלנו.' : 'Thank you for filling out our questionnaire.' }}</p>
-              <p class="text-gray-700">{{ lang.currentLanguage === 'he' ? 'פנייתך התקבלה ואנו נחזור אליך בקרוב.' : 'Your inquiry has been received and we will get back to you soon.' }}</p>
-            </div>
-
-            <div>
-              <p class="text-gray-700">{{ lang.currentLanguage === 'he' ? 'בברכה,' : 'Best regards,' }}</p>
-              <p class="text-gray-700">{{ '{' }}{{ '{' }}businessName{{ '}' }}{{ '}' }}</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Template Builder -->
-        <div>
-          <div class="flex items-center justify-between mb-4">
-            <h2 class="text-xl font-bold">{{ lang.t('automations.templateBuilder') }}</h2>
-            <button
-              (click)="addTemplate()"
-              class="px-4 py-2 text-white rounded-lg transition flex items-center gap-2"
-              style="background-color: hsl(186, 74%, 35%);"
-              onmouseover="this.style.backgroundColor='hsl(186, 74%, 30%)'"
-              onmouseout="this.style.backgroundColor='hsl(186, 74%, 35%)'">
-              <span>+</span>
-              {{ lang.currentLanguage === 'he' ? 'תבנית חדשה' : 'New Template' }}
-            </button>
-          </div>
-          <p class="text-gray-600 mb-6">{{ lang.currentLanguage === 'he' ? 'צור תבניות מותאמות אישית למענה אוטומטי' : 'Create custom templates for automatic responses' }}</p>
-
-          <!-- Existing Templates -->
-          <div class="mb-4">
-            <h3 class="font-semibold mb-3">{{ lang.currentLanguage === 'he' ? 'תבניות קיימות' : 'Existing Templates' }}</h3>
-          </div>
-
-          <div class="space-y-3">
-            @for (template of templates; track template.id) {
-              <div class="border rounded-lg p-4 flex items-center justify-between hover:bg-gray-50 transition" style="border-color: hsl(186, 30%, 88%);">
-                <div class="flex items-center gap-3">
-                  @if (template.isDefault) {
-                    <span class="text-yellow-500">⭐</span>
-                  }
-                  <div>
-                    <div class="font-semibold">{{ template.name }}</div>
-                    <div class="text-sm text-gray-600">
-                      {{ template.channel }} • {{ template.type }}
-                    </div>
+                <div>
+                  <label class="form-label">{{ lang.t('automations.responseType') }} <span class="text-red-500">*</span></label>
+                  <div class="response-type-buttons">
+                    <button
+                      [class.active]="responseType === 'new_customer'"
+                      (click)="responseType = 'new_customer'"
+                      class="response-btn">
+                      {{ lang.t('automations.newCustomerResponse') }}
+                    </button>
+                    <button
+                      [class.active]="responseType === 'reminder'"
+                      (click)="responseType = 'reminder'"
+                      class="response-btn">
+                      {{ lang.t('automations.reminder') }}
+                    </button>
                   </div>
                 </div>
-                <div class="flex items-center gap-2">
-                  <button (click)="editTemplate(template)" class="p-2 hover:bg-gray-100 rounded" title="{{ lang.currentLanguage === 'he' ? 'ערוך' : 'Edit' }}">
-                    ✏️
-                  </button>
-                  <button (click)="removeTemplate(template.id)" class="p-2 hover:bg-gray-100 rounded text-red-600" title="{{ lang.currentLanguage === 'he' ? 'מחק' : 'Delete' }}">
-                    🗑️
-                  </button>
-                  @if (!template.isDefault) {
-                    <button (click)="setDefaultTemplate(template.id)" class="p-2 hover:bg-gray-100 rounded" title="{{ lang.t('templates.setAsDefault') }}">
-                      ⭐
-                    </button>
+              </div>
+            </div>
+
+            <!-- תבנית סטנדרטית -->
+            @if (templateType === 'standard') {
+              <div class="form-section standard-section">
+                <div class="section-header">
+                  <div class="section-header-content">
+                    <span>⭐</span>
+                    <h3 class="section-title">{{ lang.t('automations.standardTemplate') }}</h3>
+                  </div>
+                  <div class="badge">
+                    {{ lang.t('automations.standardTemplate') }}
+                  </div>
+                </div>
+
+                <div class="space-y-4">
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label class="form-label">{{ lang.t('automations.messageTitle') }}</label>
+                      <input
+                        type="text"
+                        [value]="defaultMessageTitle"
+                        class="form-input"
+                        readonly />
+                    </div>
+                    <div>
+                      <label class="form-label">{{ lang.t('automations.sendChannel') }}</label>
+                      <div class="channel-buttons">
+                        <button class="channel-btn active">{{ lang.t('automations.email') }}</button>
+                        <button class="channel-btn disabled" disabled>{{ lang.t('automations.whatsapp') }}</button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label class="form-label">{{ lang.t('automations.messageContentUpTo2Lines') }}</label>
+                    <textarea
+                      [value]="defaultMessageContent"
+                      class="form-textarea"
+                      rows="2"
+                      readonly></textarea>
+                    <p class="helper-text">{{ lang.t('automations.limitedTo2Lines') }}</p>
+                  </div>
+                </div>
+              </div>
+            }
+
+            <!-- הגדרות תזכורת -->
+            @if (responseType === 'reminder') {
+              <div class="form-section reminder-section">
+                <h3 class="section-title">{{ lang.t('automations.reminderSettings') }}</h3>
+
+                <div class="space-y-4">
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label class="form-label">{{ lang.t('automations.leadStatus') }} <span class="text-red-500">*</span></label>
+                      <select [(ngModel)]="leadStatus" class="form-select">
+                        <option value="">{{ lang.t('automations.selectLeadStatus') }}</option>
+                        <option value="new">{{ lang.t('automations.new') }}</option>
+                        <option value="contacted">{{ lang.t('automations.contacted') }}</option>
+                        <option value="qualified">{{ lang.t('automations.qualified') }}</option>
+                        <option value="proposal">{{ lang.t('automations.proposal') }}</option>
+                        <option value="negotiation">{{ lang.t('automations.negotiation') }}</option>
+                        <option value="closed-won">{{ lang.t('automations.closedWon') }}</option>
+                        <option value="closed-lost">{{ lang.t('automations.closedLost') }}</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label class="form-label">{{ lang.t('automations.leadSubStatus') }}</label>
+                      <select [(ngModel)]="leadSubStatus" class="form-select">
+                        <option value="">{{ lang.t('automations.selectSubStatus') }}</option>
+                        <option value="hot">{{ lang.t('automations.hot') }}</option>
+                        <option value="warm">{{ lang.t('automations.warm') }}</option>
+                        <option value="cold">{{ lang.t('automations.cold') }}</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label class="form-label">{{ lang.t('automations.sendTimingAfterStatusChange') }}</label>
+                    <select [(ngModel)]="reminderDelay" class="form-select">
+                      <option value="">{{ lang.t('automations.selectTiming') }}</option>
+                      <option value="immediate">{{ lang.t('automations.immediateAfter1Hour') }}</option>
+                      <option value="custom">{{ lang.t('automations.customTiming') }}</option>
+                    </select>
+                  </div>
+
+                  @if (reminderDelay === 'custom') {
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label class="form-label">{{ lang.t('automations.numberOfDays') }}</label>
+                        <input
+                          type="number"
+                          [(ngModel)]="reminderDays"
+                          [placeholder]="'1'"
+                          class="form-input" />
+                      </div>
+                      <div>
+                        <label class="form-label">{{ lang.t('automations.sendTime') }}</label>
+                        <input
+                          type="time"
+                          [(ngModel)]="reminderTime"
+                          class="form-input" />
+                      </div>
+                    </div>
                   }
                 </div>
               </div>
             }
 
-            @if (templates.length === 0) {
-              <div class="text-center py-8 text-gray-500">
-                {{ lang.t('templates.noActiveTemplates') }}
+            <!-- תוכן ההודעה -->
+            @if (templateType !== 'standard' && templateType !== 'combined') {
+              <div class="form-section message-section">
+                <h3 class="section-title">{{ lang.t('automations.messageContent') }}</h3>
+
+                <div class="space-y-4">
+                  @if (singleChannel === 'email' || selectedChannels.includes('email')) {
+                    <div>
+                      <div class="checkbox-row">
+                        <label class="checkbox-label">
+                          <input
+                            type="checkbox"
+                            [(ngModel)]="aiDecideForTitle"
+                            class="checkbox-input" />
+                          <span>{{ lang.t('automations.letAiDecide') }}</span>
+                        </label>
+                      </div>
+                      @if (!aiDecideForTitle) {
+                        <input
+                          type="text"
+                          [(ngModel)]="emailSubject"
+                          [placeholder]="lang.t('automations.enterEmailSubject')"
+                          class="form-input" />
+                      }
+                    </div>
+                  }
+
+                  @if (templateType === 'ai') {
+                    <div>
+                      <label class="form-label">{{ lang.t('automations.aiInstructions') }}</label>
+                      @if (!aiDecideForTitle) {
+                        <textarea
+                          [(ngModel)]="customAiMessage"
+                          [placeholder]="lang.t('automations.giveAiInstructions')"
+                          class="form-textarea"
+                          rows="5"></textarea>
+                      }
+                    </div>
+                  }
+
+                  @if (templateType === 'personal') {
+                    <div>
+                      <label class="form-label">{{ lang.t('automations.messageBody') }}</label>
+                      <textarea
+                        [(ngModel)]="messageBody"
+                        [placeholder]="lang.t('automations.enterMessageContent')"
+                        class="form-textarea"
+                        rows="5"></textarea>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+
+            <!-- הוספת קישור / תמונה -->
+            @if (templateType !== 'standard') {
+              <div class="form-section link-section">
+                <h3 class="section-title">{{ lang.t('automations.addLinkOrImage') }}</h3>
+
+                <div class="space-y-4">
+                  <div>
+                    <label class="form-label">{{ lang.t('automations.link') }}</label>
+                    <input
+                      type="url"
+                      [(ngModel)]="templateDesign.linkUrl"
+                      placeholder="https://example.com"
+                      class="form-input" />
+                  </div>
+
+                  <div>
+                    <label class="form-label">{{ lang.t('automations.uploadFile') }}</label>
+                    <input
+                      type="file"
+                      accept="image/*,.pdf,.doc,.docx"
+                      class="file-input" />
+                  </div>
+                </div>
+              </div>
+            }
+
+            <!-- הגדרות AI משולב -->
+            @if (templateType === 'combined') {
+              <div class="form-section combined-section">
+                <h3 class="section-title">{{ lang.t('automations.combinedAiSettings') }}</h3>
+
+                <div class="space-y-4">
+                  <div>
+                    <div class="checkbox-row">
+                      <label class="checkbox-label">
+                        <input
+                          type="checkbox"
+                          [(ngModel)]="aiDecideForCombined"
+                          class="checkbox-input" />
+                        <span>{{ lang.t('automations.letAiDecide') }}</span>
+                      </label>
+                    </div>
+                    @if (!aiDecideForCombined) {
+                      <input
+                        type="text"
+                        [(ngModel)]="emailSubject"
+                        [placeholder]="lang.t('automations.messageTitle')"
+                        class="form-input" />
+                    }
+                  </div>
+
+                  <div>
+                    <label class="form-label">{{ lang.t('automations.aiResponsePosition') }}</label>
+                    <select [(ngModel)]="aiPosition" class="form-select">
+                      <option value="start">{{ lang.t('automations.startOfResponse') }}</option>
+                      <option value="middle">{{ lang.t('automations.middleOfResponse') }}</option>
+                      <option value="end">{{ lang.t('automations.endOfResponse') }}</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label class="form-label">{{ lang.t('automations.aiInstructions') }}</label>
+                    @if (!aiDecideForCombined) {
+                      <textarea
+                        [(ngModel)]="customAiMessage"
+                        [placeholder]="lang.t('automations.giveAiInstructionsCombined')"
+                        class="form-textarea"
+                        rows="4"></textarea>
+                    }
+                  </div>
+
+                  <div>
+                    <label class="form-label">{{ lang.t('automations.personalTextAddition') }}</label>
+                    <textarea
+                      [(ngModel)]="messageBody"
+                      [placeholder]="lang.t('automations.enterYourPersonalPart')"
+                      class="form-textarea"
+                      rows="4"></textarea>
+                  </div>
+                </div>
+              </div>
+            }
+
+            <!-- עיצוב התבנית -->
+            <div class="form-section design-section">
+              <h3 class="section-title">{{ lang.t('automations.templateDesign') }}</h3>
+
+              <div class="design-grid">
+                <div class="design-item">
+                  <label class="design-checkbox">
+                    <input
+                      type="checkbox"
+                      [(ngModel)]="includeLogo"
+                      class="checkbox-input" />
+                    <span>{{ lang.t('automations.addLogoToTemplate') }}</span>
+                  </label>
+                  <img [src]="logoUrl" alt="Logo" class="design-image" />
+                </div>
+
+                <div class="design-item">
+                  <label class="design-checkbox">
+                    <input
+                      type="checkbox"
+                      [(ngModel)]="includeProfile"
+                      class="checkbox-input" />
+                    <span>{{ lang.t('automations.addProfileImage') }}</span>
+                  </label>
+                  <img [src]="profileFile || logoUrl" alt="Profile" class="design-image" />
+                </div>
+
+                <div class="design-item">
+                  <div class="design-label">
+                    <span>🎨</span>
+                    <span>{{ lang.t('automations.addBrandColors') }}</span>
+                  </div>
+                  <div class="color-circles">
+                    <div
+                      class="color-circle"
+                      [style.backgroundColor]="templateDesign.primaryColor"
+                      [title]="lang.t('automations.primaryColor')"></div>
+                    <div
+                      class="color-circle"
+                      [style.backgroundColor]="templateDesign.secondaryColor"
+                      [title]="lang.t('automations.secondaryColor')"></div>
+                    <div
+                      class="color-circle"
+                      [style.backgroundColor]="templateDesign.backgroundColor"
+                      [title]="lang.t('automations.backgroundColor')"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- התאמת התבנית לערוצים -->
+            <div class="form-section channels-section">
+              <h3 class="section-title">{{ lang.t('automations.adaptTemplateToChannels') }}</h3>
+
+              <div class="channels-grid">
+                <button
+                  [class.active]="selectedChannels.includes('general')"
+                  (click)="handleChannelToggle('general')"
+                  class="channel-card general">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                    <polyline points="10 9 9 9 8 9"></polyline>
+                  </svg>
+                  {{ lang.t('automations.general') }}
+                </button>
+
+                <button
+                  [class.active]="selectedChannels.includes('message')"
+                  (click)="handleChannelToggle('message')"
+                  class="channel-card message">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+                  </svg>
+                  {{ lang.t('automations.message') }}
+                </button>
+
+                <button
+                  [class.active]="selectedChannels.includes('whatsapp')"
+                  (click)="handleChannelToggle('whatsapp')"
+                  class="channel-card whatsapp">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+                  </svg>
+                  {{ lang.t('automations.whatsapp') }}
+                </button>
+
+                <button
+                  [class.active]="selectedChannels.includes('email')"
+                  (click)="handleChannelToggle('email')"
+                  class="channel-card email">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                    <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
+                  </svg>
+                  {{ lang.t('automations.email') }}
+                </button>
+              </div>
+            </div>
+
+            <!-- דוגמא למענה לפי הערוצים שנבחרו -->
+            @if (selectedChannels.length > 0) {
+              <div class="form-section preview-section">
+                <h3 class="section-title">{{ lang.t('automations.exampleBySelectedChannels') }}</h3>
+
+                <div class="preview-grid">
+                  @for (channel of selectedChannels; track channel) {
+                    <div class="preview-card">
+                      <div class="preview-header">
+                        @if (channel === 'general') {
+                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="channel-icon gray">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                          </svg>
+                        }
+                        @if (channel === 'message') {
+                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="channel-icon purple">
+                            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+                          </svg>
+                        }
+                        @if (channel === 'whatsapp') {
+                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="channel-icon green">
+                            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+                          </svg>
+                        }
+                        @if (channel === 'email') {
+                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="channel-icon blue">
+                            <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                            <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
+                          </svg>
+                        }
+                        <span class="channel-name">{{ getChannelName(channel) }}</span>
+                      </div>
+
+                      <div class="template-type-label">
+                        {{ getTemplateTypeName() }}
+                      </div>
+
+                      <div class="preview-content-small">
+                        @if (templateType === 'standard') {
+                          <div class="preview-title-small">{{ lang.t('automations.thankYouForFilling') }}</div>
+                          <div class="preview-text-small">{{ lang.t('automations.responseReceived') }}</div>
+                        }
+                        @if (templateType === 'ai') {
+                          <div class="preview-title-small">{{ lang.t('templates.typeAI') }}</div>
+                          <div class="preview-text-small">{{ lang.t('automations.personalizedAiResponse') }}</div>
+                        }
+                        @if (templateType === 'personal') {
+                          <div class="preview-title-small">{{ lang.t('automations.personalFeedback') }}</div>
+                          <div class="preview-text-small">{{ lang.t('automations.enterMessageContent') }}</div>
+                        }
+                        @if (templateType === 'combined') {
+                          <div class="preview-title-small">AI + {{ lang.t('automations.personalFeedback') }}</div>
+                          <div class="preview-text-small">{{ lang.t('automations.combinedAiPersonal') }}</div>
+                        }
+                      </div>
+
+                      <button (click)="handleShowDemo(channel)" class="show-demo-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                          <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                        {{ lang.t('automations.showExample') }}
+                      </button>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+
+            <!-- Action buttons -->
+            <div class="action-buttons">
+              <button
+                (click)="handleSaveTemplate()"
+                class="save-btn">
+                {{ lang.t('automations.saveTemplate') }}
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- My Templates Tab -->
+      @if (activeTab === 'my-templates') {
+        <div class="tab-content">
+          <div class="my-templates-content">
+            <!-- Header -->
+            <div class="my-templates-header">
+              <div class="my-templates-title">
+                <span>📋</span>
+                <h1>{{ lang.t('automations.myTemplates') }}</h1>
+              </div>
+              <p>{{ lang.t('automations.manageYourTemplates') }}</p>
+            </div>
+
+            <!-- Templates List -->
+            @if (savedTemplates && savedTemplates.length > 0) {
+              <div class="templates-grid">
+                @for (template of savedTemplates; track template.id) {
+                  <div class="template-card">
+                    <div class="template-info">
+                      <!-- First row: Name and badges -->
+                      <div class="template-header-row">
+                        <h3 class="template-name">{{ template.name }}</h3>
+                        <span class="template-type-badge" [class]="'badge-' + template.templateType">
+                          {{ getTemplateTypeLabel(template.templateType) }}
+                        </span>
+                      </div>
+
+                      <!-- Second row: Channels -->
+                      <div class="template-channels-row">
+                        @for (channel of template.channels; track channel) {
+                          <div class="channel-item">
+                            <span class="channel-icon">
+                              @if (channel === 'email') { 📧 }
+                              @if (channel === 'whatsapp') { 💬 }
+                              @if (channel === 'message') { 📱 }
+                              @if (channel === 'general') { 📄 }
+                            </span>
+                            <span class="channel-label">{{ getChannelName(channel) }}</span>
+                          </div>
+                        }
+                      </div>
+
+                      <!-- Third row: Metadata grid -->
+                      <div class="template-meta-grid">
+                        <div class="meta-item">
+                          <span class="meta-label">{{ lang.t('automations.responseType') }}:</span>
+                          <span class="meta-value">{{ template.responseType === 'new_customer' ? lang.t('automations.newCustomerResponse') : lang.t('automations.reminder') }}</span>
+                        </div>
+                        @if (template.createdAt) {
+                          <div class="meta-item">
+                            <span class="meta-label">{{ lang.t('automations.created') }}:</span>
+                            <span class="meta-value">{{ formatDate(template.createdAt) }}</span>
+                          </div>
+                        }
+                      </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="template-card-actions">
+                      <button
+                        (click)="editTemplate(template)"
+                        class="action-btn edit-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                        {{ lang.t('common.edit') }}
+                      </button>
+                      <button
+                        (click)="deleteTemplate(template.id)"
+                        class="action-btn delete-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <polyline points="3 6 5 6 21 6"></polyline>
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        </svg>
+                        {{ lang.t('common.delete') }}
+                      </button>
+                    </div>
+                  </div>
+                }
+              </div>
+            } @else {
+              <div class="empty-state">
+                <div class="empty-icon">📋</div>
+                <h3>{{ lang.t('automations.noTemplatesYet') }}</h3>
+                <p>{{ lang.t('automations.createFirstTemplate') }}</p>
+                <button
+                  (click)="activeTab = 'templates'"
+                  class="create-template-btn">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                  </svg>
+                  {{ lang.t('automations.createNewTemplate') }}
+                </button>
               </div>
             }
           </div>
         </div>
       }
 
-      <!-- Triggers Tab Content -->
-      @if (activeTab === 'triggers') {
-      <!-- New Question Trigger Section -->
-      <div class="mb-8">
-        <div class="flex items-center gap-2 mb-4">
-          <span class="text-xl">⏱️</span>
-          <h2 class="text-xl font-bold">{{ lang.currentLanguage === 'he' ? 'טריגר לשאלון חדש' : 'New Question Trigger' }}</h2>
-        </div>
-        <p class="text-gray-600 mb-6">{{ lang.currentLanguage === 'he' ? 'מענה אוטומטי לליקוח לאחר מילוי השאלון' : 'Automatic response to customer after filling questionnaire' }}</p>
-
-        <!-- Enable Toggle -->
-        <div class="flex items-center justify-between mb-6 pb-6 border-b" style="border-color: hsl(186, 30%, 88%);">
-          <span class="font-medium">{{ lang.currentLanguage === 'he' ? 'הפעל מענה אוטומטי' : 'Enable automatic response' }}</span>
-          <label class="toggle-switch">
-            <input type="checkbox" [(ngModel)]="newQuestionTrigger.enabled">
-            <span class="toggle-slider"></span>
-          </label>
-        </div>
-
-        @if (newQuestionTrigger.enabled) {
-          <!-- Channel Selection -->
-          <div class="mb-6">
-            <label class="block font-medium mb-3">{{ lang.currentLanguage === 'he' ? 'ערוצי מענה' : 'Response Channels' }}</label>
-            <div class="flex gap-4">
-              <label class="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" [(ngModel)]="newQuestionTrigger.channels.email" class="w-5 h-5 rounded" style="accent-color: hsl(186, 74%, 35%);">
-                <span>{{ lang.currentLanguage === 'he' ? 'מייל' : 'Email' }}</span>
-              </label>
-              <label class="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" [(ngModel)]="newQuestionTrigger.channels.whatsapp" class="w-5 h-5 rounded" style="accent-color: hsl(186, 74%, 35%);">
-                <span>{{ lang.currentLanguage === 'he' ? 'וואטסאפ' : 'WhatsApp' }}</span>
-              </label>
-              <label class="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" [(ngModel)]="newQuestionTrigger.channels.sms" class="w-5 h-5 rounded" style="accent-color: hsl(186, 74%, 35%);">
-                <span>{{ lang.t('automations.sms') }}</span>
-              </label>
+      <!-- Notifications Tab -->
+      @if (activeTab === 'notifications') {
+        <div class="tab-content">
+          <div class="notifications-content">
+            <!-- Header -->
+            <div class="notifications-header">
+              <div class="notifications-title">
+                <span>🔔</span>
+                <h1>{{ lang.t('automations.myNotifications') }}</h1>
+              </div>
+              <p>{{ lang.t('automations.manageNotifications') }}</p>
             </div>
-          </div>
 
-          <!-- Send Address -->
-          <div class="mb-6">
-            <label class="block font-medium mb-3">{{ lang.currentLanguage === 'he' ? 'תווען שליחה' : 'Send Address' }}</label>
-            <select [(ngModel)]="newQuestionTrigger.sendAddress" class="w-full px-4 py-2 border rounded-lg" style="border-color: hsl(186, 30%, 88%);">
-              <option value="immediate">{{ lang.currentLanguage === 'he' ? 'מיידי' : 'Immediate' }}</option>
-              <option value="1hour">{{ lang.currentLanguage === 'he' ? 'שעה אחת' : '1 Hour' }}</option>
-              <option value="24hours">{{ lang.t('automations.24Hours') }}</option>
-            </select>
-          </div>
-        }
-      </div>
-
-      <!-- Response Triggers Section -->
-      <div>
-        <div class="flex items-center justify-between mb-4">
-          <div class="flex items-center gap-2">
-            <span class="text-xl">📊</span>
-            <h2 class="text-xl font-bold">{{ lang.currentLanguage === 'he' ? 'טריגרים לתזכורות' : 'Reminder Triggers' }}</h2>
-          </div>
-          <button
-            (click)="addTrigger()"
-            class="px-4 py-2 text-white rounded-lg transition flex items-center gap-2"
-            style="background-color: hsl(186, 74%, 35%);"
-            onmouseover="this.style.backgroundColor='hsl(186, 74%, 30%)'"
-            onmouseout="this.style.backgroundColor='hsl(186, 74%, 35%)'">
-            <span>+</span>
-            {{ lang.t('automations.addReminder') }}
-          </button>
-        </div>
-        <p class="text-gray-600 mb-6">{{ lang.currentLanguage === 'he' ? 'תזכורות אוטומציות על בסיס טופס לידי ותוכן' : 'Automatic reminders based on lead form and content' }}</p>
-
-        <!-- Triggers List -->
-        <div class="space-y-4">
-          @for (trigger of responseTriggers; track trigger.id) {
-            <div class="border rounded-lg p-4" style="border-color: hsl(186, 30%, 88%);">
-              <!-- Trigger Header -->
-              <div class="flex items-center justify-between mb-4">
-                <span class="font-semibold">{{ trigger.name }}</span>
-                <button class="text-red-600 hover:text-red-700">🗑️</button>
+            <!-- Timing Settings -->
+            <div class="form-section timing-section">
+              <div class="section-header-simple">
+                <span>⏰</span>
+                <h2>{{ lang.t('automations.timingSettings') }}</h2>
               </div>
 
-              <!-- Condition -->
-              <div class="mb-3">
-                <label class="text-sm text-gray-600 mb-2 block">{{ lang.currentLanguage === 'he' ? 'תנאי בתכן' : 'Condition' }}</label>
-                <select [(ngModel)]="trigger.condition" class="w-full px-4 py-2 border rounded-lg text-sm" style="border-color: hsl(186, 30%, 88%);">
-                  <option value="">{{ lang.t('automations.selectCondition') }}</option>
-                </select>
-              </div>
+              <div class="timing-grid">
+                <div>
+                  <label class="form-label">{{ lang.t('automations.notificationFrequency') }}</label>
+                  <select [(ngModel)]="notificationTiming.frequency" class="form-select">
+                    <option value="hourly">{{ lang.t('automations.hourly') }}</option>
+                    <option value="daily">{{ lang.t('automations.daily') }}</option>
+                    <option value="every3days">{{ lang.t('automations.every3Days') }}</option>
+                    <option value="weekly">{{ lang.t('automations.weekly') }}</option>
+                    <option value="monthly">{{ lang.t('automations.monthly') }}</option>
+                  </select>
+                </div>
 
-              <!-- Status Type -->
-              <div class="mb-3">
-                <label class="text-sm text-gray-600 mb-2 block">{{ lang.currentLanguage === 'he' ? 'סטטוס ליד' : 'Lead Status' }}</label>
-                <select [(ngModel)]="trigger.status" class="w-full px-4 py-2 border rounded-lg text-sm" style="border-color: hsl(186, 30%, 88%);">
-                  <option value="new">{{ lang.currentLanguage === 'he' ? 'חדש' : 'New' }}</option>
-                  <option value="active">{{ lang.currentLanguage === 'he' ? 'פעיל' : 'Active' }}</option>
-                  <option value="converted">{{ lang.t('automations.converted') }}</option>
-                </select>
-              </div>
+                <div>
+                  <label class="form-label">{{ lang.t('automations.sendTime') }}</label>
+                  <input
+                    type="time"
+                    [(ngModel)]="notificationTiming.time"
+                    class="form-input" />
+                </div>
 
-              <!-- Send Address -->
-              <div class="mb-3">
-                <label class="text-sm text-gray-600 mb-2 block">{{ lang.currentLanguage === 'he' ? 'תווען שליחה' : 'Send Address' }}</label>
-                <select [(ngModel)]="trigger.timing" class="w-full px-4 py-2 border rounded-lg text-sm" style="border-color: hsl(186, 30%, 88%);">
-                  <option value="immediate">{{ lang.currentLanguage === 'he' ? 'תווען זמן וותמאס' : 'Immediate' }}</option>
-                </select>
-              </div>
-
-              <!-- Footer -->
-              <div class="flex items-center justify-between pt-3 border-t" style="border-color: hsl(186, 30%, 88%);">
-                <span class="text-sm text-gray-600">{{ lang.currentLanguage === 'he' ? 'מספר ימים' : 'Days count' }}</span>
-                <span class="text-sm font-medium">{{ lang.currentLanguage === 'he' ? 'שעת שליחה' : 'Send time' }}</span>
+                <div>
+                  <label class="form-label">{{ lang.t('automations.enableNotifications') }}</label>
+                  <div class="toggle-container">
+                    <label class="toggle-switch">
+                      <input
+                        type="checkbox"
+                        [(ngModel)]="notificationTiming.enabled" />
+                      <span class="toggle-slider"></span>
+                    </label>
+                    <span>{{ notificationTiming.enabled ? lang.t('automations.enabled') : lang.t('automations.disabled') }}</span>
+                  </div>
+                </div>
               </div>
             </div>
-          }
 
-          @if (responseTriggers.length === 0) {
-            <div class="text-center py-8 text-gray-500">
-              {{ lang.t('automations.noActiveTriggers') }}
+            <!-- Notification Channels -->
+            <div class="form-section channels-pref-section">
+              <h2>{{ lang.t('automations.notificationChannels') }}</h2>
+              <p class="section-desc">{{ lang.t('automations.chooseHowToReceive') }}</p>
+
+              <div class="notification-channels">
+                <div class="notification-channel app">
+                  <div class="channel-info">
+                    <span>🔔</span>
+                    <span>{{ lang.t('automations.inAppNotifications') }}</span>
+                  </div>
+                  <label class="toggle-switch">
+                    <input type="checkbox" checked />
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+
+                <div class="notification-channel email">
+                  <div class="channel-info">
+                    <span>📧</span>
+                    <span>{{ lang.t('automations.emailNotifications') }}</span>
+                  </div>
+                  <label class="toggle-switch">
+                    <input type="checkbox" checked />
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+
+                <div class="notification-channel whatsapp">
+                  <div class="channel-info">
+                    <span>💬</span>
+                    <span>{{ lang.t('automations.whatsappNotifications') }}</span>
+                  </div>
+                  <label class="toggle-switch">
+                    <input type="checkbox" />
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+              </div>
             </div>
-          }
+
+            <!-- Contact Information -->
+            <div class="form-section contact-section">
+              <h2>{{ lang.t('automations.contactInformation') }}</h2>
+              <p class="section-desc">{{ lang.t('automations.addressesForNotifications') }}</p>
+
+              <div class="contact-grid">
+                <div>
+                  <label class="form-label">{{ lang.t('automations.emailAddress') }}</label>
+                  <input
+                    type="email"
+                    value="user@example.com"
+                    placeholder="user@example.com"
+                    class="form-input"
+                    dir="ltr" />
+                </div>
+
+                <div>
+                  <label class="form-label">{{ lang.t('automations.whatsappNumber') }}</label>
+                  <input
+                    type="tel"
+                    value="+972501234567"
+                    placeholder="+972501234567"
+                    class="form-input"
+                    dir="ltr" />
+                </div>
+              </div>
+            </div>
+
+            <!-- Save Button -->
+            <div class="save-notifications-container">
+              <button
+                (click)="saveNotificationSettings()"
+                class="save-notifications-btn">
+                <span>🔔</span>
+                {{ lang.t('automations.saveNotificationSettings') }}
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
       }
     </div>
   </div>
+
+  <!-- Demo Modal -->
+  <app-template-demo-dialog
+    [isOpen]="showDemoModal"
+    [channel]="selectedChannelForDemo"
+    [templateType]="templateType"
+    [emailSubject]="emailSubject"
+    [messageBody]="messageBody"
+    [customAiMessage]="customAiMessage"
+    [aiPosition]="aiPosition"
+    [defaultMessageTitle]="defaultMessageTitle"
+    [defaultMessageContent]="defaultMessageContent"
+    (closeDialog)="closeDemoModal()">
+  </app-template-demo-dialog>
 </div>

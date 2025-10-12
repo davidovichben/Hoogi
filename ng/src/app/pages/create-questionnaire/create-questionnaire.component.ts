@@ -16,6 +16,19 @@ interface Link {
   url: string;
 }
 
+interface SavedTemplate {
+  id: string;
+  name: string;
+  templateType: 'standard' | 'ai' | 'personal' | 'combined';
+  responseType: 'new_customer' | 'reminder';
+  channels: string[];
+  emailSubject?: string;
+  messageBody?: string;
+  customAiMessage?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 interface QuestionnaireState {
   id?: string;
   title: string;
@@ -41,6 +54,8 @@ interface QuestionnaireState {
   subOccupationFree?: string;
   linkUrl?: string;
   attachmentUrl?: string;
+  // Automation settings
+  automationTemplateId?: string | null;
 }
 
 @Component({
@@ -73,7 +88,8 @@ export class CreateQuestionnaireComponent implements OnInit {
     occupation: '',
     subOccupation: '',
     occupationFree: '',
-    subOccupationFree: ''
+    subOccupationFree: '',
+    automationTemplateId: null
   };
 
   loading = false;
@@ -82,6 +98,8 @@ export class CreateQuestionnaireComponent implements OnInit {
   attachmentFileName = '';
   uploadingAttachment = false;
   currentUserId: string | null = null;
+  savedTemplates: SavedTemplate[] = [];
+  showAutomationSettings = false;
   
   // Error tracking for required fields
   errors = {
@@ -98,6 +116,17 @@ export class CreateQuestionnaireComponent implements OnInit {
 
   get OTHER() {
     return OTHER;
+  }
+
+  get automationEnabled(): boolean {
+    return this.showAutomationSettings || !!this.formData.automationTemplateId;
+  }
+
+  set automationEnabled(value: boolean) {
+    this.showAutomationSettings = value;
+    if (!value) {
+      this.formData.automationTemplateId = null;
+    }
   }
 
   goBack() {
@@ -128,6 +157,7 @@ export class CreateQuestionnaireComponent implements OnInit {
         }
 
         await this.loadProfileData(user.id);
+        await this.loadSavedTemplates();
       }
     });
 
@@ -281,6 +311,12 @@ export class CreateQuestionnaireComponent implements OnInit {
         this.formData.showLogo = questionnaire.show_logo ?? true;
         this.formData.showProfileImage = questionnaire.show_profile_image ?? true;
         this.formData.questions = convertedQuestions;
+        this.formData.automationTemplateId = questionnaire.automation_template_id || null;
+
+        // If there's an automation template, show the settings
+        if (this.formData.automationTemplateId) {
+          this.showAutomationSettings = true;
+        }
 
         // Set attachment file name if attachment exists
         if (this.formData.attachmentUrl) {
@@ -364,6 +400,12 @@ export class CreateQuestionnaireComponent implements OnInit {
         return false;
       }
 
+      // Validate that questions have been added
+      if (!this.formData.questions || this.formData.questions.length === 0) {
+        this.toast.show(this.lang.t('createQuestionnaire.noQuestionsError'), 'error');
+        return false;
+      }
+
       // Validate that all questions have text
       const emptyQuestions = this.formData.questions.filter(q => !q.text || !q.text.trim());
       if (emptyQuestions.length > 0) {
@@ -403,7 +445,8 @@ export class CreateQuestionnaireComponent implements OnInit {
         link_url: this.formData.linkUrl || null,
         attachment_url: this.formData.attachmentUrl || null,
         show_logo: this.formData.showLogo ?? true,
-        show_profile_image: this.formData.showProfileImage ?? true
+        show_profile_image: this.formData.showProfileImage ?? true,
+        automation_template_id: this.formData.automationTemplateId || null
       };
 
       if (this.questionnaireId) {
@@ -572,6 +615,37 @@ export class CreateQuestionnaireComponent implements OnInit {
     const fileInput = document.getElementById('attachmentFileInput') as HTMLInputElement;
     if (fileInput) {
       fileInput.value = '';
+    }
+  }
+
+  async loadSavedTemplates() {
+    try {
+      if (!this.currentUserId) return;
+
+      const { data, error } = await this.supabaseService.client
+        .from('automation_templates')
+        .select('*')
+        .eq('user_id', this.currentUserId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Convert database format to SavedTemplate interface
+      this.savedTemplates = (data || []).map(template => ({
+        id: template.id,
+        name: template.name,
+        templateType: template.template_type,
+        responseType: template.response_type,
+        channels: template.channels || [],
+        emailSubject: template.email_subject,
+        messageBody: template.message_body,
+        customAiMessage: template.custom_ai_message,
+        createdAt: template.created_at,
+        updatedAt: template.updated_at
+      }));
+    } catch (e: any) {
+      console.error('Error loading templates:', e);
+      // Silently fail - templates are optional
     }
   }
 }

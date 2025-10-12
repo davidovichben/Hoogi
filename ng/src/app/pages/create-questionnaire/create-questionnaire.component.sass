@@ -385,3 +385,125 @@ textarea[style*="--focus-ring-color"]:focus
 	outline: 2px solid var(--focus-ring-color)
 	outline-offset: 2px
 	opacity: 0.5
+
+// Automation card
+.automation-card
+	background: linear-gradient(135deg, #FEF3E2 0%, #FFEFD5 100%)
+	margin-bottom: 1.5rem
+
+.automation-subtitle
+	font-size: 0.875rem
+	color: #6b7280
+	margin-top: 0.5rem
+	margin-bottom: 1.5rem
+
+.automation-toggle
+	margin-bottom: 1.5rem
+
+.toggle-label
+	display: flex
+	align-items: center
+	gap: 0.75rem
+	cursor: pointer
+	user-select: none
+
+.toggle-checkbox
+	width: 1.25rem
+	height: 1.25rem
+	border-radius: 0.25rem
+	cursor: pointer
+	accent-color: #10B3B3
+
+.toggle-text
+	font-size: 1rem
+	font-weight: 500
+	color: #111827
+
+.automation-settings-content
+	margin-top: 1.5rem
+	padding-top: 1.5rem
+	border-top: 1px solid #e5e7eb
+
+.automation-field
+	margin-bottom: 1.5rem
+
+.automation-label
+	display: block
+	font-size: 0.875rem
+	font-weight: 600
+	color: #111827
+	margin-bottom: 0.5rem
+
+.form-select
+	width: 100%
+	padding: 0.75rem 1rem
+	background-color: white
+	border: 1px solid #e5e7eb
+	border-radius: 0.5rem
+	font-size: 1rem
+	cursor: pointer
+	transition: border-color 0.2s
+
+	&:focus
+		outline: 2px solid rgba(25, 159, 58, 0.5)
+		outline-offset: 2px
+		border-color: #199f3a
+
+	&:hover
+		border-color: #d1d5db
+
+.automation-hint
+	font-size: 0.8125rem
+	color: #6b7280
+	margin-top: 0.5rem
+	font-style: italic
+
+.channels-grid
+	display: grid
+	grid-template-columns: repeat(auto-fit, minmax(150px, 1fr))
+	gap: 0.75rem
+
+.channel-btn
+	padding: 0.75rem 1rem
+	background-color: white
+	border: 2px solid #e5e7eb
+	border-radius: 0.5rem
+	font-size: 0.875rem
+	font-weight: 500
+	color: #374151
+	cursor: pointer
+	transition: all 0.2s
+	display: flex
+	align-items: center
+	justify-content: center
+	gap: 0.5rem
+
+	&:hover
+		border-color: #10B3B3
+		background-color: rgba(16, 179, 179, 0.05)
+
+	&.active
+		background-color: #10B3B3
+		border-color: #10B3B3
+		color: white
+		font-weight: 600
+
+.automation-note
+	display: flex
+	align-items: flex-start
+	gap: 0.5rem
+	padding: 1rem
+	background-color: rgba(59, 130, 246, 0.1)
+	border: 1px solid rgba(59, 130, 246, 0.2)
+	border-radius: 0.5rem
+	margin-top: 1.5rem
+
+	svg
+		flex-shrink: 0
+		color: #3b82f6
+		margin-top: 0.125rem
+
+	span
+		font-size: 0.8125rem
+		color: #1e40af
+		line-height: 1.5

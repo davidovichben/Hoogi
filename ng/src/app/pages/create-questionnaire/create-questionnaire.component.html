@@ -147,7 +147,10 @@
           </svg>
         </div>
         <div>
-          <h2 class="questions-title">{{ lang.t('createQuestionnaire.buildQuestionnaire') }}</h2>
+          <h2 class="questions-title">
+            {{ lang.t('createQuestionnaire.buildQuestionnaire') }}
+            <span style="color: #EF4444; margin-inline-start: 4px;">*</span>
+          </h2>
           <p class="questions-subtitle">{{ lang.t('createQuestionnaire.questionCreationDesc') }}</p>
         </div>
       </div>
@@ -156,6 +159,54 @@
           <p class="questions-badge-text">
             {{ formData.questions.length }} {{ lang.currentLanguage === 'he' ? 'שאלות נוספו לשאלון' : 'questions added to questionnaire' }}
           </p>
+        </div>
+      } @else {
+        <div class="questions-badge" style="background-color: #FEE2E2; border-color: #FCA5A5;">
+          <p class="questions-badge-text" style="color: #DC2626;">
+            {{ lang.currentLanguage === 'he' ? 'לא נוספו שאלות - לחץ להוספת שאלות' : 'No questions added - Click to add questions' }}
+          </p>
+        </div>
+      }
+    </div>
+
+    <!-- Automation Settings - full width card -->
+    <div class="automation-card card">
+      <h3 class="card-title">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display: inline-block; vertical-align: middle; margin-left: 8px;">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+        </svg>
+        {{ lang.t('createQuestionnaire.automationSettings') }}
+      </h3>
+
+      <!-- Enable automation checkbox -->
+      <div class="automation-toggle">
+        <label class="toggle-label">
+          <input
+            type="checkbox"
+            [(ngModel)]="automationEnabled"
+            class="toggle-checkbox">
+          <span class="toggle-text">{{ lang.t('createQuestionnaire.enableAutomation') }}</span>
+        </label>
+      </div>
+
+      <!-- Select saved template -->
+      @if (automationEnabled) {
+        <div class="automation-settings-content">
+          <div class="automation-field">
+            <label class="automation-label">{{ lang.t('createQuestionnaire.selectTemplate') }}</label>
+            <select [(ngModel)]="formData.automationTemplateId" class="form-select">
+              <option [value]="null">{{ lang.t('createQuestionnaire.selectTemplatePlaceholder') }}</option>
+              @for (template of savedTemplates; track template.id) {
+                <option [value]="template.id">
+                  @if (template.templateType === 'standard') { ⭐ }
+                  @if (template.templateType === 'ai') { 🤖 }
+                  @if (template.templateType === 'personal') { 👤 }
+                  @if (template.templateType === 'combined') { 🤝 }
+                  {{ template.name }}
+                </option>
+              }
+            </select>
+          </div>
         </div>
       }
     </div>

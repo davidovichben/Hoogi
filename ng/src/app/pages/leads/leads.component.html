@@ -87,6 +87,7 @@
                 <option value="website">{{ lang.t('leads.channelWebsite') }}</option>
                 <option value="facebook">{{ lang.t('leads.channelFacebook') }}</option>
                 <option value="instagram">{{ lang.t('leads.channelInstagram') }}</option>
+                <option value="other">{{ lang.t('leads.channel_other') }}</option>
               </select>
 
               <!-- Status filter -->
@@ -95,6 +96,7 @@
                 (ngModelChange)="applyFilters()"
                 class="filter-select">
                 <option value="">{{ lang.t('leads.allStatuses') }}</option>
+                <option value="new,in-progress">{{ lang.t('leads.statusWaitingForHandling') }}</option>
                 <option value="new">{{ lang.t('leads.statusNew') }}</option>
                 <option value="in-progress">{{ lang.t('leads.statusInProgress') }}</option>
                 <option value="reminder">{{ lang.t('leads.statusReminder') }}</option>

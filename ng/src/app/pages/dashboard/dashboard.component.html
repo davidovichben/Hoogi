@@ -3,7 +3,7 @@
   <div class="dashboard-header">
 	  <div class="header-content">
 		  <div class="logo-container">
-			  <img src="/img/logo.png" alt="Hoogi" class="logo">
+			  <img src="/img/logo.png" alt="Hoogi Avatar" class="logo">
 		  </div>
 		  <div class="welcome-box">
 			  <h1 class="welcome-title">
@@ -86,14 +86,14 @@
 
   <!-- Visual Charts Section -->
   <div class="charts-section">
-    <!-- Networks Chart -->
+    <!-- Channels Chart -->
     <div class="chart-card">
-      <h2 class="chart-title">{{ lang.t('dashboard.leadsByNetwork') }}</h2>
+      <h2 class="chart-title">{{ lang.t('dashboard.leadsByChannel') }}</h2>
       <div class="chart-body">
         <div class="chart-content">
           <!-- Stats List -->
           <div class="stats-list">
-            @for (item of networkData; track item.id) {
+            @for (item of channelData; track item.id) {
               <div class="stat-item">
                 <div class="stat-item-left">
                   <div class="stat-dot" [style.background-color]="item.color"></div>

@@ -44,36 +44,31 @@ export class DashboardComponent implements OnInit, OnDestroy {
   businessName = '';
 
   // Stats
-  remainingLeads = 180;
-  utilizedLeads = 120;
-  activeQuestionnairesCount = 5;
-  newLeadsCount = 42;
-  reminderLeadsCount = 18;
+  totalLeadQuota = 180; // Total lead quota
+  utilizedLeads = 0;    // Actual leads used
+  activeQuestionnairesCount = 0;
+  newLeadsCount = 0;
+  reminderLeadsCount = 0;
 
-  // Network leads data
-  networkData: LeadItem[] = [
-    { id: '1', name: 'Facebook', source: 'facebook', count: 45, color: '#8B5CF6' },
-    { id: '2', name: 'Instagram', source: 'instagram', count: 38, color: '#EC4899' },
-    { id: '3', name: 'WhatsApp', source: 'whatsapp', count: 25, color: '#10B981' },
-    { id: '4', name: 'אתר', source: 'website', count: 30, color: '#3B82F6' },
-    { id: '5', name: 'LinkedIn', source: 'linkedin', count: 42, color: '#F59E0B' },
-  ];
+  // Computed property for remaining leads
+  get remainingLeads(): number {
+    return Math.max(0, this.totalLeadQuota - this.utilizedLeads);
+  }
+
+  // Channel leads data
+  channelData: LeadItem[] = [];
 
   // Partner leads data
-  partnerData: LeadItem[] = [
-    { id: '1', name: 'שותף א׳', source: 'partner1', count: 65, color: '#8B5CF6' },
-    { id: '2', name: 'שותף ב׳', source: 'partner2', count: 52, color: '#EC4899' },
-    { id: '3', name: 'שותף ג׳', source: 'partner3', count: 43, color: '#10B981' },
-  ];
+  partnerData: LeadItem[] = [];
 
   // Questionnaires
   questionnaires: QuestionnaireItem[] = [];
 
   // Partner summary stats
   partnerStats = {
-    total: 160,
-    new: 32,
-    average: 53
+    total: 0,
+    new: 0,
+    average: 0
   };
 
   constructor(
@@ -152,17 +147,166 @@ export class DashboardComponent implements OnInit, OnDestroy {
         created_at: q.created_at
       }));
 
-      // Load actual counts
-      const [
-        { count: leadsCount },
-        { count: responsesCount }
-      ] = await Promise.all([
-        this.supabaseService.client.from('leads').select("*", { count: "exact", head: true }).eq("owner_id", userId),
-        this.supabaseService.client.from('responses').select("*", { count: "exact", head: true }).eq("owner_id", userId)
-      ]);
+      // Load active questionnaires count
+      const { count: activeQCount } = await this.supabaseService.client
+        .from('questionnaires')
+        .select("*", { count: "exact", head: true })
+        .eq('owner_id', userId)
+        .eq('is_active', true);
 
-      if (leadsCount !== null) this.remainingLeads = leadsCount;
-      if (responsesCount !== null) this.utilizedLeads = responsesCount;
+      if (activeQCount !== null) {
+        this.activeQuestionnairesCount = activeQCount;
+      }
+
+      // Load actual counts - count leads to get utilized leads
+      // RLS will automatically filter leads by questionnaire owner
+      const { count: leadsCount } = await this.supabaseService.client
+        .from('leads')
+        .select("*", { count: "exact", head: true });
+
+      // Set utilized leads - remaining will be calculated automatically (180 - utilized)
+      if (leadsCount !== null) {
+        this.utilizedLeads = leadsCount;
+      }
+
+      // Load new leads count (last 3 days)
+      const threeDaysAgo = new Date();
+      threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+      const threeDaysAgoISO = threeDaysAgo.toISOString();
+
+      const { count: newLeadsCount } = await this.supabaseService.client
+        .from('leads')
+        .select("*", { count: "exact", head: true })
+        .gte('created_at', threeDaysAgoISO);
+
+      if (newLeadsCount !== null) {
+        this.newLeadsCount = newLeadsCount;
+      }
+
+      // Load leads waiting to be handled (status = 'new' or 'in-progress')
+      const { count: waitingLeadsCount } = await this.supabaseService.client
+        .from('leads')
+        .select("*", { count: "exact", head: true })
+        .in('status', ['new', 'in-progress']);
+
+      if (waitingLeadsCount !== null) {
+        this.reminderLeadsCount = waitingLeadsCount;
+      }
+
+      // Load channel distribution
+      const { data: leadsData, error: leadsError } = await this.supabaseService.client
+        .from('leads')
+        .select('channel');
+
+      if (!leadsError && leadsData) {
+        // Define valid channels
+        const validChannels = ['email', 'whatsapp', 'sms', 'website', 'facebook', 'instagram'];
+
+        // Count leads by channel
+        const channelCounts: { [key: string]: number } = {};
+        leadsData.forEach((lead: any) => {
+          let channel = lead.channel || 'other';
+          // If channel is not in the valid list, categorize as 'other'
+          if (!validChannels.includes(channel)) {
+            channel = 'other';
+          }
+          channelCounts[channel] = (channelCounts[channel] || 0) + 1;
+        });
+
+        // Define channel colors
+        const channelColors: { [key: string]: string } = {
+          'email': '#8B5CF6',
+          'whatsapp': '#10B981',
+          'sms': '#3B82F6',
+          'website': '#EC4899',
+          'facebook': '#0ea5e9',
+          'instagram': '#f43f5e',
+          'other': '#6b7280'
+        };
+
+        // Build channelData array
+        this.channelData = Object.entries(channelCounts).map(([channel, count]) => ({
+          id: channel,
+          name: this.lang.t(`leads.channel_${channel}`),
+          source: channel,
+          count: count,
+          color: channelColors[channel] || '#6b7280'
+        }));
+
+        // Sort by count descending
+        this.channelData.sort((a, b) => (b.count || 0) - (a.count || 0));
+
+        // If no channels exist, show placeholder
+        if (this.channelData.length === 0) {
+          this.channelData = [{
+            id: 'none',
+            name: this.lang.t('dashboard.noPartners'),
+            source: 'none',
+            count: 0,
+            color: '#8B5CF6'
+          }];
+        }
+      }
+
+      // Load partner distribution
+      const { data: partnerLeadsData, error: partnerLeadsError } = await this.supabaseService.client
+        .from('leads')
+        .select('partner_id, created_at');
+
+      if (!partnerLeadsError && partnerLeadsData) {
+        // Count leads by partner
+        const partnerCounts: { [key: string]: number } = {};
+        let totalWithPartner = 0;
+        let newWithPartner = 0;
+        const threeDaysAgoDate = new Date();
+        threeDaysAgoDate.setDate(threeDaysAgoDate.getDate() - 3);
+
+        partnerLeadsData.forEach((lead: any) => {
+          if (lead.partner_id) {
+            partnerCounts[lead.partner_id] = (partnerCounts[lead.partner_id] || 0) + 1;
+            totalWithPartner++;
+
+            // Check if it's a new lead (last 3 days)
+            const leadDate = new Date(lead.created_at);
+            if (leadDate >= threeDaysAgoDate) {
+              newWithPartner++;
+            }
+          }
+        });
+
+        // Define partner colors
+        const partnerColors = ['#8B5CF6', '#EC4899', '#10B981', '#3B82F6', '#F59E0B', '#EF4444'];
+
+        // Build partnerData array
+        this.partnerData = Object.entries(partnerCounts).map(([partnerId, count], index) => ({
+          id: partnerId,
+          name: partnerId.substring(0, 8) + '...',
+          source: partnerId,
+          count: count,
+          color: partnerColors[index % partnerColors.length]
+        }));
+
+        // Sort by count descending
+        this.partnerData.sort((a, b) => (b.count || 0) - (a.count || 0));
+
+        // If no partners exist, show placeholder
+        if (this.partnerData.length === 0) {
+          this.partnerData = [{
+            id: 'none',
+            name: this.lang.t('dashboard.noPartners'),
+            source: 'none',
+            count: 0,
+            color: '#8B5CF6'
+          }];
+        }
+
+        // Calculate partner stats
+        this.partnerStats.total = totalWithPartner;
+        this.partnerStats.new = newWithPartner;
+        this.partnerStats.average = this.partnerData.length > 0 && totalWithPartner > 0
+          ? Math.round(totalWithPartner / this.partnerData.length)
+          : 0;
+      }
 
     } catch (e: any) {
       this.error = e?.message || "Failed to load dashboard";
@@ -210,11 +354,31 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   viewNewLeads() {
-    this.router.navigate(['/leads'], { queryParams: { filter: 'new' } });
+    // Calculate date range for last 3 days
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const threeDaysAgo = new Date();
+    threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+
+    // Format dates as YYYY-MM-DD
+    const dateFrom = threeDaysAgo.toISOString().split('T')[0];
+    const dateTo = tomorrow.toISOString().split('T')[0];
+
+    this.router.navigate(['/leads'], {
+      queryParams: {
+        dateFrom: dateFrom,
+        dateTo: dateTo
+      }
+    });
   }
 
   viewReminderLeads() {
-    this.router.navigate(['/leads'], { queryParams: { filter: 'reminder' } });
+    // Filter by status = 'new' and 'in-progress' (leads waiting to be handled)
+    this.router.navigate(['/leads'], {
+      queryParams: {
+        status: 'new,in-progress'
+      }
+    });
   }
 
   goToSubscription() {

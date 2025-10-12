@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { LanguageService } from '../../core/services/language.service';
 import { SupabaseService } from '../../core/services/supabase.service';
 import { ToastService } from '../../core/services/toast.service';
@@ -55,10 +56,24 @@ export class LeadsComponent implements OnInit {
   constructor(
     public lang: LanguageService,
     private supabase: SupabaseService,
-    private toast: ToastService
+    private toast: ToastService,
+    private route: ActivatedRoute
   ) {}
 
   async ngOnInit() {
+    // Read query parameters and set filters
+    this.route.queryParams.subscribe(params => {
+      if (params['dateFrom']) {
+        this.filterDateFrom = params['dateFrom'];
+      }
+      if (params['dateTo']) {
+        this.filterDateTo = params['dateTo'];
+      }
+      if (params['status']) {
+        this.filterStatus = params['status'];
+      }
+    });
+
     await this.loadLeads();
   }
 
@@ -103,8 +118,9 @@ export class LeadsComponent implements OnInit {
       // Channel filtering
       const matchesChannel = !this.filterChannel || lead.channel === this.filterChannel;
 
-      // Status filtering
-      const matchesStatus = !this.filterStatus || lead.status === this.filterStatus;
+      // Status filtering - handle comma-separated values (e.g., "new,in-progress")
+      const matchesStatus = !this.filterStatus ||
+        this.filterStatus.split(',').map(s => s.trim()).includes(lead.status);
 
       // Questionnaire filtering
       const matchesQuestionnaire = !this.filterQuestionnaire || lead.questionnaire_title === this.filterQuestionnaire;
@@ -225,13 +241,20 @@ export class LeadsComponent implements OnInit {
           }
         }
 
+        // Normalize channel - only allow valid channels, otherwise set to 'other'
+        const validChannels = ['email', 'whatsapp', 'sms', 'website', 'facebook', 'instagram'];
+        let normalizedChannel = lead.channel || 'other';
+        if (!validChannels.includes(normalizedChannel.toLowerCase())) {
+          normalizedChannel = 'other';
+        }
+
         return {
           id: lead.id,
           questionnaire_id: lead.questionnaire_id,
           questionnaire_title: lead.questionnaires?.title || 'Untitled',
           client_name: lead.client_name || 'Unknown',
           partner_id: lead.partner_id,
-          channel: lead.channel,
+          channel: normalizedChannel,
           status: lead.status || 'new',
           sub_status: lead.sub_status || '',
           automations: Array.isArray(lead.automations) ? lead.automations : [],
@@ -368,9 +391,13 @@ export class LeadsComponent implements OnInit {
       'sms': this.lang.t('leads.channelSMS'),
       'website': this.lang.t('leads.channelWebsite'),
       'facebook': this.lang.t('leads.channelFacebook'),
-      'instagram': this.lang.t('leads.channelInstagram')
+      'instagram': this.lang.t('leads.channelInstagram'),
+      'other': this.lang.t('leads.channel_other')
     };
-    return channelLabels[channel.toLowerCase()] || channel;
+    // If channel is not in the valid list, return 'other'
+    const validChannels = ['email', 'whatsapp', 'sms', 'website', 'facebook', 'instagram', 'other'];
+    const normalizedChannel = channel.toLowerCase();
+    return channelLabels[normalizedChannel] || this.lang.t('leads.channel_other');
   }
 
   toggleCommentPopup(event: Event, leadId: string, currentComment?: string) {

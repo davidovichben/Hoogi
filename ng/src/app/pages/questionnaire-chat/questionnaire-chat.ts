@@ -6,6 +6,7 @@ import { QuestionnaireService } from '../../core/services/questionnaire.service'
 import { ToastService } from '../../core/services/toast.service';
 import { SupabaseService } from '../../core/services/supabase.service';
 import { LanguageService } from '../../core/services/language.service';
+import { ReferralTrackingService } from '../../core/services/referral-tracking.service';
 import { Questionnaire, Question, QuestionOption } from '../../core/models/questionnaire.model';
 
 @Component({
@@ -58,6 +59,9 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
   private audioChunks: Blob[] = [];
   private audioBlob: Blob | null = null;
 
+  // Referral tracking
+  private detectedChannel: string = 'direct';
+
   constructor(
     private questionnaireService: QuestionnaireService,
     private toastService: ToastService,
@@ -66,10 +70,15 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
     private router: Router,
     private route: ActivatedRoute,
     private cdr: ChangeDetectorRef,
-    private ngZone: NgZone
+    private ngZone: NgZone,
+    private referralTracking: ReferralTrackingService
   ) {}
 
   ngOnInit() {
+    // Detect referral source/channel
+    this.detectedChannel = this.referralTracking.detectChannel();
+    console.log('Detected channel:', this.detectedChannel);
+
     // Prevent body scroll
     document.body.style.overflow = 'hidden';
 
@@ -642,7 +651,7 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
         questionnaire_id: this.questionnaire.id,
         client_name: clientName,
         partner_id: null, // Will be assigned later by admin/user
-        channel: 'whatsapp', // Chat view channel
+        channel: this.detectedChannel, // Detected from referral source
         status: 'new',
         sub_status: null,
         automations: [], // Empty array, will be configured by admin
