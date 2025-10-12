@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { SupabaseService } from './supabase.service';
-import { OTHER } from '../constants/occupations.constant';
+import { OCCUPATIONS, OTHER } from '../constants/occupations.constant';
 
 @Injectable({
   providedIn: 'root'
@@ -25,8 +25,11 @@ export class ProfileValidatorService {
       const hasMobile = !!(data.phone || '').trim();
       const hasOccupation = !!(data.occupation || '').trim();
 
-      // Suboccupation only required if occupation is not "other"
-      const hasSubOccupation = data.occupation === OTHER || !!(data.suboccupation || '').trim();
+      // Suboccupation only required if occupation is a predefined category with suboccupations
+      const occupationKeys = Object.keys(OCCUPATIONS);
+      const isPredefinedOccupation = occupationKeys.includes(data.occupation || '');
+      const needsSubOccupation = isPredefinedOccupation && OCCUPATIONS[data.occupation]?.length > 0;
+      const hasSubOccupation = !needsSubOccupation || !!(data.suboccupation || '').trim();
 
       return hasBusinessName && hasEmail && hasMobile && hasOccupation && hasSubOccupation;
     } catch (e) {

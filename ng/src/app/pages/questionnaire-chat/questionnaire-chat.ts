@@ -93,6 +93,57 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
     }
   }
 
+  private validateName(name: string): { valid: boolean; message: string } {
+    if (!name || !name.trim()) {
+      return { valid: false, message: this.lang.currentLanguage === 'he' ? 'נא להזין שם' : 'Please enter a name' };
+    }
+    // Hebrew and English letters, spaces, hyphens, apostrophes only
+    const nameRegex = /^[\u0590-\u05FFa-zA-Z\s'\-]+$/;
+    if (!nameRegex.test(name.trim())) {
+      return {
+        valid: false,
+        message: this.lang.currentLanguage === 'he'
+          ? 'שם חייב להכיל אותיות בלבד (ללא מספרים או סמלים)'
+          : 'Name must contain only letters (no numbers or symbols)'
+      };
+    }
+    return { valid: true, message: '' };
+  }
+
+  private validateEmail(email: string): { valid: boolean; message: string } {
+    if (!email || !email.trim()) {
+      return { valid: false, message: this.lang.currentLanguage === 'he' ? 'נא להזין כתובת מייל' : 'Please enter an email address' };
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      return {
+        valid: false,
+        message: this.lang.currentLanguage === 'he'
+          ? 'נא להזין כתובת מייל תקינה'
+          : 'Please enter a valid email address'
+      };
+    }
+    return { valid: true, message: '' };
+  }
+
+  private validateIsraeliPhone(phone: string): { valid: boolean; message: string } {
+    if (!phone || !phone.trim()) {
+      return { valid: false, message: this.lang.currentLanguage === 'he' ? 'נא להזין מספר טלפון' : 'Please enter a phone number' };
+    }
+    const cleanPhone = phone.replace(/\D/g, '');
+    // Israeli: 9-10 digits, mobile starts with 05, landline starts with 0 followed by 2-9
+    const israeliPhoneRegex = /^(0?(5[0-9]|[2-9])\d{7})$/;
+    if (!israeliPhoneRegex.test(cleanPhone)) {
+      return {
+        valid: false,
+        message: this.lang.currentLanguage === 'he'
+          ? 'נא להזין מספר טלפון ישראלי תקין (לדוגמה: 050-1234567)'
+          : 'Please enter a valid Israeli phone number (e.g., 050-1234567)'
+      };
+    }
+    return { valid: true, message: '' };
+  }
+
   ngOnDestroy() {
     // Restore body scroll
     document.body.style.overflow = '';
@@ -119,51 +170,62 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
   }
 
   loadPreviewData() {
-    try {
-      const previewDataStr = sessionStorage.getItem('preview_questionnaire');
-      if (!previewDataStr) {
-        this.toastService.show('No preview data found', 'error');
-        return;
+    this.isLoading = true;
+
+    // Use setTimeout to ensure the loading spinner is shown
+    setTimeout(() => {
+      try {
+        const previewDataStr = sessionStorage.getItem('preview_questionnaire');
+        if (!previewDataStr) {
+          this.toastService.show('No preview data found', 'error');
+          this.isLoading = false;
+          return;
+        }
+
+        const data = JSON.parse(previewDataStr);
+
+        this.questionnaire = {
+          id: 'preview',
+          title: data.questionnaire.title,
+          description: data.questionnaire.description,
+          language: data.questionnaire.language,
+          owner_id: data.questionnaire.owner_id,
+          status: 'draft',
+          is_active: false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          user_id: data.questionnaire.owner_id
+        } as Questionnaire;
+
+        this.questions = data.questions;
+        this.options = data.options || [];
+
+        // Load showLogo and showProfileImage from preview data
+        this.showLogo = data.questionnaire.show_logo ?? true;
+        this.showProfileImage = data.questionnaire.show_profile_image ?? true;
+
+        // Apply theme from preview data
+        if (data.profile) {
+          this.primaryColor = data.profile.brand_primary || '#199f3a';
+          this.secondaryColor = data.profile.brand_secondary || '#9cbb54';
+          this.logoUrl = data.profile.logo_url || '';
+          this.imageUrl = data.profile.image_url || '';
+        }
+
+        // This is preview mode (owner view)
+        this.isOwnerView = true;
+
+        // Don't clear preview data yet - keep it so form view can access it too
+        // It will be cleared when user navigates away from preview
+
+        this.initializeChat();
+      } catch (error) {
+        console.error('Error loading preview data:', error);
+        this.toastService.show('Error loading preview', 'error');
+      } finally {
+        this.isLoading = false;
       }
-
-      const data = JSON.parse(previewDataStr);
-
-      this.questionnaire = {
-        id: 'preview',
-        title: data.questionnaire.title,
-        description: data.questionnaire.description,
-        language: data.questionnaire.language,
-        owner_id: data.questionnaire.owner_id,
-        status: 'draft',
-        is_active: false,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        user_id: data.questionnaire.owner_id
-      } as Questionnaire;
-
-      this.questions = data.questions;
-      this.options = data.options || [];
-
-      // Load showLogo and showProfileImage from preview data
-      this.showLogo = data.questionnaire.show_logo ?? true;
-      this.showProfileImage = data.questionnaire.show_profile_image ?? true;
-
-      // Apply theme from preview data
-      if (data.profile) {
-        this.primaryColor = data.profile.brand_primary || '#199f3a';
-        this.secondaryColor = data.profile.brand_secondary || '#9cbb54';
-        this.logoUrl = data.profile.logo_url || '';
-        this.imageUrl = data.profile.image_url || '';
-      }
-
-      // This is preview mode (owner view)
-      this.isOwnerView = true;
-
-      this.initializeChat();
-    } catch (error) {
-      console.error('Error loading preview data:', error);
-      this.toastService.show('Error loading preview', 'error');
-    }
+    }, 0);
   }
 
   async loadQuestionnaire(tokenOrId: string) {
@@ -227,29 +289,11 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
       }
     });
 
-    // In owner view, just show a simple instruction message
-    if (this.isOwnerView) {
-      if (this.questionnaire) {
-        this.chatMessages.push({
-          type: 'bot',
-          text: this.lang.currentLanguage === 'he'
-            ? 'מצב תצוגה מקדימה - השתמש בכפתורים למטה לניווט בין שאלות'
-            : 'Preview mode - Use buttons below to navigate between questions'
-        });
-      }
-
-      // Show first question
-      if (this.questions.length > 0) {
-        this.showCurrentQuestion();
-      }
-      return;
-    }
-
-    // For guest view: Add welcome message with questionnaire name
+    // Add welcome message with questionnaire name (same for both guest and owner)
     if (this.questionnaire) {
       const welcomeText = this.lang.currentLanguage === 'he'
-        ? `שלום! ברוך הבא ל${this.questionnaire.title} - כל סוגי השאלות. בואו נתחיל בשאלה הראשונה:`
-        : `Hello! Welcome to ${this.questionnaire.title} - all question types. Let's start with the first question:`;
+        ? `שלום! ברוך הבא ל${this.questionnaire.title}. בואו נתחיל בשאלה הראשונה:`
+        : `Hello! Welcome to ${this.questionnaire.title}. Let's start with the first question:`;
 
       this.chatMessages.push({
         type: 'bot',
@@ -325,6 +369,20 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
   }
 
   getQuestionOptions(questionId: string): QuestionOption[] {
+    // First check if the question has options stored directly
+    const question = this.questions.find(q => q.id === questionId);
+    if (question && (question as any).options && Array.isArray((question as any).options)) {
+      // Convert inline options array to QuestionOption format
+      return (question as any).options.map((opt: string, index: number) => ({
+        id: `${questionId}_opt_${index}`,
+        question_id: questionId,
+        label: opt,
+        value: opt,
+        order_index: index
+      }));
+    }
+
+    // Fall back to separate options array
     return this.options.filter(opt => opt.question_id === questionId);
   }
 
@@ -403,21 +461,36 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
         this.toastService.show(message, 'error');
         return;
       }
+
+      // Validate first 3 questions (name, email, phone)
+      if (this.currentQuestionIndex === 0) {
+        // First question: Name validation
+        const nameValidation = this.validateName(response);
+        if (!nameValidation.valid) {
+          this.toastService.show(nameValidation.message, 'error');
+          return;
+        }
+      } else if (this.currentQuestionIndex === 1) {
+        // Second question: Email validation
+        const emailValidation = this.validateEmail(response);
+        if (!emailValidation.valid) {
+          this.toastService.show(emailValidation.message, 'error');
+          return;
+        }
+      } else if (this.currentQuestionIndex === 2) {
+        // Third question: Israeli phone validation
+        const phoneValidation = this.validateIsraeliPhone(response);
+        if (!phoneValidation.valid) {
+          this.toastService.show(phoneValidation.message, 'error');
+          return;
+        }
+      }
     }
 
     // Store the response
     this.responses[question.id] = response;
 
-    // In owner view, don't auto-advance - let them use navigation buttons
-    if (this.isOwnerView) {
-      this.toastService.show(
-        this.lang.currentLanguage === 'he' ? 'תשובה נשמרה' : 'Answer saved',
-        'success'
-      );
-      return;
-    }
-
-    // For guest view: Add user's answer to chat and auto-advance
+    // Add user's answer to chat and auto-advance (same for both guest and owner)
     this.chatMessages.push({
       type: 'user',
       text: displayText
@@ -472,15 +545,20 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
       }
 
       // Save to database
-      const { error } = await this.supabaseService.client
+      const { data: responseInsert, error } = await this.supabaseService.client
         .from('responses')
         .insert({
           questionnaire_id: this.questionnaire.id,
           response_data: responseData,
           submitted_at: new Date().toISOString()
-        });
+        })
+        .select()
+        .single();
 
       if (error) throw error;
+
+      // Extract lead data and save to leads table
+      await this.saveLeadData(responseData, responseInsert?.id);
 
       this.isSubmitted = true;
 
@@ -503,6 +581,92 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
     }
   }
 
+  private extractField(data: Record<string, any>, possibleKeys: string[]): string {
+    // Try to find the field by checking question text and various possible keys
+    for (const key in data) {
+      const value = data[key];
+
+      // Find the question for this response
+      const question = this.questions.find(q => q.id === key);
+      if (question) {
+        const questionText = question.question_text.toLowerCase();
+
+        // Check if question text matches any of our possible keys
+        for (const possibleKey of possibleKeys) {
+          if (questionText.includes(possibleKey.toLowerCase())) {
+            // Handle array values (from multi-choice questions)
+            if (Array.isArray(value)) {
+              return value.join(', ');
+            }
+            return typeof value === 'string' ? value : String(value);
+          }
+        }
+      }
+
+      // Also check the key itself (in case it's a direct match)
+      const lowerKey = key.toLowerCase();
+      for (const possibleKey of possibleKeys) {
+        if (lowerKey.includes(possibleKey.toLowerCase())) {
+          if (Array.isArray(value)) {
+            return value.join(', ');
+          }
+          return typeof value === 'string' ? value : String(value);
+        }
+      }
+    }
+    return '';
+  }
+
+  private async saveLeadData(responseData: Record<string, any>, responseId?: string) {
+    if (!this.questionnaire) return;
+
+    try {
+      // Extract client name from the first question (which is always the full name)
+      let clientName = 'Unknown';
+      if (this.questions.length > 0) {
+        const firstQuestionId = this.questions[0].id;
+        const firstAnswer = responseData[firstQuestionId];
+
+        if (firstAnswer) {
+          // Handle both string and array values
+          if (Array.isArray(firstAnswer)) {
+            clientName = firstAnswer.join(', ');
+          } else if (typeof firstAnswer === 'string' && firstAnswer.trim()) {
+            clientName = firstAnswer.trim();
+          }
+        }
+      }
+
+      // Prepare lead data with new schema
+      const leadData = {
+        questionnaire_id: this.questionnaire.id,
+        client_name: clientName,
+        partner_id: null, // Will be assigned later by admin/user
+        channel: 'whatsapp', // Chat view channel
+        status: 'new',
+        sub_status: null,
+        automations: [], // Empty array, will be configured by admin
+        comments: null,
+        answer_json: responseData,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      // Insert into leads table
+      const { error: leadError } = await this.supabaseService.client
+        .from('leads')
+        .insert(leadData);
+
+      if (leadError) {
+        console.error('Error saving lead data:', leadError);
+        // Don't throw error - lead saving is optional, response is already saved
+      }
+    } catch (error) {
+      console.error('Error in saveLeadData:', error);
+      // Don't throw error - lead saving is optional
+    }
+  }
+
   onKeyPress(event: KeyboardEvent) {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
@@ -510,17 +674,69 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
     }
   }
 
-  goBackToEdit() {
-    // Clear preview data when navigating away
-    if (this.questionnaire && this.questionnaire.id === 'preview') {
-      sessionStorage.removeItem('preview_questionnaire');
+  skipCurrentQuestion() {
+    const question = this.getCurrentQuestion();
+    if (!question) return;
+
+    // Only allow skipping if question is not required
+    if (question.is_required) {
+      const message = this.lang.currentLanguage === 'he'
+        ? 'לא ניתן לדלג על שאלה חובה'
+        : 'Cannot skip a required question';
+      this.toastService.show(message, 'error');
+      return;
     }
 
-    // Navigate back to the create/edit questionnaire page
-    if (this.questionnaire && this.questionnaire.id !== 'preview') {
-      this.router.navigate(['/create-questionnaire', this.questionnaire.id]);
+    // Add a "skipped" message to chat
+    const skipMessage = this.lang.currentLanguage === 'he' ? 'ללא תשובה' : 'No answer';
+    this.chatMessages.push({
+      type: 'user',
+      text: skipMessage
+    });
+
+    // Clear the response for this question
+    this.responses[question.id] = null;
+
+    setTimeout(() => {
+      this.shouldScrollToBottom = true;
+    }, 100);
+
+    // Move to next question or finish
+    this.currentQuestionIndex++;
+
+    if (this.currentQuestionIndex < this.questions.length) {
+      setTimeout(() => {
+        this.showCurrentQuestion();
+      }, 300);
     } else {
+      // All questions answered, submit
+      setTimeout(() => {
+        this.submitAllResponses();
+      }, 300);
+    }
+  }
+
+  goBackToEdit() {
+    // For preview mode, close the tab and clear preview data
+    if (this.questionnaire && this.questionnaire.id === 'preview') {
+      sessionStorage.removeItem('preview_questionnaire');
+      window.close();
+      return;
+    }
+
+    // For non-preview owner view, navigate back to the questionnaire edit page
+    if (this.questionnaire && this.questionnaire.id !== 'preview') {
+      this.router.navigate(['/questionnaires/edit', this.questionnaire.id]);
+    } else {
+      // Fallback to questionnaires list
       this.router.navigate(['/questionnaires']);
+    }
+  }
+
+  switchToFormView() {
+    const id = this.route.snapshot.paramMap.get('id');
+    if (id) {
+      this.router.navigate(['/questionnaires/live', id]);
     }
   }
 
@@ -592,12 +808,47 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
   }
 
   // File upload handler
-  onFileSelected(event: Event) {
+  async onFileSelected(event: Event) {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length > 0) {
-      this.uploadedFile = input.files[0];
-      this.uploadedFileName = input.files[0].name;
-      this.currentAnswer = `File uploaded: ${this.uploadedFileName}`;
+      const file = input.files[0];
+
+      try {
+        // Upload file to Supabase Storage
+        const timestamp = new Date().getTime();
+        const fileExtension = file.name.split('.').pop();
+        const fileName = `${timestamp}_${Math.random().toString(36).substring(7)}.${fileExtension}`;
+        const filePath = `uploads/${fileName}`;
+
+        const { data, error } = await this.supabaseService.client.storage
+          .from('questionnaire-files')
+          .upload(filePath, file, {
+            cacheControl: '3600',
+            upsert: false
+          });
+
+        if (error) throw error;
+
+        // Get public URL
+        const { data: publicUrlData } = this.supabaseService.client.storage
+          .from('questionnaire-files')
+          .getPublicUrl(filePath);
+
+        this.uploadedFile = file;
+        this.uploadedFileName = file.name;
+        this.currentAnswer = `File: ${publicUrlData.publicUrl}`;
+
+        this.toastService.show(
+          this.lang.currentLanguage === 'he' ? 'הקובץ הועלה בהצלחה' : 'File uploaded successfully',
+          'success'
+        );
+      } catch (error: any) {
+        console.error('Error uploading file:', error);
+        this.toastService.show(
+          this.lang.currentLanguage === 'he' ? 'שגיאה בהעלאת הקובץ' : 'Error uploading file',
+          'error'
+        );
+      }
     }
   }
 
@@ -648,10 +899,51 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
     }
   }
 
-  stopRecording() {
+  async stopRecording() {
     if (this.mediaRecorder && this.isRecording) {
       this.mediaRecorder.stop();
       this.isRecording = false;
+
+      // Wait a bit for the onstop event to fire and create the blob
+      setTimeout(async () => {
+        if (this.audioBlob) {
+          try {
+            // Upload audio to Supabase Storage
+            const timestamp = new Date().getTime();
+            const fileName = `audio_${timestamp}_${Math.random().toString(36).substring(7)}.webm`;
+            const filePath = `uploads/${fileName}`;
+
+            const { data, error } = await this.supabaseService.client.storage
+              .from('questionnaire-files')
+              .upload(filePath, this.audioBlob, {
+                cacheControl: '3600',
+                upsert: false,
+                contentType: 'audio/webm'
+              });
+
+            if (error) throw error;
+
+            // Get public URL
+            const { data: publicUrlData } = this.supabaseService.client.storage
+              .from('questionnaire-files')
+              .getPublicUrl(filePath);
+
+            // Update response with URL
+            this.currentAnswer = `Audio: ${publicUrlData.publicUrl}`;
+
+            this.toastService.show(
+              this.lang.currentLanguage === 'he' ? 'ההקלטה נשמרה בהצלחה' : 'Recording saved successfully',
+              'success'
+            );
+          } catch (error: any) {
+            console.error('Error uploading audio:', error);
+            this.toastService.show(
+              this.lang.currentLanguage === 'he' ? 'שגיאה בשמירת ההקלטה' : 'Error saving recording',
+              'error'
+            );
+          }
+        }
+      }, 500);
     }
   }
 }

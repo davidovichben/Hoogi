@@ -1,0 +1,114 @@
+<div class="dialog-backdrop" (click)="onBackdropClick($event)">
+  <div class="dialog-content" [attr.dir]="lang.currentLanguage === 'he' ? 'rtl' : 'ltr'">
+    <!-- Header -->
+    <div class="dialog-header">
+      <h2 class="dialog-title">{{ questionnaireTitle }}</h2>
+      <button class="close-btn" (click)="closeDialog()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Client Info -->
+    <div class="client-info-header">
+      <div class="info-item">
+        <span class="info-label">{{ lang.t('leads.clientName') }}:</span>
+        <span class="info-value">{{ clientName }}</span>
+      </div>
+    </div>
+
+    <!-- Content -->
+    <div class="dialog-body">
+      @if (loading) {
+        <div class="loading-state">
+          <p>{{ lang.t('common.loading') }}</p>
+        </div>
+      } @else if (questionsAndAnswers.length === 0) {
+        <div class="empty-state">
+          <p>{{ lang.t('leads.noQuestionsFound') }}</p>
+        </div>
+      } @else {
+        <div class="questions-list">
+          @for (qa of questionsAndAnswers; track $index) {
+            <div class="question-answer-item">
+              <div class="question-text">
+                <span class="question-number">{{ $index + 1 }}.</span>
+                {{ qa.question_text }}
+              </div>
+
+              <!-- Audio File -->
+              @if (isAudioFile(qa.answer)) {
+                <div class="answer-media">
+                  <div class="media-label">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M9 18V5l12-2v13"></path>
+                      <circle cx="6" cy="18" r="3"></circle>
+                      <circle cx="18" cy="16" r="3"></circle>
+                    </svg>
+                    {{ lang.t('leads.audioRecording') }}
+                  </div>
+                  <audio controls class="audio-player">
+                    <source [src]="getFileName(qa.answer)" type="audio/webm">
+                    {{ lang.t('leads.audioNotSupported') }}
+                  </audio>
+                  <div class="file-name">{{ getFileNameOnly(qa.answer) }}</div>
+                </div>
+              }
+              <!-- Image File -->
+              @else if (isImageFile(qa.answer)) {
+                <div class="answer-media">
+                  <div class="media-label">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                      <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                      <polyline points="21 15 16 10 5 21"></polyline>
+                    </svg>
+                    {{ lang.t('leads.uploadedImage') }}
+                  </div>
+                  <img [src]="getFileName(qa.answer)" [alt]="lang.t('leads.uploadedImage')" class="uploaded-image">
+                  <div class="file-name">{{ getFileNameOnly(qa.answer) }}</div>
+                </div>
+              }
+              <!-- Downloadable File -->
+              @else if (isDownloadableFile(qa.answer)) {
+                <div class="answer-media">
+                  <div class="media-label">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
+                      <polyline points="13 2 13 9 20 9"></polyline>
+                    </svg>
+                    {{ lang.t('leads.uploadedFile') }}
+                  </div>
+                  <a [href]="getFileName(qa.answer)" [download]="getFileNameOnly(qa.answer)" class="download-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                      <polyline points="7 10 12 15 17 10"></polyline>
+                      <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    {{ lang.t('common.download') }}
+                  </a>
+                  <div class="file-name">{{ getFileNameOnly(qa.answer) }}</div>
+                </div>
+              }
+              <!-- Regular Text Answer -->
+              @else {
+                <div class="answer-text" [class.no-answer]="!qa.answer">
+                  {{ formatAnswer(qa.answer, qa.question_type) }}
+                </div>
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- Footer -->
+    <div class="dialog-footer">
+      <button class="close-footer-btn" (click)="closeDialog()">
+        {{ lang.t('common.close') }}
+      </button>
+    </div>
+  </div>
+</div>

@@ -203,6 +203,17 @@ export class CreateQuestionnaireQuestionsComponent implements OnInit {
   ngOnInit() {}
 
   close() {
+    // Prevent closing while AI is generating questions
+    if (this.loadingSuggestions || this.loadingSingleSuggestion) {
+      this.toast.show(
+        this.lang.currentLanguage === 'he'
+          ? 'אנא המתן עד שה-AI יסיים ליצור שאלות'
+          : 'Please wait for AI to finish generating questions',
+        'error'
+      );
+      return;
+    }
+
     // Validate that all non-fixed questions have text
     const invalidQuestions = this.questions.filter(q =>
       !q.isFixed &&
@@ -250,6 +261,17 @@ export class CreateQuestionnaireQuestionsComponent implements OnInit {
   }
 
   showPreview() {
+    // Prevent preview while AI is generating questions
+    if (this.loadingSuggestions || this.loadingSingleSuggestion) {
+      this.toast.show(
+        this.lang.currentLanguage === 'he'
+          ? 'אנא המתן עד שה-AI יסיים ליצור שאלות'
+          : 'Please wait for AI to finish generating questions',
+        'error'
+      );
+      return;
+    }
+
     // Validate that all non-fixed questions have text
     const invalidQuestions = this.questions.filter(q =>
       !q.isFixed &&
@@ -451,6 +473,9 @@ export class CreateQuestionnaireQuestionsComponent implements OnInit {
 
   async loadAiSuggestedQuestions() {
     if (!this.profile) return;
+
+    // Prevent multiple simultaneous calls
+    if (this.loadingSuggestions) return;
 
     this.loadingSuggestions = true;
     try {
@@ -674,6 +699,9 @@ export class CreateQuestionnaireQuestionsComponent implements OnInit {
       );
       return;
     }
+
+    // Prevent multiple simultaneous calls
+    if (this.loadingSingleSuggestion) return;
 
     this.loadingSingleSuggestion = true;
     try {

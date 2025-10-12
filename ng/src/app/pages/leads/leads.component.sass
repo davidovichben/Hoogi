@@ -1,54 +1,813 @@
-.rtl
-  direction: rtl
-  text-align: right
+// Main container
+.leads-container
+  min-height: 100vh
+  padding: 1rem
 
-.tab-button
+  @media (min-width: 768px)
+    padding: 1.5rem
+
+// Card styling matching React component
+.leads-card
+  background: white
+  border-radius: 0.5rem
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)
+  padding: 1rem
+
+  @media (min-width: 768px)
+    padding: 1.5rem
+
+  @media (min-width: 1024px)
+    padding: 2rem
+
+// Back button
+.back-button-container
+  display: flex
+  align-items: center
+  margin-bottom: 1rem
+
+.back-button
+  display: flex
+  align-items: center
+  gap: 0.5rem
+  padding: 0.5rem 1rem
+  background: transparent
+  border: none
+  color: hsl(0, 0%, 45%)
+  font-size: 0.875rem
+  cursor: pointer
+  border-radius: 0.375rem
+  transition: all 0.2s
+
+  &:hover
+    color: hsl(0, 0%, 20%)
+    background: hsl(0, 0%, 96%)
+
+.back-arrow
+  font-size: 1rem
+
+// RTL support for back arrow
+[dir="rtl"] .back-arrow
+  transform: scaleX(-1)
+
+// Title
+.leads-title
+  display: flex
+  align-items: center
+  justify-content: flex-start
+  font-size: 1.25rem
+  font-weight: bold
+  margin-bottom: 1.5rem
+  gap: 0.5rem
+
+  @media (min-width: 768px)
+    font-size: 1.5rem
+
+  @media (min-width: 1024px)
+    font-size: 1.875rem
+
+.title-icon
+  width: 1.25rem
+  height: 1.25rem
+
+  @media (min-width: 768px)
+    width: 1.5rem
+    height: 1.5rem
+
+// Tabs
+.tabs-container
+  width: 100%
+
+.tabs-list
+  display: grid
+  grid-template-columns: repeat(2, 1fr)
+  gap: 0.5rem
+  margin-bottom: 1rem
+
+.tab-trigger
+  display: flex
+  align-items: center
+  justify-content: center
+  gap: 0.25rem
+  padding: 0.5rem 1rem
   border: 1px solid hsl(186, 30%, 88%)
   background: white
   color: hsl(186, 74%, 35%)
+  border-radius: 0.5rem
+  cursor: pointer
+  transition: all 0.2s
+  font-size: 0.875rem
+  font-weight: 500
 
   &:hover
-    background-color: hsl(186, 74%, 95%)
+    background: hsl(186, 74%, 95%)
 
   &.active
-    background-color: hsl(186, 74%, 35%)
+    background: hsl(186, 74%, 35%)
     color: white
     border-color: hsl(186, 74%, 35%)
 
-  &.disabled
-    opacity: 0.5
-    cursor: not-allowed
+.tab-icon
+  width: 1rem
+  height: 1rem
 
-.badge
+// Tab content
+.tab-content
+  margin-top: 0
+
+// Loading state
+.loading-state
+  padding: 4rem
+  text-align: center
+  color: hsl(0, 0%, 50%)
+
+// Empty state
+.empty-state
+  padding: 4rem
+  text-align: center
+
+.empty-title
+  font-size: 1.125rem
+  font-weight: 600
+  color: hsl(0, 0%, 40%)
+  margin-bottom: 0.5rem
+
+.empty-subtitle
+  font-size: 0.875rem
+  color: hsl(0, 0%, 50%)
+
+// Analytics placeholder
+.analytics-placeholder
+  padding: 4rem
+  text-align: center
+  color: hsl(0, 0%, 50%)
+  font-size: 1.125rem
+
+// Filter bar
+.filter-bar
+  display: flex
+  align-items: center
+  gap: 0.5rem
+  padding: 0.5rem
+  background: white
+  border: 1px solid hsl(186, 30%, 88%)
+  border-radius: 0.5rem
+  margin-bottom: 0.75rem
+  flex-wrap: wrap
+
+.filter-search
+  position: relative
+  flex: 1
+  min-width: 180px
+  max-width: 250px
+
+  .search-icon
+    position: absolute
+    right: 0.75rem
+    top: 50%
+    transform: translateY(-50%)
+    color: hsl(0, 0%, 60%)
+    pointer-events: none
+
+  .filter-input
+    width: 100%
+    padding: 0.5rem 0.75rem 0.5rem 2.25rem
+    font-size: 0.875rem
+    border: 1px solid hsl(214, 20%, 85%)
+    border-radius: 0.375rem
+    background: white
+    font-family: inherit
+    transition: all 0.2s
+
+    &:focus
+      outline: none
+      border-color: hsl(186, 74%, 35%)
+      box-shadow: 0 0 0 2px hsla(186, 74%, 35%, 0.1)
+
+    &::placeholder
+      color: hsl(0, 0%, 60%)
+
+[dir="rtl"] .filter-search .search-icon
+  right: auto
+  left: 0.75rem
+
+[dir="rtl"] .filter-search .filter-input
+  padding: 0.5rem 2.25rem 0.5rem 0.75rem
+
+.filter-date
+  flex: 1
+  min-width: 110px
+  height: 36px
+  padding: 0.5rem 0.75rem
+  font-size: 0.875rem
+  border: 1px solid hsl(214, 20%, 85%)
+  border-radius: 0.375rem
+  background: white
+  font-family: inherit
+  cursor: pointer
+  transition: all 0.2s
+
+  &:focus
+    outline: none
+    border-color: hsl(186, 74%, 35%)
+    box-shadow: 0 0 0 2px hsla(186, 74%, 35%, 0.1)
+
+.filter-select
+  min-width: 110px
+  height: 36px
+  padding: 0.5rem 0.75rem
+  font-size: 0.875rem
+  border: 1px solid hsl(214, 20%, 85%)
+  border-radius: 0.375rem
+  background: white
+  font-family: inherit
+  cursor: pointer
+  transition: all 0.2s
+
+  &:focus
+    outline: none
+    border-color: hsl(186, 74%, 35%)
+    box-shadow: 0 0 0 2px hsla(186, 74%, 35%, 0.1)
+
+  &:hover
+    border-color: hsl(214, 20%, 70%)
+
+  &:last-of-type
+    min-width: 140px
+
+.filter-reset-btn
+  height: 36px
+  padding: 0.5rem 1rem
+  font-size: 0.875rem
+  border: 1px solid hsl(214, 20%, 85%)
+  border-radius: 0.375rem
+  background: white
+  color: hsl(0, 0%, 40%)
+  font-family: inherit
+  cursor: pointer
+  transition: all 0.2s
+  white-space: nowrap
+
+  &:hover
+    background: hsl(0, 0%, 96%)
+    border-color: hsl(214, 20%, 70%)
+
+.filter-export-btn
+  display: flex
+  align-items: center
+  gap: 0.5rem
+  height: 36px
+  padding: 0.5rem 0.75rem
+  font-size: 0.875rem
+  font-weight: 500
+  border: none
+  border-radius: 0.375rem
+  background: #16a34a
+  color: white
+  font-family: inherit
+  cursor: pointer
+  transition: all 0.2s
+  white-space: nowrap
+
+  &:hover
+    background: #15803d
+
+// Table styles
+.table-header
+  display: grid
+  grid-template-columns: 0.5fr 2fr 1.5fr 1.5fr 1fr 160px 160px 1.5fr 160px 64px 64px
+  gap: 0.75rem
+  padding: 0.75rem 1rem
+  background: white
+  border: 1px solid hsl(186, 30%, 88%)
+  border-bottom: none
+  border-radius: 0.5rem 0.5rem 0 0
+  font-size: 14px
+  font-weight: 600
+  color: hsl(215, 16%, 47%)
+  overflow-x: auto
+
+.header-cell
+  display: flex
+  align-items: center
+  white-space: nowrap
+
+.header-checkbox
+  justify-content: center
+
+// Leads list
+.leads-list
+  border: 1px solid hsl(186, 30%, 88%)
+  border-radius: 0 0 0.5rem 0.5rem
+  background: white
+  overflow-x: auto
+
+.lead-row
+  display: grid
+  grid-template-columns: 0.5fr 2fr 1.5fr 1.5fr 1fr 160px 160px 1.5fr 160px 64px 64px
+  gap: 0.75rem
+  padding: 0.75rem 1rem
+  border-bottom: 1px solid hsl(186, 30%, 88%)
+  align-items: center
+  transition: background 0.2s
+
+  &:last-child
+    border-bottom: none
+
+  &:hover
+    background: hsl(0, 0%, 98%)
+
+.cell
+  display: flex
+  align-items: center
+  font-size: 0.875rem
+
+.cell-checkbox
+  justify-content: center
+
+.cell-id
+  font-family: monospace
+  font-size: 0.75rem
+  color: hsl(0, 0%, 50%)
+
+.cell-questionnaire
+  .questionnaire-title-btn
+    background: none
+    border: none
+    padding: 0
+    font-size: 0.875rem
+    color: hsl(186, 74%, 35%)
+    font-weight: 500
+    cursor: pointer
+    text-decoration: underline
+    text-align: start
+    font-family: inherit
+    transition: color 0.2s
+
+    &:hover
+      color: hsl(186, 74%, 25%)
+      text-decoration: none
+
+.cell-client-name
+  .client-info
+    display: flex
+    align-items: center
+    gap: 0.75rem
+
+  .client-details
+    display: flex
+    flex-direction: column
+    gap: 0.25rem
+
+  .client-name
+    font-weight: 500
+
+  .client-date
+    display: flex
+    align-items: center
+    gap: 0.25rem
+
+  .calendar-icon
+    width: 12px
+    height: 12px
+    color: #647BAF
+
+  .date-value
+    font-size: 0.75rem
+    color: #647BAF
+
+.cell-channel
+  .channel-chip
+    display: inline-flex
+    align-items: center
+    padding: 0.125rem 0.5rem
+    border-radius: 0.25rem
+    font-size: 0.75rem
+    font-weight: 500
+    line-height: 1.25rem
+    background: #faf5ff
+    border: 1px solid #e9d5ff
+    color: #7c3aed
+
+.cell-automations
+  .automation-badge
+    display: inline-flex
+    align-items: center
+    padding: 0.125rem 0.5rem
+    border-radius: 0.25rem
+    font-size: 0.75rem
+    font-weight: 500
+    line-height: 1.25rem
+
+  .automation-ai
+    background: #eff6ff
+    border: 1px solid #bfdbfe
+    color: #1d4ed8
+
+  .automation-ai-personal
+    background: #faf5ff
+    border: 1px solid #e9d5ff
+    color: #7c3aed
+
+  .automation-personal
+    background: #f0fdf4
+    border: 1px solid #bbf7d0
+    color: #15803d
+
+  .automation-standard
+    background: #f9fafb
+    border: 1px solid #e5e7eb
+    color: #374151
+
+  .automation-default
+    background: #fff7ed
+    border: 1px solid #fed7aa
+    color: #c2410c
+
+  .automations-list
+    font-size: 0.75rem
+    color: hsl(0, 0%, 50%)
+
+.cell-status
+  .status-select
+    width: 160px
+    padding: 0.25rem 0.5rem
+    font-size: 0.75rem
+    font-weight: 500
+    border: 1px solid hsl(214, 20%, 85%)
+    border-radius: 0.375rem
+    background: white
+    color: hsl(0, 0%, 20%)
+    cursor: pointer
+    transition: all 0.2s
+    font-family: inherit
+
+    &:hover
+      border-color: hsl(214, 20%, 70%)
+      background: hsl(214, 20%, 98%)
+
+    &:focus
+      outline: none
+      border-color: hsl(214, 50%, 60%)
+      box-shadow: 0 0 0 2px hsla(214, 50%, 60%, 0.1)
+
+  .status-badge
+    background: hsl(186, 74%, 35%)
+    color: white
+    padding: 0.25rem 0.75rem
+    border-radius: 0.375rem
+    font-size: 0.75rem
+    font-weight: 500
+
+.cell-sub-status
+  .sub-status-select
+    width: 160px
+    padding: 0.25rem 0.5rem
+    font-size: 0.75rem
+    font-weight: 500
+    border: 1px solid hsl(214, 20%, 85%)
+    border-radius: 0.375rem
+    background: white
+    color: hsl(0, 0%, 20%)
+    cursor: pointer
+    transition: all 0.2s
+    font-family: inherit
+
+    &:hover:not(:disabled)
+      border-color: hsl(214, 20%, 70%)
+      background: hsl(214, 20%, 98%)
+
+    &:focus
+      outline: none
+      border-color: hsl(214, 50%, 60%)
+      box-shadow: 0 0 0 2px hsla(214, 50%, 60%, 0.1)
+
+    &:disabled
+      background: hsl(0, 0%, 96%)
+      color: hsl(0, 0%, 60%)
+      cursor: not-allowed
+      border-color: hsl(214, 20%, 90%)
+
+.cell-quick-actions
+  .quick-actions-buttons
+    display: flex
+    align-items: center
+    gap: 0.25rem
+
+  .quick-action-btn
+    display: flex
+    align-items: center
+    justify-content: center
+    width: 32px
+    height: 32px
+    border-radius: 0.25rem
+    transition: all 0.2s
+    cursor: pointer
+    border: 1px solid
+
+  .phone-btn
+    background: #f0fdf4
+    border-color: #bbf7d0
+    color: #16a34a
+
+    &:hover:not(.disabled)
+      background: #dcfce7
+
+    &.disabled
+      opacity: 0.6
+      cursor: not-allowed
+
+  .whatsapp-btn
+    background: #f0fdf4
+    border-color: #bbf7d0
+    color: #16a34a
+
+    &:hover:not(.disabled)
+      background: #dcfce7
+
+    &.disabled
+      opacity: 0.6
+      cursor: not-allowed
+
+  .sms-btn
+    background: #eff6ff
+    border-color: #bfdbfe
+    color: #2563eb
+
+    &:hover:not(.disabled)
+      background: #dbeafe
+
+    &.disabled
+      opacity: 0.6
+      cursor: not-allowed
+
+  .email-btn
+    background: #faf5ff
+    border-color: #e9d5ff
+    color: #9333ea
+
+    &:hover:not(.disabled)
+      background: #f3e8ff
+
+    &.disabled
+      opacity: 0.6
+      cursor: not-allowed
+
+.cell-comments
+  .comments-container
+    display: flex
+    justify-content: center
+
+  .comment-icon-btn
+    display: flex
+    align-items: center
+    justify-content: center
+    padding: 0.375rem
+    background: transparent
+    border: 1px solid hsl(186, 30%, 88%)
+    border-radius: 0.375rem
+    cursor: pointer
+    transition: all 0.2s
+    color: hsl(0, 0%, 50%)
+
+    &:hover
+      background: hsl(186, 74%, 95%)
+      border-color: hsl(186, 74%, 35%)
+      color: hsl(186, 74%, 35%)
+
+    &.has-comment
+      background: hsl(186, 74%, 35%)
+      border-color: hsl(186, 74%, 35%)
+      color: white
+
+      &:hover
+        background: hsl(186, 74%, 30%)
+
+// Comment popup (outside table structure)
+.comment-popup
+  position: fixed
+  width: 300px
+  background: white
+  border: 1px solid hsl(186, 30%, 88%)
+  border-radius: 0.5rem
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)
+  padding: 1rem
+  z-index: 1000
+
+.comment-textarea
+  width: 100%
+  padding: 0.5rem
+  border: 1px solid hsl(186, 30%, 88%)
+  border-radius: 0.375rem
+  font-size: 0.875rem
+  resize: vertical
+  font-family: inherit
+
+  &:focus
+    outline: none
+    border-color: hsl(186, 74%, 35%)
+    box-shadow: 0 0 0 3px hsla(186, 74%, 35%, 0.1)
+
+  &::placeholder
+    color: hsl(0, 0%, 60%)
+
+.comment-popup-actions
+  display: flex
+  gap: 0.5rem
+  margin-top: 0.75rem
+  justify-content: flex-end
+
+.save-btn, .cancel-btn
+  padding: 0.375rem 0.875rem
+  border-radius: 0.375rem
+  font-size: 0.875rem
+  cursor: pointer
+  transition: all 0.2s
+  border: 1px solid
+
+.save-btn
+  background: hsl(186, 74%, 35%)
+  color: white
+  border-color: hsl(186, 74%, 35%)
+
+  &:hover
+    background: hsl(186, 74%, 30%)
+
+.cancel-btn
+  background: white
+  color: hsl(0, 0%, 50%)
+  border-color: hsl(186, 30%, 88%)
+
+  &:hover
+    background: hsl(0, 0%, 96%)
+
+.cell-created
+  .date-text
+    font-size: 0.75rem
+    color: hsl(0, 0%, 50%)
+
+.no-data
+  color: hsl(0, 0%, 60%)
+  font-style: italic
+
+// Checkbox
+.checkbox
+  width: 1rem
+  height: 1rem
+  border-radius: 0.25rem
+  accent-color: hsl(186, 74%, 35%)
+  cursor: pointer
+
+// Lead info
+.lead-info
+  display: flex
+  align-items: center
+  gap: 0.75rem
+
+.avatar
+  width: 2.5rem
+  height: 2.5rem
+  border-radius: 9999px
+  background: hsl(217, 91%, 90%)
+  display: flex
+  align-items: center
+  justify-content: center
+  color: hsl(217, 91%, 60%)
+  font-weight: 600
+
+.lead-meta
+  display: flex
+  flex-direction: column
+  gap: 0.25rem
+
+.lead-name
+  font-weight: 600
+
+.lead-status-date
+  display: flex
+  align-items: center
+  gap: 0.5rem
+  font-size: 0.75rem
+  color: hsl(0, 0%, 50%)
+
+// Status badges
+.status-badge
   display: inline-block
   padding: 2px 8px
   border-radius: 4px
   font-size: 0.75rem
   font-weight: 500
 
-  &-new
-    background-color: #3b82f6
-    color: white
+.status-new
+  background-color: #3b82f6
+  color: white
 
-  &-active
-    background-color: #10b981
-    color: white
+.status-active
+  background-color: #10b981
+  color: white
 
-  &-waiting
-    background-color: #f59e0b
-    color: white
+.status-waiting
+  background-color: #f59e0b
+  color: white
 
-  &-converted
-    background-color: #6b7280
-    color: white
+.status-converted
+  background-color: #6b7280
+  color: white
 
-.action-button
-  padding: 4px 8px
-  border: 1px solid hsl(186, 30%, 88%)
-  background: white
-  border-radius: 6px
-  transition: all 0.2s
+.lead-date
+  color: hsl(0, 0%, 50%)
+
+// Contact details
+.contact-list
+  display: flex
+  flex-direction: column
+  gap: 0.25rem
+  font-size: 0.875rem
+
+.contact-item
+  display: flex
+  align-items: center
+  gap: 0.5rem
+
+.contact-email a,
+.contact-phone a
+  color: hsl(217, 91%, 60%)
+  text-decoration: none
 
   &:hover
-    background-color: hsl(186, 74%, 95%)
+    text-decoration: underline
+
+.contact-whatsapp
+  color: hsl(142, 76%, 36%)
+
+.contact-icon
+  font-size: 1rem
+
+.contact-link
+  color: hsl(217, 91%, 60%)
+  text-decoration: none
+
+  &:hover
+    text-decoration: underline
+
+// Automation select
+.automation-select
+  width: 100%
+  padding: 0.375rem 0.75rem
+  font-size: 0.875rem
+  border: 1px solid hsl(186, 30%, 88%)
+  border-radius: 0.5rem
+  background: white
+  cursor: pointer
+
+  &:focus
+    outline: none
     border-color: hsl(186, 74%, 35%)
+    box-shadow: 0 0 0 3px hsla(186, 74%, 35%, 0.1)
+
+// Tags
+.no-tags
+  font-size: 0.875rem
+  color: hsl(0, 0%, 50%)
+
+// Action buttons
+.action-buttons
+  display: flex
+  align-items: center
+  gap: 0.5rem
+
+.action-btn
+  padding: 0.25rem 0.5rem
+  border: 1px solid hsl(186, 30%, 88%)
+  background: white
+  border-radius: 0.375rem
+  cursor: pointer
+  transition: all 0.2s
+  font-size: 1rem
+
+  &:hover
+    background: hsl(186, 74%, 95%)
+    border-color: hsl(186, 74%, 35%)
+
+// Responsive adjustments
+@media (max-width: 1024px)
+  .table-header,
+  .lead-row
+    grid-template-columns: 0.5fr 2fr 1.5fr 1.5fr 1fr 1fr 0.5fr
+    gap: 0.5rem
+    padding: 0.75rem 1rem
+
+  .leads-title
+    font-size: 1.25rem
+
+@media (max-width: 768px)
+  .table-header,
+  .lead-row
+    display: flex
+    flex-direction: column
+    gap: 0.5rem
+
+  .cell
+    width: 100%
+
+  .lead-info
+    width: 100%

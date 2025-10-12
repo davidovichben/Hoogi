@@ -12,8 +12,21 @@ interface Questionnaire {
   token?: string | null;
 }
 
-type ActiveTab = 'triggers' | 'response' | 'preferences';
+interface SelectedTemplate {
+  id: string;
+  name: string;
+  channels: Array<'email' | 'whatsapp' | 'sms'>;
+}
+
 type LinkMode = 'form' | 'chat' | 'qr' | null;
+
+// Mock automation templates
+const AUTOMATION_TEMPLATES = [
+  { id: 'template-1', name: 'תבנית תודה בסיסית', triggerType: 'lead' },
+  { id: 'template-2', name: 'תבנית מעקב לאחר מילוי', triggerType: 'lead' },
+  { id: 'template-3', name: 'תבנית הנחה מיוחדת', triggerType: 'lead' },
+  { id: 'template-4', name: 'תבנית זימון לפגישה', triggerType: 'lead' },
+];
 
 @Component({
   selector: 'app-distribution-hub',
@@ -25,16 +38,16 @@ type LinkMode = 'form' | 'chat' | 'qr' | null;
 export class DistributionHubComponent implements OnInit {
   @ViewChild('previewSection') previewSection?: ElementRef;
 
-  activeTab: ActiveTab = 'response';
   selectedQuestionnaire = '';
-  selectedTemplate = '';
-  enableWhatsApp = false;
-  enableEmail = false;
-  enableSMS = false;
   questionnaires: Questionnaire[] = [];
   loading = false;
   currentMode: LinkMode = null;
   currentUrl = '';
+
+  // Template management
+  selectedTemplates: SelectedTemplate[] = [];
+  availableTemplates = AUTOMATION_TEMPLATES;
+  newTemplateId = '';
 
   constructor(
     public lang: LanguageService,
@@ -47,11 +60,8 @@ export class DistributionHubComponent implements OnInit {
   async ngOnInit() {
     await this.loadQuestionnaires();
 
-    // Check for tab from query params
+    // Check for questionnaireId from query params
     this.route.queryParams.subscribe(params => {
-      if (params['tab']) {
-        this.activeTab = params['tab'] as ActiveTab;
-      }
       if (params['questionnaireId']) {
         this.selectedQuestionnaire = params['questionnaireId'];
       }
@@ -84,16 +94,8 @@ export class DistributionHubComponent implements OnInit {
     }
   }
 
-  setActiveTab(tab: ActiveTab) {
-    this.activeTab = tab;
-  }
-
   goBack() {
     window.history.back();
-  }
-
-  navigateToAutomations() {
-    this.router.navigate(['/automations'], { queryParams: { tab: 'templates' } });
   }
 
   onQuestionnaireChange() {
@@ -102,16 +104,65 @@ export class DistributionHubComponent implements OnInit {
     this.currentUrl = '';
   }
 
-  toggleChannel(channel: 'whatsapp' | 'email' | 'sms') {
-    if (!this.selectedQuestionnaire) return;
+  // Template management methods
+  addTemplate() {
+    if (!this.newTemplateId) return;
 
-    if (channel === 'whatsapp') {
-      this.enableWhatsApp = !this.enableWhatsApp;
-    } else if (channel === 'email') {
-      this.enableEmail = !this.enableEmail;
-    } else if (channel === 'sms') {
-      this.enableSMS = !this.enableSMS;
+    if (this.selectedTemplates.length >= 3) {
+      this.toast.show(
+        this.lang.currentLanguage === 'he' ? 'ניתן לבחור עד 3 תבניות בלבד' : 'Can select up to 3 templates only',
+        'error'
+      );
+      return;
     }
+
+    const template = this.availableTemplates.find(t => t.id === this.newTemplateId);
+    if (template) {
+      this.selectedTemplates.push({
+        id: template.id,
+        name: template.name,
+        channels: []
+      });
+      this.newTemplateId = '';
+    }
+  }
+
+  removeTemplate(index: number) {
+    this.selectedTemplates.splice(index, 1);
+  }
+
+  toggleChannelForTemplate(templateIndex: number, channel: 'email' | 'whatsapp' | 'sms') {
+    const template = this.selectedTemplates[templateIndex];
+    const channelIndex = template.channels.indexOf(channel);
+
+    if (channelIndex > -1) {
+      // Remove channel
+      template.channels.splice(channelIndex, 1);
+    } else {
+      // Add channel
+      template.channels.push(channel);
+    }
+  }
+
+  isChannelUsedByOtherTemplates(currentTemplateIndex: number, channel: 'email' | 'whatsapp' | 'sms'): boolean {
+    return this.selectedTemplates.some((t, idx) =>
+      idx !== currentTemplateIndex && t.channels.includes(channel)
+    );
+  }
+
+  getUsedChannels(): Array<'email' | 'whatsapp' | 'sms'> {
+    return this.selectedTemplates.flatMap(t => t.channels);
+  }
+
+  getAvailableChannels(templateIndex: number): Array<'email' | 'whatsapp' | 'sms'> {
+    const allChannels: Array<'email' | 'whatsapp' | 'sms'> = ['email', 'whatsapp', 'sms'];
+    return allChannels.filter(channel =>
+      !this.isChannelUsedByOtherTemplates(templateIndex, channel)
+    );
+  }
+
+  isTemplateAlreadySelected(templateId: string): boolean {
+    return this.selectedTemplates.some(t => t.id === templateId);
   }
 
   handleBuildLink(type: 'form' | 'chat' | 'qr') {
@@ -168,18 +219,59 @@ export class DistributionHubComponent implements OnInit {
     }
   }
 
-  handleCopyUrl() {
-    if (this.currentUrl) {
-      navigator.clipboard.writeText(this.currentUrl);
-      this.toast.show(this.lang.t('distribution.linkCopied'), 'success');
+  async handleCopyUrl() {
+    if (!this.currentUrl) return;
+
+    try {
+      // Try modern clipboard API
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(this.currentUrl);
+        this.toast.show(
+          this.lang.currentLanguage === 'he' ? 'הקישור הועתק ללוח' : 'Link copied to clipboard',
+          'success'
+        );
+      } else {
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = this.currentUrl;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.select();
+        const success = document.execCommand('copy');
+        document.body.removeChild(textArea);
+
+        if (success) {
+          this.toast.show(
+            this.lang.currentLanguage === 'he' ? 'הקישור הועתק ללוח' : 'Link copied to clipboard',
+            'success'
+          );
+        } else {
+          throw new Error('Copy command failed');
+        }
+      }
+    } catch (error) {
+      console.error('Failed to copy:', error);
+      this.toast.show(
+        this.lang.currentLanguage === 'he' ? 'שגיאה בהעתקת הקישור' : 'Failed to copy link',
+        'error'
+      );
     }
   }
 
-  get enabledChannels(): string[] {
-    const channels: string[] = [];
-    if (this.enableWhatsApp) channels.push('WhatsApp');
-    if (this.enableEmail) channels.push(this.lang.t('distribution.email'));
-    if (this.enableSMS) channels.push('SMS');
-    return channels;
+  navigateToAutomations() {
+    this.router.navigate(['/automations'], { queryParams: { tab: 'templates' } });
+  }
+
+  getChannelNameInHebrew(channel: 'email' | 'whatsapp' | 'sms'): string {
+    switch (channel) {
+      case 'email': return 'מייל';
+      case 'whatsapp': return 'וואטסאפ';
+      case 'sms': return 'SMS';
+    }
+  }
+
+  getFormattedChannels(template: SelectedTemplate): string {
+    return template.channels.map(ch => this.getChannelNameInHebrew(ch)).join(', ');
   }
 }

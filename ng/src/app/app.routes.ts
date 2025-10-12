@@ -19,7 +19,6 @@ export const routes: Routes = [
       { path: 'questionnaires', loadComponent: () => import('./pages/questionnaires/questionnaires.component').then(m => m.QuestionnairesComponent) },
       { path: 'questionnaires/new', loadComponent: () => import('./pages/create-questionnaire/create-questionnaire.component').then(m => m.CreateQuestionnaireComponent) },
       { path: 'questionnaires/edit/:id', loadComponent: () => import('./pages/create-questionnaire/create-questionnaire.component').then(m => m.CreateQuestionnaireComponent) },
-      { path: 'questionnaires/review/:id', loadComponent: () => import('./pages/questionnaire-review/questionnaire-review.component').then(m => m.QuestionnaireReviewComponent) },
       { path: 'questionnaires/live/:id', loadComponent: () => import('./pages/questionnaire-live/questionnaire-live').then(m => m.QuestionnaireLive) },
       { path: 'questionnaires/chat/:id', loadComponent: () => import('./pages/questionnaire-chat/questionnaire-chat').then(m => m.QuestionnaireChat) },
       { path: 'responses', redirectTo: '/leads', pathMatch: 'full' },

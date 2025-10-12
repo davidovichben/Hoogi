@@ -72,7 +72,7 @@ export class ProfileDetailsComponent implements OnInit {
   selectedImageFileName = '';
   newLink = '';
 
-  // Custom text fields for "Other" option
+  // Separate fields for "Other" option textboxes
   customOccupation = '';
   customSubOccupation = '';
 
@@ -90,8 +90,9 @@ export class ProfileDetailsComponent implements OnInit {
   }
 
   get subOccupations() {
-    if (this.formData.occupation && this.formData.occupation !== OTHER && OCCUPATIONS[this.formData.occupation]) {
-      return OCCUPATIONS[this.formData.occupation];
+    const occupation = this.formData.occupation;
+    if (occupation && occupation !== OTHER && occupation in OCCUPATIONS) {
+      return OCCUPATIONS[occupation as keyof typeof OCCUPATIONS];
     }
     return [];
   }
@@ -145,21 +146,21 @@ export class ProfileDetailsComponent implements OnInit {
           this.formData.occupation = occupation;
 
           // Handle suboccupation
-          if (suboccupation && this.formData.occupation) {
-            const validSubOccupations = OCCUPATIONS[this.formData.occupation] || [];
+          if (suboccupation) {
+            const validSubOccupations = occupation in OCCUPATIONS ? OCCUPATIONS[occupation as keyof typeof OCCUPATIONS] : [];
             if (validSubOccupations.includes(suboccupation)) {
               // It's a predefined sub-occupation
               this.formData.subOccupation = suboccupation;
             } else {
-              // It's a custom sub-occupation - set to OTHER and populate custom field
+              // It's a custom sub-occupation - set dropdown to OTHER and populate custom field
               this.formData.subOccupation = OTHER;
               this.customSubOccupation = suboccupation;
             }
           } else {
-            this.formData.subOccupation = suboccupation;
+            this.formData.subOccupation = '';
           }
         } else if (occupation) {
-          // It's a custom occupation - set to OTHER and populate custom field
+          // It's a custom occupation - set dropdown to OTHER and populate custom field
           this.formData.occupation = OTHER;
           this.customOccupation = occupation;
           this.formData.subOccupation = '';
@@ -184,6 +185,8 @@ export class ProfileDetailsComponent implements OnInit {
 
   onOccupationChange() {
     this.clearError('occupation');
+
+    // Reset suboccupation when occupation changes
     this.formData.subOccupation = '';
     this.customSubOccupation = '';
   }
@@ -201,13 +204,17 @@ export class ProfileDetailsComponent implements OnInit {
     const hasEmail = !!(this.formData.email || '').trim();
     const hasMobile = !!(this.formData.mobile || '').trim();
 
-    // Check occupation - if OTHER, check custom field
+    // Check occupation - if OTHER selected, check custom field, otherwise check dropdown
     const occOk = this.formData.occupation === OTHER
                   ? !!(this.customOccupation || '').trim()
                   : !!(this.formData.occupation || '').trim();
 
-    // Check suboccupation - only required if occupation is a predefined category
-    const subOk = this.formData.occupation === OTHER || !this.occupationKeys.includes(this.formData.occupation || '') ? true :
+    // Check suboccupation - only required if occupation is a predefined category with suboccupations
+    const needsSubOccupation = this.formData.occupation &&
+                                this.formData.occupation !== OTHER &&
+                                this.occupationKeys.includes(this.formData.occupation) &&
+                                this.subOccupations.length > 0;
+    const subOk = !needsSubOccupation ||
                   (this.formData.subOccupation === OTHER
                     ? !!(this.customSubOccupation || '').trim()
                     : !!(this.formData.subOccupation || '').trim());
@@ -374,6 +381,7 @@ export class ProfileDetailsComponent implements OnInit {
         background_color: this.formData.brandColor,
         logo_url: this.formData.logoUrl,
         image_url: this.formData.imageUrl,
+        // Save custom values if OTHER is selected, otherwise save dropdown value
         occupation: this.formData.occupation === OTHER ? this.customOccupation : this.formData.occupation,
         suboccupation: this.formData.subOccupation === OTHER ? this.customSubOccupation : this.formData.subOccupation,
         url_sources: this.formData.urlSources,

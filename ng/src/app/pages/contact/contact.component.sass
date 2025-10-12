@@ -1,0 +1,302 @@
+// Contact Page Styles - Matching LeadsResponses.tsx design
+
+.contact-page
+  max-width: 100%
+  margin: 0 auto
+
+  // Back button
+  .back-button
+    display: flex
+    align-items: center
+    gap: 0.5rem
+    font-size: 0.875rem
+    color: #6b7280
+    transition: all 0.2s
+
+    &:hover
+      color: #111827
+      background-color: #f9fafb
+
+  // Page title
+  .page-title
+    font-size: 1.875rem
+    font-weight: 700
+    margin-bottom: 1.5rem
+
+    @media (max-width: 768px)
+      font-size: 1.5rem
+
+    @media (max-width: 640px)
+      font-size: 1.25rem
+
+  // Tabs container
+  .tabs-container
+    .tabs-list
+      display: grid
+      grid-template-columns: repeat(2, 1fr)
+      gap: 0.5rem
+      margin-bottom: 1rem
+
+      .tab-button
+        padding: 0.75rem 1rem
+        border-radius: 0.5rem
+        font-weight: 500
+        background-color: #f3f4f6
+        color: #6b7280
+        border: none
+        cursor: pointer
+        transition: all 0.2s
+
+        &:hover
+          background-color: #e5e7eb
+          color: #374151
+
+        &.active
+          background-color: #3b82f6
+          color: white
+          box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1)
+
+          &:hover
+            background-color: #2563eb
+
+  // Messages tab
+  .messages-tab
+    .search-actions-bar
+      display: flex
+      align-items: center
+      justify-content: space-between
+      margin-bottom: 1rem
+      gap: 1rem
+
+      @media (max-width: 640px)
+        flex-direction: column
+        align-items: stretch
+
+      .search-box
+        flex: 1
+        max-width: 28rem
+
+        @media (max-width: 640px)
+          max-width: 100%
+
+        input
+          width: 100%
+          padding: 0.5rem 1rem
+          border: 1px solid #d1d5db
+          border-radius: 0.5rem
+
+          &:focus
+            outline: none
+            ring: 2px
+            ring-color: #3b82f6
+
+      .export-button
+        padding: 0.5rem 1rem
+        background-color: #3b82f6
+        color: white
+        border-radius: 0.5rem
+        border: none
+        cursor: pointer
+        transition: background-color 0.2s
+
+        &:hover
+          background-color: #2563eb
+
+    // Messages list
+    .messages-list
+      .message-card
+        background-color: white
+        border: 1px solid #e5e7eb
+        border-radius: 0.5rem
+        padding: 1rem
+        margin-bottom: 0.75rem
+        transition: all 0.2s
+
+        &:hover
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)
+
+        // Status badges
+        .status-badge
+          display: inline-block
+          padding: 0.25rem 0.5rem
+          font-size: 0.75rem
+          font-weight: 500
+          border-radius: 9999px
+
+          &.status-new
+            background-color: #dbeafe
+            color: #1e40af
+
+          &.status-responded
+            background-color: #d1fae5
+            color: #065f46
+
+          &.status-closed
+            background-color: #f3f4f6
+            color: #374151
+
+        // Priority badges
+        .priority-badge
+          display: inline-block
+          padding: 0.25rem 0.5rem
+          font-size: 0.75rem
+          font-weight: 500
+          border-radius: 9999px
+
+          &.priority-high
+            background-color: #fee2e2
+            color: #991b1b
+
+          &.priority-medium
+            background-color: #fef3c7
+            color: #92400e
+
+          &.priority-low
+            background-color: #f3f4f6
+            color: #6b7280
+
+        .action-btn
+          padding: 0.25rem 0.75rem
+          font-size: 0.875rem
+          border-radius: 0.25rem
+          border: none
+          cursor: pointer
+          transition: all 0.2s
+
+          &:hover
+            transform: translateY(-1px)
+
+  // Analytics tab
+  .analytics-tab
+    .stats-grid
+      display: grid
+      grid-template-columns: repeat(4, 1fr)
+      gap: 1rem
+      margin-bottom: 1.5rem
+
+      @media (max-width: 1024px)
+        grid-template-columns: repeat(2, 1fr)
+
+      @media (max-width: 640px)
+        grid-template-columns: 1fr
+
+      .stat-card
+        padding: 1.5rem
+        border-radius: 0.5rem
+
+        h3
+          font-size: 0.875rem
+          font-weight: 500
+          margin-bottom: 0.5rem
+
+        p
+          font-size: 1.875rem
+          font-weight: 700
+
+    .chart-container
+      background-color: white
+      border: 1px solid #e5e7eb
+      border-radius: 0.5rem
+      padding: 1.5rem
+      margin-bottom: 1.5rem
+
+      h2
+        font-size: 1.125rem
+        font-weight: 600
+        color: #111827
+        margin-bottom: 1rem
+
+      .chart-placeholder
+        background-color: #f9fafb
+        border-radius: 0.5rem
+        height: 16rem
+        display: flex
+        align-items: center
+        justify-content: center
+
+        p
+          color: #6b7280
+
+    .topics-container
+      background-color: white
+      border: 1px solid #e5e7eb
+      border-radius: 0.5rem
+      padding: 1.5rem
+
+      h2
+        font-size: 1.125rem
+        font-weight: 600
+        color: #111827
+        margin-bottom: 1rem
+
+      .topic-item
+        display: flex
+        align-items: center
+        justify-content: space-between
+        margin-bottom: 0.75rem
+
+        &:last-child
+          margin-bottom: 0
+
+  // Loading state
+  .loading-state
+    text-align: center
+    padding: 3rem 0
+
+    .animate-spin
+      animation: spin 1s linear infinite
+      border-radius: 9999px
+      height: 3rem
+      width: 3rem
+      border-bottom-width: 2px
+      border-color: #3b82f6
+      margin: 0 auto
+
+    p
+      margin-top: 1rem
+      color: #6b7280
+
+  // Empty state
+  .empty-state
+    text-align: center
+    padding: 3rem 0
+
+    svg
+      margin: 0 auto 1rem
+      color: #9ca3af
+
+    p
+      &:first-of-type
+        font-size: 1.125rem
+        font-weight: 600
+        color: #6b7280
+
+      &:last-of-type
+        font-size: 0.875rem
+        color: #9ca3af
+        margin-top: 0.5rem
+
+// RTL Support
+.contact-page[dir="rtl"]
+  .back-button
+    svg
+      transform: rotate(180deg)
+
+  .page-title
+    svg
+      margin-right: 0
+      margin-left: 0.5rem
+
+// Animations
+@keyframes spin
+  from
+    transform: rotate(0deg)
+  to
+    transform: rotate(360deg)
+
+// Utility classes
+.line-clamp-2
+  display: -webkit-box
+  -webkit-line-clamp: 2
+  -webkit-box-orient: vertical
+  overflow: hidden

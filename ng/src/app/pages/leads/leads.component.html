@@ -1,311 +1,385 @@
-<div class="h-screen flex flex-col" [class.rtl]="lang.currentLanguage === 'he'">
-  <!-- Header with tabs -->
-  <div class="bg-white border-b px-6 py-4" style="border-color: hsl(186, 30%, 88%);">
-    <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold">{{ lang.t('leads.title') }}</h1>
-      <div class="flex items-center gap-4">
-        <input
-          type="text"
-          [(ngModel)]="searchQuery"
-          [placeholder]="lang.t('leads.searchPlaceholder')"
-          class="px-4 py-2 border rounded-lg w-80"
-          style="border-color: hsl(186, 30%, 88%);">
-        <button
-          class="px-6 py-2 text-white rounded-lg transition"
-          style="background-color: hsl(186, 74%, 35%);"
-          onmouseover="this.style.backgroundColor='hsl(186, 74%, 30%)'"
-          onmouseout="this.style.backgroundColor='hsl(186, 74%, 35%)'">
-          {{ lang.t('leads.exportLeads') }}
-        </button>
-      </div>
-    </div>
+<div class="leads-container" [attr.dir]="lang.currentLanguage === 'he' ? 'rtl' : 'ltr'">
+  <div class="leads-card">
+    <!-- Title -->
+    <h1 class="leads-title">
+      <svg class="title-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+      </svg>
+      {{ lang.t('leads.leadsAndResponses') }}
+    </h1>
 
     <!-- Tabs -->
-    <div class="flex gap-4 mt-4">
-      <button
-        [class.active]="activeTab === 'leads'"
-        (click)="activeTab = 'leads'"
-        class="tab-button px-6 py-2 rounded-lg transition">
-        {{ lang.t('questionnaires.leads') }}
-      </button>
-      <button
-        [class.active]="activeTab === 'responses'"
-        (click)="activeTab = 'responses'"
-        class="tab-button px-6 py-2 rounded-lg transition">
-        {{ lang.t('questionnaires.responses') }}
-      </button>
-      <button
-        [class.active]="activeTab === 'leadAnalysis'"
-        (click)="activeTab = 'leadAnalysis'"
-        class="tab-button px-6 py-2 rounded-lg transition">
-        {{ lang.t('leads.leadAnalysis') }}
-      </button>
-      <button
-        [class.active]="activeTab === 'responseAnalysis'"
-        (click)="activeTab = 'responseAnalysis'"
-        class="tab-button px-6 py-2 rounded-lg transition">
-        {{ lang.t('leads.responseAnalysis') }}
-      </button>
-    </div>
-  </div>
-
-  <!-- Automation notification -->
-  @if (showAutomationBanner) {
-    <div class="bg-blue-50 border-b px-6 py-3 flex items-center justify-between" style="border-color: hsl(186, 30%, 88%);">
-      <div class="flex items-center gap-3">
-        <img src="/assets/hoogi-avatar.png" alt="Hoogi" class="w-10 h-10" onerror="this.style.display='none'">
-        <span>{{ lang.t('leads.setAutomationType') }}</span>
-      </div>
-      <button (click)="showAutomationBanner = false" class="text-gray-500 hover:text-gray-700">✕</button>
-    </div>
-  }
-
-  <!-- Main content area -->
-  <div class="flex-1 overflow-hidden">
-    <div class="h-full overflow-y-auto px-6 py-4">
-
-      <!-- Lead Analysis Tab Content -->
-      @if (activeTab === 'leadAnalysis') {
-        <div class="space-y-6">
-          <!-- Summary Stats Row -->
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <!-- Left Column: Lead Stats -->
-            <div class="bg-white rounded-lg border p-6" style="border-color: hsl(186, 30%, 88%);">
-              <h2 class="text-xl font-bold mb-4">{{ lang.t('leads.leadSummary') }}</h2>
-
-              <div class="grid grid-cols-2 gap-4">
-                <!-- Total Leads -->
-                <div class="bg-blue-50 rounded-lg p-4">
-                  <div class="text-sm text-gray-600 mb-1">{{ lang.t('leads.totalLeads') }}</div>
-                  <div class="text-3xl font-bold text-blue-700">{{ totalLeads }}</div>
-                </div>
-
-                <!-- Active Leads -->
-                <div class="bg-green-50 rounded-lg p-4">
-                  <div class="text-sm text-gray-600 mb-1">{{ lang.t('leads.activeLeads') }}</div>
-                  <div class="text-3xl font-bold text-green-700">{{ activeLeads }}</div>
-                </div>
-
-                <!-- Conversion Rate -->
-                <div class="bg-purple-50 rounded-lg p-4">
-                  <div class="text-sm text-gray-600 mb-1">{{ lang.t('leads.conversionRate') }}</div>
-                  <div class="text-3xl font-bold text-purple-700">{{ conversionRate }}%</div>
-                </div>
-
-                <!-- Average Response Time -->
-                <div class="bg-orange-50 rounded-lg p-4">
-                  <div class="text-sm text-gray-600 mb-1">{{ lang.t('leads.avgResponseTime') }}</div>
-                  <div class="text-2xl font-bold text-orange-700">{{ lang.t('leads.avgResponseTimeValue') }}</div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Right Column: Lead Sources -->
-            <div class="bg-white rounded-lg border p-6" style="border-color: hsl(186, 30%, 88%);">
-              <h2 class="text-xl font-bold mb-4">{{ lang.t('leads.leadSources') }}</h2>
-
-              <div class="space-y-3">
-                <div class="flex items-center justify-between">
-                  <span class="text-gray-700">{{ lang.t('leads.facebookAds') }}</span>
-                  <div class="flex items-center gap-3 flex-1 mx-4">
-                    <div class="flex-1 bg-gray-200 rounded-full h-2">
-                      <div class="bg-blue-600 h-2 rounded-full" style="width: 90%;"></div>
-                    </div>
-                    <span class="font-bold text-blue-600 w-8">18</span>
-                  </div>
-                </div>
-
-                <div class="flex items-center justify-between">
-                  <span class="text-gray-700">{{ lang.t('questionnaires.whatsapp') }}</span>
-                  <div class="flex items-center gap-3 flex-1 mx-4">
-                    <div class="flex-1 bg-gray-200 rounded-full h-2">
-                      <div class="bg-blue-600 h-2 rounded-full" style="width: 75%;"></div>
-                    </div>
-                    <span class="font-bold text-blue-600 w-8">15</span>
-                  </div>
-                </div>
-
-                <div class="flex items-center justify-between">
-                  <span class="text-gray-700">{{ lang.t('leads.email') }}</span>
-                  <div class="flex items-center gap-3 flex-1 mx-4">
-                    <div class="flex-1 bg-gray-200 rounded-full h-2">
-                      <div class="bg-blue-600 h-2 rounded-full" style="width: 60%;"></div>
-                    </div>
-                    <span class="font-bold text-blue-600 w-8">12</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Improvement Tips -->
-          <div class="bg-white rounded-lg border p-6" style="border-color: hsl(186, 30%, 88%);">
-            <h2 class="text-xl font-bold mb-4">{{ lang.t('leads.improvementTips') }}</h2>
-
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <!-- Tip 1 -->
-              <div class="bg-blue-50 rounded-lg p-4 border-r-4 border-blue-500">
-                <div class="font-semibold text-blue-900 mb-2">
-                  {{ lang.t('leads.increaseLeadVolume') }}
-                </div>
-                <div class="text-sm text-blue-800">
-                  {{ lang.currentLanguage === 'he'
-                    ? 'הוספת טופס פאר קצר בכל יוער בולט יכולה להגדיל את כמות הלידים ב-30%>'
-                    : 'Adding a short form on every prominent page can increase leads by 30%+' }}
-                </div>
-              </div>
-
-              <!-- Tip 2 -->
-              <div class="bg-green-50 rounded-lg p-4 border-r-4 border-green-500">
-                <div class="font-semibold text-green-900 mb-2">
-                  {{ lang.t('leads.improveResponseTime') }}
-                </div>
-                <div class="text-sm text-green-800">
-                  {{ lang.currentLanguage === 'he'
-                    ? 'מעונה תוך שעה מגדיל קבלת הלידים הללו להגדיל את האימייל-האקציה ל-70%'
-                    : 'Responding within an hour can increase lead-to-action rate to 70%' }}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      }
-
-      <!-- Leads Table (for non-analysis tabs) -->
-      @if (activeTab !== 'leadAnalysis' && activeTab !== 'responseAnalysis') {
-      <!-- Table header -->
-      <div class="bg-white rounded-t-lg border border-b-0" style="border-color: hsl(186, 30%, 88%);">
-        <div class="grid grid-cols-12 gap-4 px-6 py-3 text-sm font-semibold text-gray-600">
-          <div class="col-span-1 text-center">
-            <input type="checkbox" class="w-4 h-4 rounded" style="accent-color: hsl(186, 74%, 35%);">
-          </div>
-          <div class="col-span-2">{{ lang.t('leads.detailsAndId') }}</div>
-          <div class="col-span-2">{{ lang.t('leads.contactDetails') }}</div>
-          <div class="col-span-2">{{ lang.t('leads.automation') }}</div>
-          <div class="col-span-2">{{ lang.t('leads.tags') }}</div>
-          <div class="col-span-2">{{ lang.t('leads.actions') }}</div>
-          <div class="col-span-1"></div>
-        </div>
+    <div class="tabs-container">
+      <div class="tabs-list">
+        <button
+          [class.active]="activeTab === 'leads'"
+          (click)="activeTab = 'leads'"
+          class="tab-trigger">
+          {{ lang.t('questionnaires.leads') }}
+        </button>
+        <button
+          [class.active]="activeTab === 'answers-analytics'"
+          (click)="activeTab = 'answers-analytics'"
+          class="tab-trigger">
+          <svg class="tab-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="20" x2="18" y2="10"></line>
+            <line x1="12" y1="20" x2="12" y2="4"></line>
+            <line x1="6" y1="20" x2="6" y2="14"></line>
+          </svg>
+          {{ lang.t('leads.answersAnalytics') }}
+        </button>
       </div>
 
-      <!-- Leads list -->
-      <div class="bg-white border rounded-b-lg" style="border-color: hsl(186, 30%, 88%);">
-        @if (leads.length === 0) {
-          <!-- Empty state -->
-          <div class="py-16 text-center">
-            <p class="text-lg font-semibold text-gray-600 mb-2">
-              {{ lang.t('leads.noLeadsToDisplay') }}
-            </p>
-            <p class="text-sm text-gray-500">
-              {{ lang.t('leads.newLeadsAppear') }}
-            </p>
-          </div>
-        }
-
-        @for (lead of leads; track lead.id) {
-          <div class="grid grid-cols-12 gap-4 px-6 py-4 border-b hover:bg-gray-50 transition items-center" style="border-color: hsl(186, 30%, 88%);">
-            <!-- Checkbox -->
-            <div class="col-span-1 text-center">
-              <input type="checkbox" class="w-4 h-4 rounded" style="accent-color: hsl(186, 74%, 35%);">
+      <!-- Leads Tab Content -->
+      @if (activeTab === 'leads') {
+        <div class="tab-content">
+          @if (loading) {
+            <div class="loading-state">
+              <p>{{ lang.t('common.loading') }}</p>
             </div>
-
-            <!-- Details & ID -->
-            <div class="col-span-2">
-              <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-semibold">
-                  {{ lead.name.charAt(0) }}
-                </div>
-                <div>
-                  <div class="font-semibold">{{ lead.name }}</div>
-                  <div class="flex items-center gap-2 text-xs text-gray-500">
-                    <span [class.badge-new]="lead.status === 'new'"
-                          [class.badge-active]="lead.status === 'active'"
-                          [class.badge-waiting]="lead.status === 'waiting'"
-                          [class.badge-converted]="lead.status === 'converted'"
-                          class="badge">
-                      {{ getStatusLabel(lead.status) }}
-                    </span>
-                    <span>{{ lead.date }}</span>
-                  </div>
-                </div>
+          } @else if (leads.length === 0) {
+            <div class="empty-state">
+              <p class="empty-title">{{ lang.t('leads.noLeadsToDisplay') }}</p>
+              <p class="empty-subtitle">{{ lang.t('leads.newLeadsAppear') }}</p>
+            </div>
+          } @else {
+            <!-- Filter Bar -->
+            <div class="filter-bar">
+              <!-- Search input -->
+              <div class="filter-search">
+                <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <path d="m21 21-4.35-4.35"></path>
+                </svg>
+                <input
+                  type="text"
+                  [(ngModel)]="filterText"
+                  (ngModelChange)="applyFilters()"
+                  [placeholder]="lang.t('leads.searchPlaceholder')"
+                  class="filter-input">
               </div>
-            </div>
 
-            <!-- Contact Details -->
-            <div class="col-span-2">
-              <div class="space-y-1 text-sm">
-                <div class="flex items-center gap-2 text-blue-600">
-                  <span>📧</span>
-                  <a [href]="'mailto:' + lead.email" class="hover:underline">{{ lead.email }}</a>
-                </div>
-                <div class="flex items-center gap-2 text-blue-600">
-                  <span>📞</span>
-                  <a [href]="'tel:' + lead.phone" class="hover:underline">{{ lead.phone }}</a>
-                </div>
-                @if (lead.whatsapp) {
-                  <div class="flex items-center gap-2 text-green-600">
-                    <span>💬</span>
-                    <span>WhatsApp</span>
-                  </div>
-                }
-              </div>
-            </div>
+              <!-- Date from -->
+              <input
+                type="date"
+                [(ngModel)]="filterDateFrom"
+                (ngModelChange)="applyFilters()"
+                [placeholder]="lang.t('leads.fromDate')"
+                class="filter-date">
 
-            <!-- Automation -->
-            <div class="col-span-2">
-              <select class="w-full px-3 py-1.5 text-sm border rounded-lg" style="border-color: hsl(186, 30%, 88%);">
-                <option>{{ lang.t('leads.email') }}</option>
-                <option>{{ lang.t('leads.sms') }}</option>
-                <option>{{ lang.currentLanguage === 'he' ? 'WhatsApp' : 'WhatsApp' }}</option>
+              <!-- Date to -->
+              <input
+                type="date"
+                [(ngModel)]="filterDateTo"
+                (ngModelChange)="applyFilters()"
+                [placeholder]="lang.t('leads.toDate')"
+                class="filter-date">
+
+              <!-- Channel filter -->
+              <select
+                [(ngModel)]="filterChannel"
+                (ngModelChange)="applyFilters()"
+                class="filter-select">
+                <option value="">{{ lang.t('leads.allChannels') }}</option>
+                <option value="email">{{ lang.t('leads.channelEmail') }}</option>
+                <option value="whatsapp">{{ lang.t('leads.channelWhatsApp') }}</option>
+                <option value="sms">{{ lang.t('leads.channelSMS') }}</option>
+                <option value="website">{{ lang.t('leads.channelWebsite') }}</option>
+                <option value="facebook">{{ lang.t('leads.channelFacebook') }}</option>
+                <option value="instagram">{{ lang.t('leads.channelInstagram') }}</option>
               </select>
+
+              <!-- Status filter -->
+              <select
+                [(ngModel)]="filterStatus"
+                (ngModelChange)="applyFilters()"
+                class="filter-select">
+                <option value="">{{ lang.t('leads.allStatuses') }}</option>
+                <option value="new">{{ lang.t('leads.statusNew') }}</option>
+                <option value="in-progress">{{ lang.t('leads.statusInProgress') }}</option>
+                <option value="reminder">{{ lang.t('leads.statusReminder') }}</option>
+                <option value="closed-success">{{ lang.t('leads.statusClosedSuccess') }}</option>
+                <option value="not-relevant">{{ lang.t('leads.statusNotRelevant') }}</option>
+                <option value="no-answer">{{ lang.t('leads.statusNoAnswer') }}</option>
+                <option value="cancelled">{{ lang.t('leads.statusCancelled') }}</option>
+              </select>
+
+              <!-- Questionnaire filter -->
+              <select
+                [(ngModel)]="filterQuestionnaire"
+                (ngModelChange)="applyFilters()"
+                class="filter-select">
+                <option value="">{{ lang.t('leads.allQuestionnaires') }}</option>
+                @for (q of getUniqueQuestionnaires(); track q) {
+                  <option [value]="q">{{ q }}</option>
+                }
+              </select>
+
+              <!-- Partner filter -->
+              <select
+                [(ngModel)]="filterPartner"
+                (ngModelChange)="applyFilters()"
+                class="filter-select">
+                <option value="">{{ lang.t('leads.allPartners') }}</option>
+                @for (p of getUniquePartners(); track p) {
+                  <option [value]="p">{{ p.substring(0, 8) }}...</option>
+                }
+              </select>
+
+              <!-- Reset button -->
+              <button
+                (click)="resetFilters()"
+                class="filter-reset-btn">
+                {{ lang.t('leads.resetFilters') }}
+              </button>
+
+              <!-- Export button -->
+              <button
+                (click)="exportToExcel()"
+                class="filter-export-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7 10 12 15 17 10"></polyline>
+                  <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                {{ lang.t('leads.exportExcel') }}
+              </button>
             </div>
 
-            <!-- Tags -->
-            <div class="col-span-2">
-              <span class="text-sm text-gray-500">
-                {{ lang.t('leads.noTags') }}
-              </span>
-            </div>
-
-            <!-- Actions -->
-            <div class="col-span-2">
-              <div class="flex items-center gap-2">
-                <button class="action-button" title="{{ lang.t('common.edit') }}">
-                  ✏️
-                </button>
-                <button class="action-button" title="{{ lang.currentLanguage === 'he' ? 'הצג' : 'View' }}">
-                  👁️
-                </button>
-                <button class="action-button" title="{{ lang.t('common.submit') }}">
-                  ↗️
-                </button>
+            @if (filteredLeads.length === 0) {
+              <div class="empty-state">
+                <p class="empty-title">{{ lang.t('leads.noLeadsFound') }}</p>
+                <p class="empty-subtitle">{{ lang.t('leads.tryDifferentFilters') }}</p>
               </div>
+            } @else {
+            <!-- Table header -->
+            <div class="table-header">
+              <div class="header-cell header-checkbox">
+                <input
+                  type="checkbox"
+                  class="checkbox"
+                  [checked]="isAllSelected()"
+                  (change)="toggleAllLeads()">
+              </div>
+              <div class="header-cell header-client-name">{{ lang.t('leads.clientName') }}</div>
+              <div class="header-cell header-questionnaire">{{ lang.t('leads.questionnaire') }}</div>
+              <div class="header-cell header-partner">{{ lang.t('leads.partner') }}</div>
+              <div class="header-cell header-channel">{{ lang.t('leads.channel') }}</div>
+              <div class="header-cell header-status">{{ lang.t('leads.status') }}</div>
+              <div class="header-cell header-sub-status">{{ lang.t('leads.subStatus') }}</div>
+              <div class="header-cell header-automations">{{ lang.t('leads.automations') }}</div>
+              <div class="header-cell header-quick-actions">{{ lang.t('leads.quickActions') }}</div>
+              <div class="header-cell header-comments">{{ lang.t('leads.comments') }}</div>
+              <div class="header-cell header-actions">{{ lang.t('common.delete') }}</div>
             </div>
 
-            <!-- More menu -->
-            <div class="col-span-1 text-center">
-              <button class="action-button">⋯</button>
+            <!-- Leads list -->
+            <div class="leads-list">
+              @for (lead of filteredLeads; track lead.id) {
+                <div class="lead-row">
+                  <!-- Checkbox -->
+                  <div class="cell cell-checkbox">
+                    <input
+                      type="checkbox"
+                      class="checkbox"
+                      [checked]="isLeadSelected(lead.id)"
+                      (change)="toggleLeadSelection(lead.id)">
+                  </div>
+
+                  <!-- Client Name -->
+                  <div class="cell cell-client-name">
+                    <div class="client-info">
+                      <div class="avatar">{{ lead.client_name.charAt(0) }}</div>
+                      <div class="client-details">
+                        <span class="client-name">{{ lead.client_name }}</span>
+                        <div class="client-date">
+                          <svg class="calendar-icon" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="16" y1="2" x2="16" y2="6"></line>
+                            <line x1="8" y1="2" x2="8" y2="6"></line>
+                            <line x1="3" y1="10" x2="21" y2="10"></line>
+                          </svg>
+                          <span class="date-value">{{ getFormattedDateDDMMYYYY(lead.created_at) }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Questionnaire Title -->
+                  <div class="cell cell-questionnaire">
+                    <button class="questionnaire-title-btn" (click)="openLeadDetails(lead)">
+                      {{ lead.questionnaire_title }}
+                    </button>
+                  </div>
+
+                  <!-- Partner -->
+                  <div class="cell cell-partner">
+                    @if (lead.partner_id) {
+                      <span>{{ lead.partner_id.substring(0, 8) }}...</span>
+                    } @else {
+                      <span class="no-data">{{ lang.t('leads.notAssigned') }}</span>
+                    }
+                  </div>
+
+                  <!-- Channel -->
+                  <div class="cell cell-channel">
+                    <span class="channel-chip">
+                      {{ getChannelLabel(lead.channel || '') }}
+                    </span>
+                  </div>
+
+                  <!-- Status -->
+                  <div class="cell cell-status">
+                    <select class="status-select" [(ngModel)]="lead.status" (change)="onStatusChange(lead.id, lead.status)">
+                      <option value="new">{{ lang.t('leads.statusNew') }}</option>
+                      <option value="in-progress">{{ lang.t('leads.statusInProgress') }}</option>
+                      <option value="reminder">{{ lang.t('leads.statusReminder') }}</option>
+                      <option value="closed-success">{{ lang.t('leads.statusClosedSuccess') }}</option>
+                      <option value="not-relevant">{{ lang.t('leads.statusNotRelevant') }}</option>
+                      <option value="no-answer">{{ lang.t('leads.statusNoAnswer') }}</option>
+                      <option value="cancelled">{{ lang.t('leads.statusCancelled') }}</option>
+                    </select>
+                  </div>
+
+                  <!-- Sub Status -->
+                  <div class="cell cell-sub-status">
+                    <select
+                      class="sub-status-select"
+                      [value]="lead.sub_status || ''"
+                      (change)="onSubStatusChange(lead.id, $event)"
+                      [disabled]="getSubStatusOptions(lead.status).length === 0">
+                      @if (getSubStatusOptions(lead.status).length > 0) {
+                        <option value="">{{ lang.t('leads.subStatus') }}</option>
+                        @for (option of getSubStatusOptions(lead.status); track option) {
+                          <option [value]="option">{{ option }}</option>
+                        }
+                      } @else {
+                        <option value="">---------</option>
+                      }
+                    </select>
+                  </div>
+
+                  <!-- Automations -->
+                  <div class="cell cell-automations">
+                    @if (lead.automations && lead.automations.length > 0) {
+                      <span class="automation-badge" [ngClass]="getAutomationClass(lead.automations[0])">
+                        {{ lead.automations[0] }}
+                      </span>
+                    } @else {
+                      <span class="automations-list">{{ lang.t('leads.noAutomation') }}</span>
+                    }
+                  </div>
+
+                  <!-- Quick Actions -->
+                  <div class="cell cell-quick-actions">
+                    <div class="quick-actions-buttons">
+                      <a [href]="lead.phone ? 'tel:' + lead.phone : 'javascript:void(0)'"
+                         [class.disabled]="!lead.phone"
+                         class="quick-action-btn phone-btn"
+                         [title]="lead.phone ? lang.t('leads.call') : lang.t('leads.noPhone')">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                        </svg>
+                      </a>
+                      <a [href]="lead.phone ? getWhatsAppLink(lead.phone) : 'javascript:void(0)'"
+                         [class.disabled]="!lead.phone"
+                         target="_blank"
+                         rel="noopener noreferrer"
+                         class="quick-action-btn whatsapp-btn"
+                         [title]="lead.phone ? lang.t('leads.whatsapp') : lang.t('leads.noPhone')">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                        </svg>
+                      </a>
+                      <a [href]="lead.phone ? 'sms:' + lead.phone : 'javascript:void(0)'"
+                         [class.disabled]="!lead.phone"
+                         class="quick-action-btn sms-btn"
+                         [title]="lead.phone ? lang.t('leads.sms') : lang.t('leads.noPhone')">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                        </svg>
+                      </a>
+                      <a [href]="lead.email ? 'mailto:' + lead.email : 'javascript:void(0)'"
+                         [class.disabled]="!lead.email"
+                         class="quick-action-btn email-btn"
+                         [title]="lead.email ? lang.t('leads.email') : lang.t('leads.noEmail')">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                          <polyline points="22,6 12,13 2,6"></polyline>
+                        </svg>
+                      </a>
+                    </div>
+                  </div>
+
+                  <!-- Comments -->
+                  <div class="cell cell-comments">
+                    <div class="comments-container">
+                      <button
+                        class="comment-icon-btn"
+                        (click)="toggleCommentPopup($event, lead.id, lead.comments)"
+                        [class.has-comment]="lead.comments"
+                        [title]="lead.comments || lang.t('leads.addComment')">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Actions -->
+                  <div class="cell cell-actions">
+                    <div class="action-buttons">
+                      <button class="action-btn" [title]="lang.t('common.delete')" (click)="deleteLead(lead.id, lead.client_name)">🗑️</button>
+                    </div>
+                  </div>
+                </div>
+              }
             </div>
-          </div>
-        }
-      </div>
+            }
+          }
+        </div>
       }
-    </div>
-  </div>
 
-  <!-- Hoogi assistant (bottom right) -->
-  <div class="fixed bottom-6 right-6 bg-white rounded-lg shadow-lg p-4 max-w-sm border" style="border-color: hsl(186, 30%, 88%);">
-    <div class="flex items-start gap-3">
-      <img src="/assets/hoogi-avatar.png" alt="Hoogi" class="w-12 h-12" onerror="this.style.display='none'">
-      <div class="flex-1">
-        <div class="font-semibold mb-1">
-          {{ lang.t('leads.hoogiMessage') }}
+      <!-- Answers Analytics Tab Content -->
+      @if (activeTab === 'answers-analytics') {
+        <div class="tab-content">
+          <div class="analytics-placeholder">
+            <p>{{ lang.t('leads.analyticsComingSoon') }}</p>
+          </div>
         </div>
-        <div class="text-sm text-gray-600">
-          {{ lang.t('leads.hoogiTip') }}
-        </div>
-      </div>
-      <button (click)="dismissHoogiTip()" class="text-gray-400 hover:text-gray-600">✕</button>
+      }
     </div>
   </div>
 </div>
+
+<!-- Comment Popup (rendered outside table to float freely) -->
+@if (openCommentPopup) {
+  <div class="comment-popup" [style.top]="popupPosition.top" [style.left]="popupPosition.left">
+    <textarea
+      [(ngModel)]="editingComment"
+      [placeholder]="lang.t('leads.addCommentPlaceholder')"
+      rows="4"
+      class="comment-textarea">
+    </textarea>
+    <div class="comment-popup-actions">
+      <button class="save-btn" (click)="saveComment(openCommentPopup)">
+        {{ lang.t('common.save') }}
+      </button>
+      <button class="cancel-btn" (click)="openCommentPopup = null; editingComment = ''">
+        {{ lang.t('common.cancel') }}
+      </button>
+    </div>
+  </div>
+}
+
+<!-- Lead Details Dialog -->
+@if (selectedLead) {
+  <app-lead-details-dialog
+    [leadId]="selectedLead.id"
+    [questionnaireTitle]="selectedLead.questionnaire_title || 'Untitled'"
+    [clientName]="selectedLead.client_name"
+    [answerJson]="selectedLead.answer_json"
+    [questionnaireId]="selectedLead.questionnaire_id"
+    (close)="closeLeadDetails()">
+  </app-lead-details-dialog>
+}
