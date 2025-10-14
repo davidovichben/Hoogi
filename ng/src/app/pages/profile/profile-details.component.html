@@ -18,21 +18,42 @@
     </h2>
 
     <div class="card-content">
-      <!-- Business Name -->
-      <div class="form-field">
-        <label class="form-label">
-          {{ lang.t('profile.businessName') }} <span class="required">*</span>
-        </label>
-        <input
-          type="text"
-          [(ngModel)]="formData.businessName"
-          (input)="clearError('businessName')"
-          [placeholder]="lang.t('profile.businessNamePlaceholder')"
-          class="form-input"
-          [class.error]="errors.businessName">
-        @if (errors.businessName) {
-          <p class="error-message">{{ lang.t('profile.requiredField') }}</p>
-        }
+      <!-- Username and Business Name -->
+      <div class="grid-2">
+        <div class="form-field">
+          <label class="form-label">
+            {{ lang.t('profile.username') }} <span class="required">*</span>
+          </label>
+          <input
+            type="text"
+            [(ngModel)]="formData.username"
+            name="username"
+            (input)="clearError('username')"
+            (blur)="validateUsernameOnBlur()"
+            [placeholder]="lang.t('profile.usernamePlaceholder')"
+            class="form-input"
+            [class.error]="errors.username">
+          @if (errors.username && errorMessages.username) {
+            <p class="error-message">{{ errorMessages.username }}</p>
+          }
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">
+            {{ lang.t('profile.businessName') }} <span class="required">*</span>
+          </label>
+          <input
+            type="text"
+            [(ngModel)]="formData.businessName"
+            name="businessName"
+            (input)="clearError('businessName')"
+            [placeholder]="lang.t('profile.businessNamePlaceholder')"
+            class="form-input"
+            [class.error]="errors.businessName">
+          @if (errors.businessName) {
+            <p class="error-message">{{ lang.t('profile.requiredField') }}</p>
+          }
+        </div>
       </div>
 
       <!-- Mobile and Email -->
@@ -44,12 +65,14 @@
           <input
             type="tel"
             [(ngModel)]="formData.mobile"
+            name="mobile"
             (input)="clearError('mobile')"
+            (blur)="validateMobileOnBlur()"
             [placeholder]="lang.t('profile.mobilePlaceholder')"
             class="form-input"
             [class.error]="errors.mobile">
-          @if (errors.mobile) {
-            <p class="error-message">{{ lang.t('profile.requiredField') }}</p>
+          @if (errors.mobile && errorMessages.mobile) {
+            <p class="error-message">{{ errorMessages.mobile }}</p>
           }
         </div>
 
@@ -60,12 +83,14 @@
           <input
             type="email"
             [(ngModel)]="formData.email"
+            name="email"
             (input)="clearError('email')"
+            (blur)="validateEmailOnBlur()"
             [placeholder]="lang.t('profile.emailPlaceholder')"
             class="form-input"
             [class.error]="errors.email">
-          @if (errors.email) {
-            <p class="error-message">{{ lang.t('profile.requiredField') }}</p>
+          @if (errors.email && errorMessages.email) {
+            <p class="error-message">{{ errorMessages.email }}</p>
           }
         </div>
       </div>
@@ -78,6 +103,7 @@
           </label>
           <select
             [(ngModel)]="formData.occupation"
+            name="occupation"
             (change)="onOccupationChange()"
             class="form-input"
             [class.error]="errors.occupation">
@@ -99,6 +125,7 @@
             </label>
             <select
               [(ngModel)]="formData.subOccupation"
+              name="subOccupation"
               (change)="onSubOccupationChange()"
               class="form-input"
               [class.error]="errors.subOccupation">
@@ -117,7 +144,7 @@
         @if (formData.occupation === OTHER) {
           <div class="form-field">
             <label class="form-label">
-              {{ lang.currentLanguage === 'he' ? 'שירות עיקרי' : 'Primary Service' }} <span class="required">*</span>
+              {{ lang.t('profile.primaryService') }} <span class="required">*</span>
             </label>
             <input
               type="text"
@@ -135,7 +162,7 @@
         @if (formData.subOccupation === OTHER) {
           <div class="form-field">
             <label class="form-label">
-              {{ lang.currentLanguage === 'he' ? 'שירות עיקרי' : 'Primary Service' }} <span class="required">*</span>
+              {{ lang.t('profile.primaryService') }} <span class="required">*</span>
             </label>
             <input
               type="text"

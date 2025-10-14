@@ -28,6 +28,10 @@ export class RegisterComponent {
 
   emailTouched = false;
   emailConfirmTouched = false;
+  passwordTouched = false;
+  passwordConfirmTouched = false;
+  showPassword = false;
+  showPasswordConfirm = false;
 
   constructor(
     private authService: AuthService,
@@ -67,10 +71,36 @@ export class RegisterComponent {
     this.emailConfirmTouched = true;
   }
 
+  onPasswordBlur() {
+    this.passwordTouched = true;
+  }
+
+  onPasswordConfirmBlur() {
+    this.passwordConfirmTouched = true;
+  }
+
+  get passwordError(): string | null {
+    if (!this.passwordTouched) return null;
+    if (!this.password) return this.lang.t('register.errors.passwordRequired');
+    if (this.password.length < 8) return this.lang.t('register.errors.passwordTooShort');
+    return null;
+  }
+
+  get passwordConfirmError(): string | null {
+    if (!this.passwordConfirmTouched) return null;
+    if (!this.passwordConfirm) return this.lang.t('register.errors.passwordRequired');
+    if (this.password && this.passwordConfirm && this.password !== this.passwordConfirm) {
+      return this.lang.t('register.errors.passwordMismatch');
+    }
+    return null;
+  }
+
   async handleRegister() {
     // Mark fields as touched for validation
     this.emailTouched = true;
     this.emailConfirmTouched = true;
+    this.passwordTouched = true;
+    this.passwordConfirmTouched = true;
 
     if (!this.fullName.trim()) {
       this.toast.show(this.lang.t('register.errors.fullNameRequired'), 'error');
@@ -107,7 +137,7 @@ export class RegisterComponent {
       return;
     }
 
-    if (this.password.length < 6) {
+    if (this.password.length < 8) {
       this.toast.show(this.lang.t('register.errors.passwordTooShort'), 'error');
       return;
     }
@@ -134,16 +164,24 @@ export class RegisterComponent {
       // Save profile data if user was created
       if (data.user) {
         try {
-          await this.supabaseService.client
+          const { data: profileData, error: profileError } = await this.supabaseService.client
             .from('profiles')
             .upsert({
               id: data.user.id,
+              username: this.fullName,
               email: this.email,
               locale: locale,
               created_at: new Date().toISOString()
-            });
+            })
+            .select();
+
+          if (profileError) {
+            console.error('Error saving profile:', profileError);
+          } else {
+            console.log('Profile saved successfully:', profileData);
+          }
         } catch (profileError: any) {
-          console.error('Error saving profile:', profileError);
+          console.error('Exception saving profile:', profileError);
           // Don't block the registration flow if profile save fails
         }
       }
@@ -151,7 +189,7 @@ export class RegisterComponent {
       // If confirmation is not required, session will exist
       if (data.session) {
         this.toast.show(this.lang.t('register.success.registered'), 'success');
-        this.router.navigate(['/dashboard']);
+        this.router.navigate(['/profile']);
         return;
       }
 
@@ -159,7 +197,7 @@ export class RegisterComponent {
       const { error: signInErr } = await this.authService.signIn(this.email, this.password);
       if (!signInErr) {
         this.toast.show(this.lang.t('register.success.signingIn'), 'success');
-        this.router.navigate(['/dashboard']);
+        this.router.navigate(['/profile']);
         return;
       }
 
@@ -179,5 +217,13 @@ export class RegisterComponent {
 
   openTerms() {
     window.open('/terms-of-service', '_blank');
+  }
+
+  togglePasswordVisibility() {
+    this.showPassword = !this.showPassword;
+  }
+
+  togglePasswordConfirmVisibility() {
+    this.showPasswordConfirm = !this.showPasswordConfirm;
   }
 }

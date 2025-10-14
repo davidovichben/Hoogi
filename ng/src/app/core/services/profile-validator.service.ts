@@ -12,7 +12,7 @@ export class ProfileValidatorService {
     try {
       const { data, error } = await this.supabaseService.client
         .from('profiles')
-        .select('company, email, phone, occupation, suboccupation')
+        .select('username, company, email, phone, occupation, suboccupation')
         .eq('id', userId)
         .single();
 
@@ -20,6 +20,7 @@ export class ProfileValidatorService {
       if (!data) return false;
 
       // Check required fields
+      const hasUsername = !!(data.username || '').trim();
       const hasBusinessName = !!(data.company || '').trim();
       const hasEmail = !!(data.email || '').trim();
       const hasMobile = !!(data.phone || '').trim();
@@ -31,7 +32,7 @@ export class ProfileValidatorService {
       const needsSubOccupation = isPredefinedOccupation && OCCUPATIONS[data.occupation]?.length > 0;
       const hasSubOccupation = !needsSubOccupation || !!(data.suboccupation || '').trim();
 
-      return hasBusinessName && hasEmail && hasMobile && hasOccupation && hasSubOccupation;
+      return hasUsername && hasBusinessName && hasEmail && hasMobile && hasOccupation && hasSubOccupation;
     } catch (e) {
       console.error('Error checking profile completion:', e);
       return false;

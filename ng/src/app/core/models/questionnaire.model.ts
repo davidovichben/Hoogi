@@ -36,6 +36,8 @@ export interface Questionnaire {
   language?: string;
   token?: string;
   automation_template_id?: string;
+  attachment_url?: string;
+  link_url?: string;
 }
 
 export interface Question {

@@ -12,14 +12,14 @@
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" [style.transform]="lang.currentLanguage === 'he' ? 'rotate(180deg)' : 'none'">
                 <path d="M19 12H5M12 19l-7-7 7-7"/>
               </svg>
-              <span class="text-sm">{{ lang.currentLanguage === 'he' ? 'חזרה' : 'Back' }}</span>
+              <span class="text-sm">{{ lang.t('questionnaireLive.back') }}</span>
             </button>
             <div [class.text-right]="lang.currentLanguage === 'he'" [class.text-left]="lang.currentLanguage !== 'he'">
               <h1 class="text-2xl font-bold text-gray-900">
-                {{ questionnaire.title || (lang.currentLanguage === 'he' ? 'שאלון ללא שם' : 'Untitled Questionnaire') }}
+                {{ questionnaire.title || lang.t('questionnaireLive.untitledQuestionnaire') }}
               </h1>
               @if (questionnaire.description) {
-                <p class="text-gray-600">{{ questionnaire.description }}</p>
+                <p [style.color]="secondaryColor">{{ questionnaire.description }}</p>
               }
             </div>
           </div>
@@ -36,14 +36,14 @@
                 <line x1="16" y1="17" x2="8" y2="17"></line>
                 <polyline points="10 9 9 9 8 9"></polyline>
               </svg>
-              {{ lang.currentLanguage === 'he' ? 'טופס' : 'Form' }}
+              {{ lang.t('questionnaireLive.form') }}
             </button>
             <button
               class="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition bg-blue-600 text-white">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
               </svg>
-              {{ lang.currentLanguage === 'he' ? 'צ\'אט' : 'Chat' }}
+              {{ lang.t('questionnaireLive.chat') }}
             </button>
           </div>
         </div>
@@ -57,7 +57,7 @@
               <line x1="8" y1="2" x2="8" y2="6"></line>
               <line x1="3" y1="10" x2="21" y2="10"></line>
             </svg>
-            <span>{{ lang.currentLanguage === 'he' ? 'נוצר:' : 'Created:' }} {{ questionnaire.created_at | date: 'dd.MM.yyyy' }}</span>
+            <span>{{ lang.t('questionnaireLive.created') }} {{ questionnaire.created_at | date: 'dd.MM.yyyy' }}</span>
           </div>
           <div class="flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -67,14 +67,14 @@
               <line x1="16" y1="17" x2="8" y2="17"></line>
               <polyline points="10 9 9 9 8 9"></polyline>
             </svg>
-            <span>{{ questions.length }} {{ lang.currentLanguage === 'he' ? 'שאלות' : 'Questions' }}</span>
+            <span>{{ questions.length }} {{ lang.t('questionnaireLive.questions') }}</span>
           </div>
         </div>
       </div>
     </div>
   }
 
-  <div class="chat-container flex-1 bg-gray-50 relative mx-auto" [class.max-w-3xl]="isOwnerView" [class.w-1/3]="!isOwnerView">
+  <div class="chat-container flex-1 relative mx-auto bg-gray-50 w-full md:max-w-[56rem] h-full">
   <!-- Loading State -->
   @if (isLoading) {
     <div class="flex items-center justify-center h-full">
@@ -84,123 +84,140 @@
 
   <!-- Chat Interface -->
   @if (!isLoading && questionnaire) {
+    <div class="h-full flex flex-col overflow-hidden" [style.background-color]="backgroundColor">
     <!-- Header -->
-    <div class="chat-header p-4 shadow-md z-20"  [style.background-color]="primaryColor">
-      <div class="flex items-center justify-between gap-4" [style.direction]="lang.currentLanguage === 'he' ? 'rtl' : 'ltr'">
-        @if (logoUrl && showLogo) {
-          <img [src]="logoUrl" alt="Logo" class="h-10 w-10 rounded-full object-cover bg-white flex-shrink-0" />
-        }
-        <div class="flex-1 text-white text-center">
-          <h1 class="text-xl font-bold">{{ questionnaire.title }}</h1>
-          @if (questionnaire.meta?.subtitle) {
-            <p class="text-sm opacity-90">{{ questionnaire.meta?.subtitle }}</p>
+    <div class="chat-header p-8 pb-2 z-20 w-full flex-shrink-0"  [style.background-color]="backgroundColor">
+      <div class="flex items-start justify-center gap-4 w-full" [style.direction]="lang.currentLanguage === 'he' ? 'rtl' : 'ltr'">
+        <div class="w-32 flex-shrink-0">
+          @if (logoUrl && showLogo) {
+            <img [src]="logoUrl" alt="Logo" class="h-32 w-32 object-contain" />
           }
         </div>
-        @if (imageUrl && showProfileImage) {
-          <img [src]="imageUrl" alt="Profile" class="h-10 w-10 rounded-full object-cover flex-shrink-0 border-2 border-white" />
-        }
+        <div class="flex-1 text-center">
+          <div class="h-1 mb-1 rounded-full" [style.background]="'linear-gradient(to right, ' + primaryColor + ', ' + secondaryColor + ')'"></div>
+          @if (businessName) {
+            <h2 class="text-2xl font-bold mb-2" [style.color]="primaryColor">{{ businessName }}</h2>
+          }
+          <h1 class="text-2xl font-bold" [style.color]="secondaryColor">{{ questionnaire.title }}</h1>
+          @if (questionnaire.description) {
+            <p class="text-center text-sm mt-3" [style.color]="secondaryColor">{{ questionnaire.description }}</p>
+          }
+          @if (questionnaire.attachment_url) {
+            <img [src]="questionnaire.attachment_url" alt="Questionnaire attachment" class="mt-1 mx-auto rounded-lg max-w-full" style="max-height: 14rem;" />
+          }
+          @if (questionnaire.link_url) {
+            <div class="text-center mt-2 mb-4">
+              <a [href]="getExternalUrl(questionnaire.link_url)" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-10 py-3.5 text-white text-base rounded-full" [style.background]="'linear-gradient(to right, ' + primaryColor + ', ' + secondaryColor + ')'">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+                </svg>
+                {{ lang.t('questionnaireLive.moreInfo') }}
+              </a>
+            </div>
+          }
+        </div>
+        <div class="w-32 flex-shrink-0">
+          @if (imageUrl && showProfileImage) {
+            <img [src]="imageUrl" alt="Profile" class="h-32 w-32 rounded-full object-cover border-4" [style.border-color]="secondaryColor" />
+          }
+        </div>
       </div>
     </div>
 
     <!-- Messages Area -->
-    <div #messagesContainer class="p-4 overflow-y-auto" [style.height]="isOwnerView ? 'calc(100vh - 420px)' : 'calc(100vh - 200px)'">
+    <div #messagesContainer class="p-4 overflow-y-auto flex-1">
       <div class="space-y-4" [style.direction]="lang.currentLanguage === 'he' ? 'rtl' : 'ltr'">
         @for (message of chatMessages; track $index) {
           @if (message.type === 'bot') {
             <!-- Bot Message -->
             <div class="flex items-start gap-3 justify-start">
-              <div class="w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center text-2xl" [style.background-color]="secondaryColor">
+              <div class="w-12 h-12 rounded-full flex-shrink-0 flex items-center justify-center text-2xl" [style.background-color]="secondaryColor">
                 {{ (logoUrl && showLogo) ? '' : '🤖' }}
                 @if (logoUrl && showLogo) {
                   <img [src]="logoUrl" alt="Bot" class="w-full h-full rounded-full object-cover" />
                 }
               </div>
-              <div class="bg-white rounded-2xl px-5 py-3 shadow-md max-w-md"
+              <div class="rounded-2xl px-5 py-3 shadow-md max-w-md"
                    [class.rounded-tl-sm]="lang.currentLanguage === 'he'"
-                   [class.rounded-tr-sm]="lang.currentLanguage !== 'he'">
-                <p class="text-gray-800">{{ message.text }}</p>
+                   [class.rounded-tr-sm]="lang.currentLanguage !== 'he'"
+                   [class.bg-white]="message.questionIndex === undefined && !message.isSuccess"
+                   [style.background-color]="message.questionIndex !== undefined ? '#2c3e50' : (message.isSuccess ? primaryColor : 'white')"
+                   [style.border-right]="message.questionIndex !== undefined && lang.currentLanguage === 'he' ? '4px solid ' + secondaryColor : 'none'"
+                   [style.border-left]="message.questionIndex !== undefined && lang.currentLanguage !== 'he' ? '4px solid ' + secondaryColor : 'none'">
+                @if (message.isSuccess) {
+                  <div class="flex items-center gap-3">
+                    <div class="text-3xl">✓</div>
+                    <p class="text-white font-semibold">{{ message.text }}</p>
+                  </div>
+                } @else {
+                  <p [style.color]="message.questionIndex !== undefined ? 'white' : primaryColor">{{ message.text }}</p>
+                }
+
+                <!-- Show options inside the bubble for choice questions -->
+                @if (message.questionIndex !== undefined && !isSubmitted) {
+                  @if (isSingleChoiceQuestion(questions[message.questionIndex]) || isMultiChoiceQuestion(questions[message.questionIndex])) {
+                    <div class="mt-3 space-y-2">
+                      @for (option of getQuestionOptions(questions[message.questionIndex].id); track option.value) {
+                        <div
+                          (click)="onOptionClick(questions[message.questionIndex], option.value)"
+                          class="cursor-pointer py-2 px-3 rounded-lg transition-all"
+                          [class.font-semibold]="isOptionSelected(questions[message.questionIndex], option.value)"
+                          [style.color]="secondaryColor">
+                          {{ option.label }}
+                        </div>
+                      }
+                    </div>
+                  }
+                }
               </div>
             </div>
-            <!-- Progress Indicator under question -->
-            @if (message.questionIndex !== undefined && !isSubmitted && questions.length > 0) {
-              <div class="text-center py-2 text-sm" [style.color]="primaryColor">
-                {{ lang.currentLanguage === 'he' ? 'שאלה' : 'Question' }} {{ message.questionIndex + 1 }} {{ lang.currentLanguage === 'he' ? 'מתוך' : 'of' }} {{ questions.length }}
-              </div>
-            }
           } @else {
             <!-- User Message -->
             <div class="flex justify-end">
               <div class="bg-white rounded-2xl px-5 py-3 shadow-md max-w-md"
                    [class.rounded-tr-sm]="lang.currentLanguage === 'he'"
                    [class.rounded-tl-sm]="lang.currentLanguage !== 'he'">
-                <p class="text-gray-800">{{ message.text }}</p>
+                <p [style.color]="primaryColor">{{ message.text }}</p>
               </div>
             </div>
           }
         }
 
-        <!-- Current Question Options (for choice questions) -->
-        @if (!isSubmitted && getCurrentQuestion() && showOptions) {
-          @if (isSingleChoiceQuestion(getCurrentQuestion()!) || isMultiChoiceQuestion(getCurrentQuestion()!)) {
-            <!-- Loading Spinner -->
-            @if (optionsLoading) {
-              <div class="flex justify-center items-center mt-4 py-6">
-                <div class="animate-spin rounded-full h-8 w-8 border-b-2" [style.border-color]="primaryColor"></div>
-              </div>
+        <!-- Submit/Skip buttons for multi-choice questions -->
+        @if (!isSubmitted && getCurrentQuestion() && showOptions && isMultiChoiceQuestion(getCurrentQuestion()!)) {
+          <div class="flex justify-start gap-2 mt-4">
+            <button
+              (click)="submitCurrentAnswer()"
+              class="px-8 py-3 text-sm rounded-xl text-white shadow-md hover:shadow-lg transition-all"
+              [style.background-color]="primaryColor">
+              {{ lang.t('questionnaireLive.continue') }}
+            </button>
+            @if (!getCurrentQuestion()!.is_required) {
+              <button
+                (click)="skipCurrentQuestion()"
+                class="px-8 py-3 text-sm rounded-xl shadow-md hover:shadow-lg transition-all bg-gray-100 text-gray-700 hover:bg-gray-200">
+                {{ lang.t('questionnaireLive.skip') }}
+              </button>
             }
+          </div>
+        }
 
-            <!-- Options (shown after loading) -->
-            @if (!optionsLoading) {
-              <div class="flex flex-col items-end gap-2 mt-4">
-                @for (option of getQuestionOptions(getCurrentQuestion()!.id); track option.value) {
-                  <button
-                    (click)="onOptionClick(getCurrentQuestion()!, option.value)"
-                    class="px-6 py-3 rounded-xl shadow-md transition-all max-w-md w-full bg-white hover:shadow-lg"
-                    [class.option-selected]="isOptionSelected(getCurrentQuestion()!, option.value)"
-                    [style.border]="'2px solid ' + (isOptionSelected(getCurrentQuestion()!, option.value) ? primaryColor : 'transparent')">
-                    <span [style.color]="isOptionSelected(getCurrentQuestion()!, option.value) ? primaryColor : '#374151'">
-                      {{ option.label }}
-                    </span>
-                  </button>
-                }
-
-                <!-- Skip button for single choice non-required questions -->
-                @if (isSingleChoiceQuestion(getCurrentQuestion()!) && !getCurrentQuestion()!.is_required) {
-                  <button
-                    (click)="skipCurrentQuestion()"
-                    class="px-8 py-3 rounded-xl font-semibold shadow-md hover:shadow-lg transition-all mt-2 bg-gray-100 text-gray-700 hover:bg-gray-200">
-                    {{ lang.currentLanguage === 'he' ? 'דלג' : 'Skip' }}
-                  </button>
-                }
-
-                <!-- Submit button for multi-choice -->
-                @if (isMultiChoiceQuestion(getCurrentQuestion()!)) {
-                  <div class="flex gap-2 mt-2">
-                    <button
-                      (click)="submitCurrentAnswer()"
-                      class="px-8 py-3 rounded-xl text-white font-semibold shadow-md hover:shadow-lg transition-all"
-                      [style.background-color]="primaryColor">
-                      {{ lang.currentLanguage === 'he' ? 'המשך' : 'Continue' }}
-                    </button>
-                    @if (!getCurrentQuestion()!.is_required) {
-                      <button
-                        (click)="skipCurrentQuestion()"
-                        class="px-8 py-3 rounded-xl font-semibold shadow-md hover:shadow-lg transition-all bg-gray-100 text-gray-700 hover:bg-gray-200">
-                        {{ lang.currentLanguage === 'he' ? 'דלג' : 'Skip' }}
-                      </button>
-                    }
-                  </div>
-                }
-              </div>
-            }
-          }
+        <!-- Skip button for single choice non-required questions -->
+        @if (!isSubmitted && getCurrentQuestion() && showOptions && isSingleChoiceQuestion(getCurrentQuestion()!) && !getCurrentQuestion()!.is_required) {
+          <div class="flex justify-start mt-4">
+            <button
+              (click)="skipCurrentQuestion()"
+              class="px-8 py-3 text-sm rounded-xl shadow-md hover:shadow-lg transition-all bg-gray-100 text-gray-700 hover:bg-gray-200">
+              {{ lang.t('questionnaireLive.skip') }}
+            </button>
+          </div>
         }
       </div>
     </div>
 
     <!-- Input Area (for text-based questions and owner navigation) -->
 	  @if (!isSubmitted && getCurrentQuestion() && !isSingleChoiceQuestion(getCurrentQuestion()!) && !isMultiChoiceQuestion(getCurrentQuestion()!)) {
-      <div class="bg-white border-t border-gray-200 p-4 shadow-lg">
+      <div class="bg-white border-t border-gray-200 p-4 shadow-lg flex-shrink-0">
         <div class="flex items-center gap-3" [style.direction]="lang.currentLanguage === 'he' ? 'rtl' : 'ltr'">
           @if (getCurrentQuestion()!.question_type === 'file') {
             <!-- File Upload -->
@@ -239,7 +256,7 @@
               <button
                 (click)="skipCurrentQuestion()"
                 class="w-12 h-12 rounded-lg flex items-center justify-center bg-gray-100 text-gray-700 shadow-md hover:shadow-lg hover:bg-gray-200 transition flex-shrink-0"
-                [title]="lang.currentLanguage === 'he' ? 'דלג' : 'Skip'">
+                [title]="lang.t('questionnaireLive.skip')">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="m9 18 6-6-6-6"/>
                   <path d="M9 18V6"/>
@@ -265,7 +282,7 @@
                   </svg>
                   <span class="font-medium">
                     @if (isRecording) {
-                      {{ lang.currentLanguage === 'he' ? 'הקלטה... לחץ לעצירה' : 'Recording... Click to stop' }}
+                      {{ lang.t('questionnaireLive.recordingStop') }}
                     } @else if (audioFileName) {
                       {{ audioFileName }}
                     } @else {
@@ -290,7 +307,7 @@
               <button
                 (click)="skipCurrentQuestion()"
                 class="w-12 h-12 rounded-lg flex items-center justify-center bg-gray-100 text-gray-700 shadow-md hover:shadow-lg hover:bg-gray-200 transition flex-shrink-0"
-                [title]="lang.currentLanguage === 'he' ? 'דלג' : 'Skip'">
+                [title]="lang.t('questionnaireLive.skip')">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="m9 18 6-6-6-6"/>
                   <path d="M9 18V6"/>
@@ -359,7 +376,7 @@
               <button
                 (click)="skipCurrentQuestion()"
                 class="w-12 h-12 rounded-lg flex items-center justify-center bg-gray-100 text-gray-700 shadow-md hover:shadow-lg hover:bg-gray-200 transition flex-shrink-0"
-                [title]="lang.currentLanguage === 'he' ? 'דלג' : 'Skip'">
+                [title]="lang.t('questionnaireLive.skip')">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="m9 18 6-6-6-6"/>
                   <path d="M9 18V6"/>
@@ -373,13 +390,14 @@
 
     <!-- Success Message -->
     @if (isSubmitted) {
-      <div class="bg-white border-t border-gray-200 p-6 text-center">
+      <div class="bg-white border-t border-gray-200 p-6 text-center flex-shrink-0">
         <div class="text-4xl mb-2" [style.color]="primaryColor">✓</div>
         <p class="text-lg font-semibold text-gray-800">
           {{ lang.t('questionnaireLive.thankYou') }}
         </p>
       </div>
     }
+    </div>
   }
 
   <!-- Error State -->

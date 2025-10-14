@@ -383,7 +383,7 @@ export class UpdatePasswordComponent implements OnInit, OnDestroy {
       return;
     }
 
-    if (this.password.length < 6) {
+    if (this.password.length < 8) {
       this.toastService.show(this.lang.t('updatePassword.passwordTooShort'), 'error');
       return;
     }

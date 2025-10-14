@@ -253,7 +253,8 @@ export class CreateQuestionnaireQuestionsComponent implements OnInit {
       return;
     }
 
-    this.dialogRef.close(this.questions);
+    // Return questions with a flag to indicate the questionnaire should be saved
+    this.dialogRef.close({ questions: this.questions, shouldSave: true });
   }
 
   cancel() {

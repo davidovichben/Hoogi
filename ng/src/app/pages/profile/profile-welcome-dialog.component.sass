@@ -1,0 +1,178 @@
+.dialog-overlay
+  position: relative
+  width: 100%
+  min-height: 400px
+  display: flex
+  align-items: center
+  justify-content: center
+
+.dialog-container
+  width: 100%
+  max-width: 540px
+  background: #ffffff
+  border-radius: 24px
+  overflow: hidden
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15)
+
+.dialog-header
+  background: linear-gradient(135deg, hsl(186, 74%, 97%) 0%, #ffffff 100%)
+  padding: 3.5rem 2.5rem 2.5rem
+  text-align: center
+  position: relative
+  border-bottom: 1px solid hsl(186, 30%, 88%)
+
+  &::before
+    content: ''
+    position: absolute
+    top: 0
+    left: 0
+    right: 0
+    height: 4px
+    background: linear-gradient(90deg, hsl(186, 74%, 35%) 0%, hsl(186, 74%, 45%) 50%, hsl(186, 74%, 35%) 100%)
+
+.icon-wrapper
+  display: inline-block
+  margin-bottom: 1.5rem
+  animation: bounceIn 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55)
+
+.hoogi-logo
+  width: 120px
+  height: auto
+  filter: drop-shadow(0 8px 16px hsla(186, 74%, 35%, 0.2))
+  animation: float 3s ease-in-out infinite
+
+@keyframes bounceIn
+  0%
+    opacity: 0
+    transform: scale(0.3)
+  50%
+    opacity: 1
+    transform: scale(1.05)
+  70%
+    transform: scale(0.9)
+  100%
+    transform: scale(1)
+
+@keyframes float
+  0%, 100%
+    transform: translateY(0px)
+  50%
+    transform: translateY(-10px)
+
+.dialog-title
+  font-size: 2.25rem
+  font-weight: 700
+  color: hsl(186, 74%, 35%)
+  margin: 0
+  line-height: 1.2
+  letter-spacing: -0.02em
+  animation: fadeInUp 0.6s ease-out 0.2s both
+
+@keyframes fadeInUp
+  from
+    opacity: 0
+    transform: translateY(20px)
+  to
+    opacity: 1
+    transform: translateY(0)
+
+.dialog-body
+  padding: 2.5rem 3rem
+  text-align: center
+
+.message-line
+  font-size: 1.125rem
+  line-height: 1.8
+  color: #374151
+  margin: 0 0 1rem 0
+  animation: fadeInUp 0.6s ease-out both
+
+  &:nth-child(1)
+    animation-delay: 0.3s
+    font-weight: 500
+
+  &:nth-child(2)
+    animation-delay: 0.4s
+
+  &.highlight
+    color: #1f2937
+    font-size: 1.25rem
+    font-weight: 600
+    margin-top: 1.5rem
+    padding: 1rem 1.5rem
+    background: linear-gradient(135deg, hsla(186, 74%, 35%, 0.08) 0%, hsla(186, 74%, 45%, 0.08) 100%)
+    border-radius: 12px
+    border-left: 4px solid hsl(186, 74%, 35%)
+
+.dialog-footer
+  padding: 1.5rem 3rem 3rem
+  text-align: center
+  animation: fadeInUp 0.6s ease-out 0.5s both
+
+.btn-primary
+  background: linear-gradient(135deg, hsl(186, 74%, 35%) 0%, hsl(186, 74%, 30%) 100%)
+  color: white
+  border: none
+  padding: 1.125rem 3rem
+  font-size: 1.125rem
+  font-weight: 600
+  border-radius: 12px
+  cursor: pointer
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1)
+  box-shadow: 0 4px 14px hsla(186, 74%, 35%, 0.3)
+  min-width: 240px
+  position: relative
+  overflow: hidden
+
+  &::before
+    content: ''
+    position: absolute
+    top: 0
+    left: -100%
+    width: 100%
+    height: 100%
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent)
+    transition: left 0.5s
+
+  &:hover
+    transform: translateY(-2px)
+    box-shadow: 0 8px 24px hsla(186, 74%, 35%, 0.4)
+
+    &::before
+      left: 100%
+
+  &:active
+    transform: translateY(0)
+    box-shadow: 0 2px 8px hsla(186, 74%, 35%, 0.3)
+
+// Responsive styles
+@media (max-width: 600px)
+  .dialog-header
+    padding: 2.5rem 1.5rem 2rem
+
+  .dialog-title
+    font-size: 1.75rem
+
+  .icon-wrapper
+    margin-bottom: 1rem
+
+  .welcome-icon
+    width: 80px
+    height: 80px
+
+  .dialog-body
+    padding: 2rem 1.5rem
+
+  .message-line
+    font-size: 1rem
+
+    &.highlight
+      font-size: 1.125rem
+      padding: 0.875rem 1.25rem
+
+  .dialog-footer
+    padding: 1.5rem 1.5rem 2.5rem
+
+  .btn-primary
+    min-width: 200px
+    padding: 1rem 2rem

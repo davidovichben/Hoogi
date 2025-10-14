@@ -349,6 +349,12 @@ export class CreateQuestionnaireComponent implements OnInit {
   }
   
   openQuestionsDialog() {
+    // Validate that title is not empty before opening questions dialog
+    if (!this.formData.title || !this.formData.title.trim()) {
+      this.toast.show(this.lang.t('createQuestionnaire.titleRequiredBeforeQuestions'), 'error');
+      return;
+    }
+
     const dialogRef = this.dialog.open(CreateQuestionnaireQuestionsComponent, {
       width: '1000px',
       maxWidth: '90vw',
@@ -371,9 +377,20 @@ export class CreateQuestionnaireComponent implements OnInit {
       disableClose: false
     });
 
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().subscribe(async result => {
       if (result) {
-        this.formData.questions = result;
+        // Check if result is an object with questions and shouldSave flag
+        if (typeof result === 'object' && result.questions) {
+          this.formData.questions = result.questions;
+
+          // If shouldSave flag is true, publish the questionnaire
+          if (result.shouldSave) {
+            await this.saveQuestionnaire('published');
+          }
+        } else {
+          // Legacy support: if result is just the questions array
+          this.formData.questions = result;
+        }
       }
     });
   }
@@ -397,6 +414,12 @@ export class CreateQuestionnaireComponent implements OnInit {
 
       if (!this.currentUserId) {
         this.toast.show(this.lang.t('createQuestionnaire.pleaseLoginToSave'), 'error');
+        return false;
+      }
+
+      // Validate that title is not empty
+      if (!this.formData.title || !this.formData.title.trim()) {
+        this.toast.show(this.lang.t('createQuestionnaire.titleRequired'), 'error');
         return false;
       }
 
@@ -427,10 +450,7 @@ export class CreateQuestionnaireComponent implements OnInit {
       });
 
       if (questionsWithEmptyOptions.length > 0) {
-        const message = this.lang.currentLanguage === 'he'
-          ? 'שאלות בחירה חייבות להכיל לפחות אפשרות אחת'
-          : 'Choice questions must have at least one option';
-        this.toast.show(message, 'error');
+        this.toast.show(this.lang.t('createQuestionnaire.choiceQuestionsNeedOptions'), 'error');
         return false;
       }
 

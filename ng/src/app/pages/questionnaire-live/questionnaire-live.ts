@@ -7,7 +7,6 @@ import { ToastService } from '../../core/services/toast.service';
 import { SupabaseService } from '../../core/services/supabase.service';
 import { LanguageService } from '../../core/services/language.service';
 import { ReferralTrackingService } from '../../core/services/referral-tracking.service';
-import { AutomationService } from '../../core/services/automation.service';
 import { Questionnaire, Question, QuestionOption } from '../../core/models/questionnaire.model';
 
 @Component({
@@ -34,6 +33,7 @@ export class QuestionnaireLive implements OnInit {
   imageUrl = '';
   showLogo = true;
   showProfileImage = true;
+  businessName = '';
 
   // Preview-specific data
   isPreviewMode = false;
@@ -62,8 +62,7 @@ export class QuestionnaireLive implements OnInit {
     public lang: LanguageService,
     private router: Router,
     private route: ActivatedRoute,
-    private referralTracking: ReferralTrackingService,
-    private automationService: AutomationService
+    private referralTracking: ReferralTrackingService
   ) {}
 
   ngOnInit() {
@@ -143,6 +142,7 @@ export class QuestionnaireLive implements OnInit {
           this.backgroundColor = data.profile.background_color || '#b0a0a4';
           this.logoUrl = data.profile.logo_url || '';
           this.imageUrl = data.profile.image_url || '';
+          this.businessName = data.profile.business_name || '';
         }
 
         // Initialize multi-choice responses
@@ -219,7 +219,7 @@ export class QuestionnaireLive implements OnInit {
     try {
       const { data, error } = await this.supabaseService.client
         .from('profiles')
-        .select('brand_primary, brand_secondary, background_color, logo_url, image_url')
+        .select('brand_primary, brand_secondary, background_color, logo_url, image_url, business_name')
         .eq('id', ownerId)
         .single();
 
@@ -229,6 +229,7 @@ export class QuestionnaireLive implements OnInit {
         this.backgroundColor = data.background_color || '#b0a0a4';
         this.logoUrl = data.logo_url || '';
         this.imageUrl = data.image_url || '';
+        this.businessName = data.business_name || '';
       }
     } catch (error) {
       // Silently fail and use default colors
@@ -308,17 +309,46 @@ export class QuestionnaireLive implements OnInit {
       };
 
       // Insert into leads table
-      const { error: leadError } = await this.supabaseService.client
+      const { data: insertedLead, error: leadError } = await this.supabaseService.client
         .from('leads')
-        .insert(leadData);
+        .insert(leadData)
+        .select()
+        .single();
 
       if (leadError) {
         console.error('Error saving lead data:', leadError);
         // Don't throw error - lead saving is optional, response is already saved
+        return;
+      }
+
+      // Trigger automation by calling the Edge Function directly
+      if (insertedLead) {
+        this.triggerAutomation(insertedLead);
       }
     } catch (error) {
       console.error('Error in saveLeadData:', error);
       // Don't throw error - lead saving is optional
+    }
+  }
+
+  private async triggerAutomation(lead: any) {
+    try {
+      // Call the on-new-lead Edge Function to trigger automation
+      const { error } = await this.supabaseService.client.functions.invoke('on-new-lead', {
+        body: {
+          type: 'INSERT',
+          table: 'leads',
+          record: lead
+        }
+      });
+
+      if (error) {
+        console.error('Error triggering automation:', error);
+        // Don't throw - automation failure shouldn't affect the submission
+      }
+    } catch (error) {
+      console.error('Error in triggerAutomation:', error);
+      // Don't throw - automation failure shouldn't affect the submission
     }
   }
 
@@ -588,21 +618,8 @@ export class QuestionnaireLive implements OnInit {
       if (responseError) throw responseError;
 
       // Extract lead data and save to leads table
+      // Automation will be triggered automatically by the database trigger when the lead is created
       await this.saveLeadData(responseData, responseInsert?.id);
-
-      // Execute automation if configured
-      if (this.questionnaire.automation_template_id) {
-        await this.automationService.executeAutomation(
-          {
-            id: this.questionnaire.id,
-            owner_id: this.questionnaire.owner_id,
-            automation_template_id: this.questionnaire.automation_template_id,
-            title: this.questionnaire.title
-          },
-          responseData,
-          this.questions
-        );
-      }
 
       // Show success message for guest view
       this.toastService.show(
@@ -828,5 +845,15 @@ export class QuestionnaireLive implements OnInit {
       this.lang.currentLanguage === 'he' ? 'הטופס אופס' : 'Form reset',
       'success'
     );
+  }
+
+  getExternalUrl(url: string): string {
+    if (!url) return '';
+    // Check if URL already has a protocol
+    if (url.match(/^https?:\/\//i)) {
+      return url;
+    }
+    // Add https:// if no protocol is present
+    return 'https://' + url;
   }
 }

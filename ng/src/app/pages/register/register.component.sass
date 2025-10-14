@@ -95,6 +95,44 @@
   text-align: right
   font-weight: 500
 
+.helper-text
+  display: block
+  color: #6b7280
+  font-size: 0.75rem
+  margin-top: 0.25rem
+  text-align: right
+  font-weight: 400
+
+// Password input with toggle
+.password-input-wrapper
+  position: relative
+  width: 100%
+
+  .form-input
+    padding-left: 2.5rem
+
+  .password-toggle-btn
+    position: absolute
+    left: 0.625rem
+    top: 50%
+    transform: translateY(-50%)
+    background: none
+    border: none
+    color: #6b7280
+    cursor: pointer
+    padding: 0.25rem
+    display: flex
+    align-items: center
+    justify-content: center
+    transition: color 0.2s
+
+    &:hover:not(:disabled)
+      color: #374151
+
+    &:disabled
+      cursor: not-allowed
+      opacity: 0.5
+
 .form-select
   cursor: pointer
   appearance: none

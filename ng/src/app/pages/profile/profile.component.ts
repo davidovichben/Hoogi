@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { LanguageService } from '../../core/services/language.service';
 import { ProfileDetailsComponent } from './profile-details.component';
@@ -13,6 +13,7 @@ import { ProfileBillingComponent } from './profile-billing.component';
 })
 export class ProfileComponent {
   activeTab: 'details' | 'billing' = 'details';
+  @ViewChild(ProfileDetailsComponent) profileDetailsComponent?: ProfileDetailsComponent;
 
   constructor(public lang: LanguageService) {}
 

@@ -77,13 +77,17 @@
     <div class="form-section">
       <!-- Title input -->
       <div class="title-card card">
-        <h3 class="card-title">{{ lang.t('createQuestionnaire.questionnaireTitle') }}</h3>
+        <h3 class="card-title">
+          {{ lang.t('createQuestionnaire.questionnaireTitle') }}
+          <span style="color: #EF4444; margin-inline-start: 4px;">*</span>
+        </h3>
         <input
           type="text"
           [(ngModel)]="formData.title"
           [placeholder]="lang.t('createQuestionnaire.questionnaireTitlePlaceholder')"
           class="form-input"
-          [style.--focus-ring-color]="formData.primaryColor">
+          [style.--focus-ring-color]="formData.primaryColor"
+          required>
       </div>
 
       <!-- Description input -->

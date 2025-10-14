@@ -28,15 +28,17 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
 
   // Current question tracking
   currentQuestionIndex = 0;
-  chatMessages: Array<{type: 'bot' | 'user', text: string, questionIndex?: number}> = [];
+  chatMessages: Array<{type: 'bot' | 'user', text: string, questionIndex?: number, isSuccess?: boolean}> = [];
 
   // Owner's theme colors
   primaryColor = '#199f3a';
   secondaryColor = '#9cbb54';
+  backgroundColor = '#b0a0a4';
   logoUrl = '';
   imageUrl = '';
   showLogo = true;
   showProfileImage = true;
+  businessName = '';
 
   // Store responses
   responses: Record<string, any> = {};
@@ -217,8 +219,10 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
         if (data.profile) {
           this.primaryColor = data.profile.brand_primary || '#199f3a';
           this.secondaryColor = data.profile.brand_secondary || '#9cbb54';
+          this.backgroundColor = data.profile.background_color || '#b0a0a4';
           this.logoUrl = data.profile.logo_url || '';
           this.imageUrl = data.profile.image_url || '';
+          this.businessName = data.profile.business_name || '';
         }
 
         // This is preview mode (owner view)
@@ -275,15 +279,17 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
     try {
       const { data, error } = await this.supabaseService.client
         .from('profiles')
-        .select('brand_primary, brand_secondary, logo_url, image_url')
+        .select('brand_primary, brand_secondary, background_color, logo_url, image_url, business_name')
         .eq('id', ownerId)
         .single();
 
       if (!error && data) {
         this.primaryColor = data.brand_primary || '#199f3a';
         this.secondaryColor = data.brand_secondary || '#9cbb54';
+        this.backgroundColor = data.background_color || '#b0a0a4';
         this.logoUrl = data.logo_url || '';
         this.imageUrl = data.image_url || '';
+        this.businessName = data.business_name || '';
       }
     } catch (error) {
       console.error('Error loading owner theme:', error);
@@ -298,25 +304,17 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
       }
     });
 
-    // Add welcome message with questionnaire name (same for both guest and owner)
-    if (this.questionnaire) {
-      const welcomeText = this.lang.currentLanguage === 'he'
-        ? `שלום! ברוך הבא ל${this.questionnaire.title}. בואו נתחיל בשאלה הראשונה:`
-        : `Hello! Welcome to ${this.questionnaire.title}. Let's start with the first question:`;
+    // Add AI greeting
+    this.chatMessages.push({
+      type: 'bot',
+      text: this.lang.t('questionnaireLive.aiGreeting')
+    });
 
-      this.chatMessages.push({
-        type: 'bot',
-        text: welcomeText
-      });
-    }
-
-    // Add description if available
-    if (this.questionnaire?.description) {
-      this.chatMessages.push({
-        type: 'bot',
-        text: this.questionnaire.description
-      });
-    }
+    // Add user greeting
+    this.chatMessages.push({
+      type: 'user',
+      text: this.lang.t('questionnaireLive.userGreeting')
+    });
 
     // Show first question
     if (this.questions.length > 0) {
@@ -536,7 +534,8 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
 
       this.chatMessages.push({
         type: 'bot',
-        text: thankYouMessage
+        text: thankYouMessage,
+        isSuccess: true
       });
       // Delay scroll to allow DOM to render the thank you message
       setTimeout(() => {
@@ -577,7 +576,8 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
 
       this.chatMessages.push({
         type: 'bot',
-        text: thankYouMessage
+        text: thankYouMessage,
+        isSuccess: true
       });
       // Delay scroll to allow DOM to render the thank you message
       setTimeout(() => {
@@ -954,5 +954,15 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
         }
       }, 500);
     }
+  }
+
+  getExternalUrl(url: string): string {
+    if (!url) return '';
+    // Check if URL already has a protocol
+    if (url.match(/^https?:\/\//i)) {
+      return url;
+    }
+    // Add https:// if no protocol is present
+    return 'https://' + url;
   }
 }
