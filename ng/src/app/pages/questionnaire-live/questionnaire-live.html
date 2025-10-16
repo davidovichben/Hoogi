@@ -28,18 +28,18 @@
                 <h1 class="text-2xl font-bold" [style.color]="secondaryColor">
                   {{ questionnaire.title }}
                 </h1>
+                @if (questionnaire.description) {
+                  <p class="text-center text-base" style="margin-top: 15px;" [style.color]="secondaryColor">{{ questionnaire.description }}</p>
+                }
               </div>
               <div class="w-32 flex-shrink-0">
                 @if (imageUrl && showProfileImage) {
-                  <img [src]="imageUrl" alt="Profile" class="h-32 w-32 rounded-full object-cover border-4" [style.border-color]="secondaryColor" />
+                  <img [src]="imageUrl" alt="Profile" class="h-32 w-32 object-cover" />
                 }
               </div>
             </div>
-            @if (questionnaire.description) {
-              <p class="text-center text-sm mt-3" [style.color]="secondaryColor">{{ questionnaire.description }}</p>
-            }
             @if (questionnaire.attachment_url) {
-              <img [src]="questionnaire.attachment_url" alt="Questionnaire attachment" class="mt-1 mx-auto rounded-lg max-w-full" style="max-height: 14rem;" />
+              <img [src]="questionnaire.attachment_url" alt="Questionnaire attachment" class="mx-auto rounded-lg max-w-full" [class.mb-4]="!questionnaire.link_url" style="max-height: 14rem; margin-top: 19px;" />
             }
             @if (questionnaire.link_url) {
               <div class="text-center mt-2 mb-4">
@@ -306,12 +306,6 @@
                     <h1 class="text-2xl font-bold text-gray-900">
                       {{ questionnaire.title || lang.t('questionnaireLive.untitledQuestionnaire') }}
                     </h1>
-                    @if (questionnaire.description) {
-                      <p class="text-center text-sm mt-6" [style.color]="secondaryColor">{{ questionnaire.description }}</p>
-                    }
-                    @if (questionnaire.attachment_url) {
-                      <img [src]="questionnaire.attachment_url" alt="Questionnaire attachment" class="mt-2 mx-auto rounded-lg max-w-full" style="max-height: 20rem;" />
-                    }
                   </div>
                 </div>
 
@@ -397,18 +391,18 @@
                     <h1 class="text-2xl font-bold" [style.color]="secondaryColor">
                       {{ questionnaire.title || lang.t('questionnaireLive.untitledQuestionnaire') }}
                     </h1>
+                    @if (questionnaire.description) {
+                      <p class="text-center text-base" style="margin-top: 15px;" [style.color]="secondaryColor">{{ questionnaire.description }}</p>
+                    }
                   </div>
                   <div class="w-32 flex-shrink-0">
                     @if (imageUrl && showProfileImage) {
-                      <img [src]="imageUrl" alt="Profile" class="h-32 w-32 rounded-full object-cover border-4" [style.border-color]="secondaryColor" />
+                      <img [src]="imageUrl" alt="Profile" class="h-32 w-32 object-cover" />
                     }
                   </div>
                 </div>
-                @if (questionnaire.description) {
-                  <p class="text-center text-sm mt-4" [style.color]="secondaryColor">{{ questionnaire.description }}</p>
-                }
                 @if (questionnaire.attachment_url) {
-                  <img [src]="questionnaire.attachment_url" alt="Questionnaire attachment" class="mt-1 mx-auto rounded-lg max-w-full" style="max-height: 14rem;" />
+                  <img [src]="questionnaire.attachment_url" alt="Questionnaire attachment" class="mx-auto rounded-lg max-w-full" [class.mb-4]="!questionnaire.link_url" style="max-height: 14rem; margin-top: 19px;" />
                 }
                 @if (questionnaire.link_url) {
                   <div class="text-center mt-2 mb-4">
@@ -641,9 +635,9 @@
 
           <!-- Chat View -->
           @if (viewMode === 'chat') {
-            <div class="space-y-4 rounded-lg p-6" [style.background-color]="backgroundColor">
+            <div class="flex flex-col h-full rounded-lg p-6" [style.background-color]="backgroundColor">
               <!-- Chat Header with Branding -->
-              <div class="rounded-lg p-6" [style.background-color]="backgroundColor">
+              <div class="rounded-lg p-6 flex-shrink-0" [style.background-color]="backgroundColor">
                 <div class="flex flex-col items-center">
                   @if (logoUrl) {
                     <img [src]="logoUrl" alt="Logo" class="h-32 w-32 object-contain" />
@@ -658,9 +652,12 @@
                       <h2 class="text-2xl font-bold mb-2" [style.color]="primaryColor">{{ businessName }}</h2>
                     }
                     <h3 class="text-2xl font-bold" [style.color]="secondaryColor">{{ questionnaire.title }}</h3>
+                    @if (questionnaire.description) {
+                      <p class="text-center text-base" style="margin-top: 15px;" [style.color]="secondaryColor">{{ questionnaire.description }}</p>
+                    }
                     <p class="text-sm mt-4" [style.color]="secondaryColor">{{ lang.t('questionnaireLive.assistantHelper') }}</p>
                     @if (questionnaire.attachment_url) {
-                      <img [src]="questionnaire.attachment_url" alt="Questionnaire attachment" class="mt-2 mx-auto rounded-lg max-w-full" style="max-height: 14rem;" />
+                      <img [src]="questionnaire.attachment_url" alt="Questionnaire attachment" class="mx-auto rounded-lg max-w-full" [class.mb-4]="!questionnaire.link_url" style="max-height: 14rem; margin-top: 23px;" />
                     }
                     @if (questionnaire.link_url) {
                       <div class="text-center mt-2 mb-4">
@@ -677,13 +674,13 @@
               </div>
 
               <!-- Chat Messages -->
-              <div class="space-y-4 overflow-y-auto" style="max-height: calc(100vh - 400px);">
+              <div class="space-y-4 overflow-y-auto flex-1 mb-4">
                 <!-- Bot Message -->
                 <div class="flex gap-3">
                   @if (imageUrl) {
-                    <img [src]="imageUrl" alt="Assistant" class="w-10 h-10 rounded-full object-cover flex-shrink-0 border-2" [style.border-color]="primaryColor" />
+                    <img [src]="imageUrl" alt="Assistant" class="w-10 h-10 object-cover flex-shrink-0" />
                   } @else {
-                    <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" [style.background-color]="primaryColor">
+                    <div class="w-10 h-10 flex items-center justify-center flex-shrink-0" [style.background-color]="primaryColor">
                       <span class="text-white text-sm font-bold">{{ (questionnaire.title || 'H').charAt(0) }}</span>
                     </div>
                   }
@@ -706,9 +703,9 @@
                 @if (questions.length > 0) {
                   <div class="flex gap-3">
                     @if (imageUrl) {
-                      <img [src]="imageUrl" alt="Assistant" class="w-10 h-10 rounded-full object-cover flex-shrink-0 border-2" [style.border-color]="primaryColor" />
+                      <img [src]="imageUrl" alt="Assistant" class="w-10 h-10 object-cover flex-shrink-0" />
                     } @else {
-                      <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" [style.background-color]="primaryColor">
+                      <div class="w-10 h-10 flex items-center justify-center flex-shrink-0" [style.background-color]="primaryColor">
                         <span class="text-white text-sm font-bold">{{ (questionnaire.title || 'H').charAt(0) }}</span>
                       </div>
                     }
@@ -732,16 +729,17 @@
               </div>
 
               <!-- Chat Input -->
-              <div class="flex gap-2">
+              <div class="flex gap-2 flex-shrink-0">
                 <input
                   type="text"
                   [placeholder]="lang.t('questionnaireLive.typeMessage')"
-                  class="flex-1 p-3 border-2 rounded-lg bg-gray-50"
-                  [style.border-color]="primaryColor + '66'" />
+                  class="flex-1 p-3 border-2 rounded-lg bg-white focus:outline-none focus:ring-2"
+                  [style.border-color]="primaryColor + '66'"
+                  [style.--tw-ring-color]="primaryColor" />
                 <button
-                  class="text-white text-sm rounded-lg transition-opacity"
+                  class="text-white text-sm rounded-lg transition-opacity hover:opacity-90"
                   [style.background-color]="primaryColor"
-                  style="width: 156px; height: 40px;">
+                  style="width: 156px; height: 48px;">
                   {{ lang.t('questionnaireLive.send') }}
                 </button>
               </div>

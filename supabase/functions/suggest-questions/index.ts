@@ -568,26 +568,37 @@ serve(async (req) => {
           throw new Error('No AI API key configured');
         }
 
-        // נסה לחלץ מערך JSON מהתגובה
-        let questions: string[] = [];
+        // נסה לחלץ JSON מהתגובה
+        let questions: any[] = [];
         try {
-          // נסה למצוא מערך JSON בתגובה
-          const jsonMatch = aiResponse.match(/\[[\s\S]*\]/);
+          // נסה למצוא JSON בתגובה (אובייקט או מערך)
+          const jsonMatch = aiResponse.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
           if (jsonMatch) {
-            questions = JSON.parse(jsonMatch[0]);
+            const parsed = JSON.parse(jsonMatch[0]);
+            // אם זה אובייקט עם מאפיין questions, קח אותו
+            if (parsed.questions && Array.isArray(parsed.questions)) {
+              questions = parsed.questions;
+            }
+            // אם זה מערך ישירות, השתמש בו
+            else if (Array.isArray(parsed)) {
+              questions = parsed;
+            }
           } else {
             // אם לא נמצא JSON, נסה לחלק לפי שורות
             questions = aiResponse.split('\n')
               .map(line => line.trim())
               .filter(line => line.length > 0 && !line.startsWith('#') && !line.startsWith('-'))
-              .slice(0, max);
+              .slice(0, max)
+              .map(text => ({ text, type: 'text', isRequired: false }));
           }
-        } catch {
+        } catch (parseError) {
+          console.error('JSON parse error:', parseError);
           // fallback: חלוקה לפי שורות
           questions = aiResponse.split('\n')
             .map(line => line.trim())
             .filter(line => line.length > 0 && !line.startsWith('#') && !line.startsWith('-'))
-            .slice(0, max);
+            .slice(0, max)
+            .map(text => ({ text, type: 'text', isRequired: false }));
         }
 
         if (payload.__debug) return ok({ questions, prompt_used });

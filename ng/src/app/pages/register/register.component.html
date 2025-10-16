@@ -32,6 +32,7 @@
             class="form-input"
             [class.error]="emailError"
             (blur)="onEmailBlur()"
+            (input)="onEmailChange()"
             [disabled]="isLoading"
             required
           >

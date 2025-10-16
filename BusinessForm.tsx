@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,8 +13,10 @@ import { Badge } from "@/components/ui/badge";
 
 const BusinessForm = () => {
   const [businessData, setBusinessData] = useState({
+    userName: "", // שם משתמש מהכניסה
     businessName: "",
     mobile: "",
+    whatsapp: "",
     email: "",
     mainCategory: "",
     customMainCategory: "",
@@ -45,6 +47,16 @@ const BusinessForm = () => {
   // Preview URLs for logo and avatar
   const [logoPreview, setLogoPreview] = useState("");
   const [avatarPreview, setAvatarPreview] = useState("");
+
+  // Load user name from localStorage or mock data
+  useEffect(() => {
+    // In a real app, this would come from authentication context
+    const mockUserName = "יוסי כהן"; // This should come from login/authentication
+    setBusinessData(prev => ({
+      ...prev,
+      userName: mockUserName
+    }));
+  }, []);
 
   const handleBusinessDataChange = (field: string, value: string) => {
     setBusinessData({
@@ -153,26 +165,43 @@ const BusinessForm = () => {
         </h2>
 
         <div className="space-y-6">
-          {/* שורה 1: שם העסק */}
-          <div className="space-y-2">
-            <Label htmlFor="businessName" className="text-right font-semibold">
-              שם העסק <span className="text-red-500">*</span> <HoogiTip tip="השם שיופיע בתוכן שייווצר" />
-            </Label>
-            <Input 
-              id="businessName" 
-              value={businessData.businessName} 
-              onChange={(e) => handleBusinessDataChange("businessName", e.target.value)}
-              className="text-right bg-white"
-              placeholder="הכנס את שם העסק"
-              required
-            />
+          {/* שורה 1: שם ושם עסק */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="userName" className="text-right font-semibold">
+                שם <span className="text-red-500">*</span> <HoogiTip tip="השם שלך מהכניסה למערכת" />
+              </Label>
+              <Input 
+                id="userName" 
+                value={businessData.userName} 
+                onChange={(e) => handleBusinessDataChange("userName", e.target.value)}
+                className="text-right bg-gray-50"
+                placeholder="השם שלך"
+                required
+                readOnly
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="businessName" className="text-right font-semibold">
+                שם העסק <span className="text-red-500">*</span> <HoogiTip tip="השם שיופיע בתוכן שייווצר" />
+              </Label>
+              <Input 
+                id="businessName" 
+                value={businessData.businessName} 
+                onChange={(e) => handleBusinessDataChange("businessName", e.target.value)}
+                className="text-right bg-white"
+                placeholder="הכנס את שם העסק"
+                required
+              />
+            </div>
           </div>
 
-          {/* שורה 2: וואטסאפ ומייל */}
+          {/* שורה 2: נייד ווואטסאפ */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="mobile" className="text-right font-semibold">
-                וואטסאפ <span className="text-red-500">*</span>
+                נייד <span className="text-red-500">*</span>
               </Label>
               <Input 
                 id="mobile" 
@@ -186,19 +215,35 @@ const BusinessForm = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-right font-semibold">
-                מייל <span className="text-red-500">*</span>
+              <Label htmlFor="whatsapp" className="text-right font-semibold">
+                וואטסאפ <span className="text-red-500">*</span>
               </Label>
               <Input 
-                id="email" 
-                type="email"
-                value={businessData.email} 
-                onChange={(e) => handleBusinessDataChange("email", e.target.value)} 
-                placeholder="example@email.com"
+                id="whatsapp" 
+                type="tel"
+                value={businessData.whatsapp} 
+                onChange={(e) => handleBusinessDataChange("whatsapp", e.target.value)} 
+                placeholder="050-1234567"
                 className="text-right bg-white"
                 required
               />
             </div>
+          </div>
+
+          {/* שורה 3: מייל */}
+          <div className="space-y-2">
+            <Label htmlFor="email" className="text-right font-semibold">
+              מייל <span className="text-red-500">*</span>
+            </Label>
+            <Input 
+              id="email" 
+              type="email"
+              value={businessData.email} 
+              onChange={(e) => handleBusinessDataChange("email", e.target.value)} 
+              placeholder="example@email.com"
+              className="text-right bg-white"
+              required
+            />
           </div>
 
           {/* שורה 3: תחום, תת תחום, עיסוק עיקרי - מימין לשמאל */}

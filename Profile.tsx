@@ -17,7 +17,7 @@ const Profile = () => {
 
   return (
     <MainLayout initialState="profile">
-      <div className="container mx-auto p-4 max-w-5xl" dir="rtl">
+      <div className="container mx-auto p-3 md:p-6 lg:p-8 max-w-5xl" dir="rtl">
         {/* Back Button */}
         <div className="flex items-center mb-4">
           <Button 
@@ -31,15 +31,15 @@ const Profile = () => {
           </Button>
         </div>
 
-        <h1 className="text-2xl font-bold mb-4 text-right">הפרופיל שלי</h1>
+        <h1 className="text-xl md:text-2xl lg:text-3xl font-bold mb-4 text-right">הפרופיל שלי</h1>
         
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid grid-cols-2">
-            <TabsTrigger value="billing">המנוי שלי</TabsTrigger>
-            <TabsTrigger value="business">פרטי העסק</TabsTrigger>
+          <TabsList className="grid grid-cols-2 w-full">
+            <TabsTrigger value="billing" className="text-sm md:text-base">המנוי שלי</TabsTrigger>
+            <TabsTrigger value="business" className="text-sm md:text-base">פרטי העסק</TabsTrigger>
           </TabsList>
           
-          <div className="mt-6 border rounded-lg p-6">
+          <div className="mt-6 border rounded-lg p-4 md:p-6 lg:p-8">
             <TabsContent value="business">
               <BusinessForm />
             </TabsContent>

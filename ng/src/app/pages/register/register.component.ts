@@ -32,6 +32,7 @@ export class RegisterComponent {
   passwordConfirmTouched = false;
   showPassword = false;
   showPasswordConfirm = false;
+  emailExistsError = false;
 
   constructor(
     private authService: AuthService,
@@ -47,6 +48,7 @@ export class RegisterComponent {
   }
 
   get emailError(): string | null {
+    if (this.emailExistsError) return this.lang.t('register.errors.emailExists');
     if (!this.emailTouched) return null;
     if (!this.email.trim()) return this.lang.t('register.errors.emailRequired');
     if (!this.validateEmail(this.email)) return this.lang.t('register.errors.emailInvalid');
@@ -65,6 +67,10 @@ export class RegisterComponent {
 
   onEmailBlur() {
     this.emailTouched = true;
+  }
+
+  onEmailChange() {
+    this.emailExistsError = false;
   }
 
   onEmailConfirmBlur() {
@@ -153,9 +159,20 @@ export class RegisterComponent {
     }
 
     this.isLoading = true;
+    this.emailExistsError = false;
     try {
       const { data, error } = await this.authService.signUp(this.email, this.password);
-      if (error) throw error;
+      if (error) {
+        // Check if the error is about user already existing
+        if (error.message.toLowerCase().includes('already') ||
+            error.message.toLowerCase().includes('exists') ||
+            error.message.toLowerCase().includes('registered')) {
+          this.emailExistsError = true;
+          this.isLoading = false;
+          return;
+        }
+        throw error;
+      }
 
       // Set language based on preferred locale
       const locale = this.language === 'עברית' ? 'he' : 'en';
@@ -189,7 +206,7 @@ export class RegisterComponent {
       // If confirmation is not required, session will exist
       if (data.session) {
         this.toast.show(this.lang.t('register.success.registered'), 'success');
-        this.router.navigate(['/profile']);
+        this.router.navigate(['/onboarding']);
         return;
       }
 
@@ -197,7 +214,7 @@ export class RegisterComponent {
       const { error: signInErr } = await this.authService.signIn(this.email, this.password);
       if (!signInErr) {
         this.toast.show(this.lang.t('register.success.signingIn'), 'success');
-        this.router.navigate(['/profile']);
+        this.router.navigate(['/onboarding']);
         return;
       }
 

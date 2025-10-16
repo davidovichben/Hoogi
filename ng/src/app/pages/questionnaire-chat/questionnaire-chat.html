@@ -19,7 +19,7 @@
                 {{ questionnaire.title || lang.t('questionnaireLive.untitledQuestionnaire') }}
               </h1>
               @if (questionnaire.description) {
-                <p [style.color]="secondaryColor">{{ questionnaire.description }}</p>
+                <p class="text-base" style="margin-bottom: 15px;" [style.color]="secondaryColor">{{ questionnaire.description }}</p>
               }
             </div>
           </div>
@@ -74,7 +74,7 @@
     </div>
   }
 
-  <div class="chat-container flex-1 relative mx-auto bg-gray-50 w-full md:max-w-[56rem] h-full">
+  <div class="chat-container flex-1 relative mx-auto bg-gray-50 w-full md:max-w-[56rem]">
   <!-- Loading State -->
   @if (isLoading) {
     <div class="flex items-center justify-center h-full">
@@ -84,7 +84,7 @@
 
   <!-- Chat Interface -->
   @if (!isLoading && questionnaire) {
-    <div class="h-full flex flex-col overflow-hidden" [style.background-color]="backgroundColor">
+    <div class="flex flex-col h-full" [style.background-color]="backgroundColor">
     <!-- Header -->
     <div class="chat-header p-8 pb-2 z-20 w-full flex-shrink-0"  [style.background-color]="backgroundColor">
       <div class="flex items-start justify-center gap-4 w-full" [style.direction]="lang.currentLanguage === 'he' ? 'rtl' : 'ltr'">
@@ -100,10 +100,10 @@
           }
           <h1 class="text-2xl font-bold" [style.color]="secondaryColor">{{ questionnaire.title }}</h1>
           @if (questionnaire.description) {
-            <p class="text-center text-sm mt-3" [style.color]="secondaryColor">{{ questionnaire.description }}</p>
+            <p class="text-center text-base" style="margin-bottom: 15px;" [style.color]="secondaryColor">{{ questionnaire.description }}</p>
           }
           @if (questionnaire.attachment_url) {
-            <img [src]="questionnaire.attachment_url" alt="Questionnaire attachment" class="mt-1 mx-auto rounded-lg max-w-full" style="max-height: 14rem;" />
+            <img [src]="questionnaire.attachment_url" alt="Questionnaire attachment" class="mt-1 mx-auto rounded-lg max-w-full" [class.mb-4]="!questionnaire.link_url" style="max-height: 14rem;" />
           }
           @if (questionnaire.link_url) {
             <div class="text-center mt-2 mb-4">
@@ -118,7 +118,7 @@
         </div>
         <div class="w-32 flex-shrink-0">
           @if (imageUrl && showProfileImage) {
-            <img [src]="imageUrl" alt="Profile" class="h-32 w-32 rounded-full object-cover border-4" [style.border-color]="secondaryColor" />
+            <img [src]="imageUrl" alt="Profile" class="h-32 w-32 object-cover" />
           }
         </div>
       </div>
@@ -215,11 +215,34 @@
       </div>
     </div>
 
-    <!-- Input Area (for text-based questions and owner navigation) -->
-	  @if (!isSubmitted && getCurrentQuestion() && !isSingleChoiceQuestion(getCurrentQuestion()!) && !isMultiChoiceQuestion(getCurrentQuestion()!)) {
+    <!-- Input Area (always visible in preview mode, conditionally in guest mode) -->
+	  @if (isOwnerView) {
+      <!-- Preview mode: Always show input box -->
       <div class="bg-white border-t border-gray-200 p-4 shadow-lg flex-shrink-0">
         <div class="flex items-center gap-3" [style.direction]="lang.currentLanguage === 'he' ? 'rtl' : 'ltr'">
-          @if (getCurrentQuestion()!.question_type === 'file') {
+          <input
+            type="text"
+            [(ngModel)]="currentAnswer"
+            (keydown.enter)="submitCurrentAnswer()"
+            class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2"
+            [style.--focus-color]="primaryColor"
+            [placeholder]="lang.t('questionnaireLive.typeMessage')" />
+          <button
+            (click)="submitCurrentAnswer()"
+            class="w-12 h-12 rounded-lg flex items-center justify-center text-white shadow-md hover:shadow-lg transition flex-shrink-0"
+            [style.background-color]="primaryColor">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+          </button>
+        </div>
+      </div>
+    } @else if (!isSubmitted && getCurrentQuestion() && !isSingleChoiceQuestion(getCurrentQuestion()!) && !isMultiChoiceQuestion(getCurrentQuestion()!)) {
+      <!-- Guest mode: Show input for text-based questions -->
+      <div class="bg-white border-t border-gray-200 p-4 shadow-lg flex-shrink-0">
+        <div class="flex items-center gap-3" [style.direction]="lang.currentLanguage === 'he' ? 'rtl' : 'ltr'">
+          @if (getCurrentQuestion() && getCurrentQuestion()!.question_type === 'file') {
             <!-- File Upload -->
             <div class="flex-1">
               <input
@@ -263,7 +286,7 @@
                 </svg>
               </button>
             }
-          } @else if (getCurrentQuestion()!.question_type === 'audio') {
+          } @else if (getCurrentQuestion() && getCurrentQuestion()!.question_type === 'audio') {
             <!-- Audio Recording -->
             <div class="flex-1">
               <button
@@ -314,7 +337,7 @@
                 </svg>
               </button>
             }
-          } @else if (getCurrentQuestion()!.question_type === 'textarea') {
+          } @else if (getCurrentQuestion() && getCurrentQuestion()!.question_type === 'textarea') {
             <textarea
               [(ngModel)]="currentAnswer"
               (keydown)="onKeyPress($event)"
@@ -322,7 +345,7 @@
               class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 resize-none"
               [style.--focus-color]="primaryColor"
               [placeholder]="lang.t('questionnaireLive.enterAnswer')"></textarea>
-          } @else if (getCurrentQuestion()!.question_type === 'email') {
+          } @else if (getCurrentQuestion() && getCurrentQuestion()!.question_type === 'email') {
             <input
               type="email"
               [(ngModel)]="currentAnswer"
@@ -330,7 +353,7 @@
               class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2"
               [style.--focus-color]="primaryColor"
               [placeholder]="lang.t('questionnaireLive.enterAnswer')" />
-          } @else if (getCurrentQuestion()!.question_type === 'phone') {
+          } @else if (getCurrentQuestion() && getCurrentQuestion()!.question_type === 'phone') {
             <input
               type="tel"
               [(ngModel)]="currentAnswer"
@@ -338,7 +361,7 @@
               class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2"
               [style.--focus-color]="primaryColor"
               [placeholder]="lang.t('questionnaireLive.enterPhone')" />
-          } @else if (getCurrentQuestion()!.question_type === 'number') {
+          } @else if (getCurrentQuestion() && getCurrentQuestion()!.question_type === 'number') {
             <input
               type="number"
               [(ngModel)]="currentAnswer"
@@ -346,7 +369,7 @@
               class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2"
               [style.--focus-color]="primaryColor"
               [placeholder]="lang.t('questionnaireLive.enterNumber')" />
-          } @else if (getCurrentQuestion()!.question_type === 'date') {
+          } @else if (getCurrentQuestion() && getCurrentQuestion()!.question_type === 'date') {
             <input
               type="date"
               [(ngModel)]="currentAnswer"
@@ -362,7 +385,7 @@
               [placeholder]="lang.t('questionnaireLive.enterAnswer')" />
           }
 
-          @if (getCurrentQuestion()!.question_type !== 'file' && getCurrentQuestion()!.question_type !== 'audio') {
+          @if (getCurrentQuestion() && getCurrentQuestion()!.question_type !== 'file' && getCurrentQuestion()!.question_type !== 'audio') {
             <button
               (click)="submitCurrentAnswer()"
               class="w-12 h-12 rounded-lg flex items-center justify-center text-white shadow-md hover:shadow-lg transition flex-shrink-0"

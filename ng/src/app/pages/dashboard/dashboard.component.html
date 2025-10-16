@@ -3,7 +3,11 @@
   <div class="dashboard-header">
 	  <div class="header-content">
 		  <div class="logo-container">
-			  <img src="/img/logo.png" alt="Hoogi Avatar" class="logo">
+			  @if (logoUrl) {
+				  <img [src]="logoUrl" alt="Business Logo" class="logo">
+			  } @else {
+				  <img src="/img/logo.png" alt="iHoogi Avatar" class="logo">
+			  }
 		  </div>
 		  <div class="welcome-box">
 			  <h1 class="welcome-title">

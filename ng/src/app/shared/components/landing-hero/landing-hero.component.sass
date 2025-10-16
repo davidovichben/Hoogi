@@ -46,14 +46,27 @@
 .h-32
   height: 8rem
 
+.h-28
+  height: 7rem
+
 .h-24
   height: 6rem
+
+.h-20
+  height: 5rem
 
 .w-24
   width: 6rem
 
+.w-20
+  width: 5rem
+
 .object-contain
   object-fit: contain
+
+.text-2xl
+  font-size: 1.5rem
+  line-height: 2rem
 
 .text-3xl
   font-size: 1.875rem
@@ -70,6 +83,10 @@
 .text-xl
   font-size: 1.25rem
   line-height: 1.75rem
+
+.text-base
+  font-size: 1rem
+  line-height: 1.5rem
 
 .text-lg
   font-size: 1.125rem
@@ -185,9 +202,52 @@
 .leading-relaxed
   line-height: 1.625
 
+// Small breakpoint (640px)
+.sm-h-24
+  @media (min-width: 640px)
+    height: 6rem
+
+.sm-h-28
+  @media (min-width: 640px)
+    height: 7rem
+
+.sm-w-24
+  @media (min-width: 640px)
+    width: 6rem
+
+.sm-text-base
+  @media (min-width: 640px)
+    font-size: 1rem
+    line-height: 1.5rem
+
+.sm-text-lg
+  @media (min-width: 640px)
+    font-size: 1.125rem
+    line-height: 1.75rem
+
+.sm-text-3xl
+  @media (min-width: 640px)
+    font-size: 1.875rem
+    line-height: 2.25rem
+
+.sm-text-4xl
+  @media (min-width: 640px)
+    font-size: 2.25rem
+    line-height: 2.5rem
+
+// Medium breakpoint (768px)
+.md-h-32
+  @media (min-width: 768px)
+    height: 8rem
+
 .md-grid-cols-2
   @media (min-width: 768px)
     grid-template-columns: repeat(2, minmax(0, 1fr))
+
+.md-text-xl
+  @media (min-width: 768px)
+    font-size: 1.25rem
+    line-height: 1.75rem
 
 .md-text-5xl
   @media (min-width: 768px)
@@ -196,5 +256,11 @@
 
 .md-text-6xl
   @media (min-width: 768px)
+    font-size: 3.75rem
+    line-height: 1
+
+// Large breakpoint (1024px)
+.lg-text-6xl
+  @media (min-width: 1024px)
     font-size: 3.75rem
     line-height: 1

@@ -364,6 +364,10 @@ export class CreateQuestionnaireComponent implements OnInit {
         questions: this.formData.questions,
         profile: this.questionnaireProfile,
         questionnaireId: this.questionnaireId,
+        title: this.formData.title,
+        linkUrl: this.formData.linkUrl,
+        attachmentUrl: this.formData.attachmentUrl,
+        description: this.formData.description,
         branding: {
           primaryColor: this.formData.primaryColor,
           secondaryColor: this.formData.secondaryColor,
@@ -374,7 +378,7 @@ export class CreateQuestionnaireComponent implements OnInit {
           showProfileImage: this.formData.showProfileImage
         }
       },
-      disableClose: false
+      disableClose: true
     });
 
     dialogRef.afterClosed().subscribe(async result => {
@@ -636,6 +640,34 @@ export class CreateQuestionnaireComponent implements OnInit {
     if (fileInput) {
       fileInput.value = '';
     }
+  }
+
+  getTrimmedFileName(fileName: string, maxLength: number = 30): string {
+    if (!fileName || fileName.length <= maxLength) {
+      return fileName;
+    }
+
+    // Get file extension
+    const lastDotIndex = fileName.lastIndexOf('.');
+    const extension = lastDotIndex !== -1 ? fileName.substring(lastDotIndex) : '';
+    const nameWithoutExt = lastDotIndex !== -1 ? fileName.substring(0, lastDotIndex) : fileName;
+
+    // Calculate how many characters we can show (accounting for ellipsis and extension)
+    const ellipsis = '...';
+    const availableLength = maxLength - ellipsis.length - extension.length;
+
+    if (availableLength <= 0) {
+      return fileName.substring(0, maxLength - ellipsis.length) + ellipsis;
+    }
+
+    // Show start and a bit of the end
+    const startLength = Math.ceil(availableLength * 0.7);
+    const endLength = Math.floor(availableLength * 0.3);
+
+    const start = nameWithoutExt.substring(0, startLength);
+    const end = endLength > 0 ? nameWithoutExt.substring(nameWithoutExt.length - endLength) : '';
+
+    return start + ellipsis + end + extension;
   }
 
   async loadSavedTemplates() {

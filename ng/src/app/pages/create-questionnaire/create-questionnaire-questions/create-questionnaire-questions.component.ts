@@ -9,9 +9,9 @@ import { LanguageService } from '../../../core/services/language.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { QuestionSuggestionService, type ProfileForAI, type AiQuestion } from '../../../core/services/question-suggestion.service';
 import { OCCUPATIONS, OTHER } from '../../../core/constants/occupations.constant';
-import { LucideAngularModule, FileText, Circle, SquareCheck, Star, Calendar, Mic, Image, Mail, Phone, Paperclip } from 'lucide-angular';
+import { LucideAngularModule, FileText, Circle, SquareCheck, Star, Calendar, Mic, Image, Mail, Phone, Paperclip, X } from 'lucide-angular';
 
-type QuestionType = 'text' | 'textarea' | 'number' | 'email' | 'phone' | 'select' | 'radio' | 'checkbox' | 'single_choice' | 'multiple_choice' | 'rating' | 'audio' | 'file' | 'conditional';
+type QuestionType = 'text' | 'textarea' | 'number' | 'email' | 'phone' | 'date' | 'select' | 'radio' | 'checkbox' | 'single_choice' | 'multiple_choice' | 'rating' | 'audio' | 'file' | 'conditional';
 
 export interface Question {
   id: string;
@@ -42,6 +42,10 @@ export interface QuestionDialogData {
   questions: Question[];
   profile?: QuestionnaireProfile;
   questionnaireId?: string | null;
+  title?: string;
+  linkUrl?: string;
+  attachmentUrl?: string;
+  description?: string;
   branding?: {
     primaryColor?: string;
     secondaryColor?: string;
@@ -64,6 +68,10 @@ export class CreateQuestionnaireQuestionsComponent implements OnInit {
   questions: Question[] = [];
   profile?: QuestionnaireProfile;
   questionnaireId?: string | null;
+  title?: string;
+  linkUrl?: string;
+  attachmentUrl?: string;
+  description?: string;
   branding?: {
     primaryColor?: string;
     secondaryColor?: string;
@@ -83,6 +91,7 @@ export class CreateQuestionnaireQuestionsComponent implements OnInit {
   loadingSuggestions = false;
   loadingSingleSuggestion = false;
   questionDescription = '';
+  aiSuggestionsUsed = false;
 
   OTHER = OTHER;
 
@@ -97,6 +106,7 @@ export class CreateQuestionnaireQuestionsComponent implements OnInit {
   readonly MailIcon = Mail;
   readonly PhoneIcon = Phone;
   readonly PaperclipIcon = Paperclip;
+  readonly XIcon = X;
 
   get questionTypes() {
     const currentLang = this.lang.currentLanguage;
@@ -108,6 +118,7 @@ export class CreateQuestionnaireQuestionsComponent implements OnInit {
         { value: 'radio', label: isHe ? 'בחירה יחידה' : 'Single Choice', icon: this.CircleIcon },
         { value: 'checkbox', label: isHe ? 'בחירה מרובה' : 'Multiple Choice', icon: this.SquareCheckIcon },
         { value: 'rating', label: isHe ? 'דירוג (1-5 כוכבים)' : 'Rating (1-5 stars)', icon: this.StarIcon },
+        { value: 'date', label: isHe ? 'תאריך' : 'Date', icon: this.CalendarIcon },
         { value: 'audio', label: isHe ? 'הקלטה קולית' : 'Audio Recording', icon: this.MicIcon },
         { value: 'conditional', label: isHe ? 'שאלה מותנית' : 'Conditional Question', icon: this.ImageIcon },
         { value: 'email', label: isHe ? 'אימייל' : 'Email', icon: this.MailIcon },
@@ -149,6 +160,10 @@ export class CreateQuestionnaireQuestionsComponent implements OnInit {
     this.questions = [...data.questions];
     this.profile = data.profile;
     this.questionnaireId = data.questionnaireId;
+    this.title = data.title;
+    this.linkUrl = data.linkUrl;
+    this.attachmentUrl = data.attachmentUrl;
+    this.description = data.description;
     this.branding = data.branding;
 
     // Add fixed questions at the start if they don't exist
@@ -331,12 +346,14 @@ export class CreateQuestionnaireQuestionsComponent implements OnInit {
     const previewData = {
       questionnaire: {
         id: this.questionnaireId || 'preview',
-        title: this.profile?.businessName || 'Preview',
-        description: '',
+        title: this.title || 'Preview',
+        description: this.description || '',
         language: this.lang.currentLanguage,
         owner_id: 'preview-user',
         show_logo: this.branding?.showLogo ?? true,
-        show_profile_image: this.branding?.showProfileImage ?? true
+        show_profile_image: this.branding?.showProfileImage ?? true,
+        link_url: this.linkUrl || null,
+        attachment_url: this.attachmentUrl || null
       },
       questions: previewQuestions,
       options: [],
@@ -345,7 +362,8 @@ export class CreateQuestionnaireQuestionsComponent implements OnInit {
         brand_secondary: this.branding?.secondaryColor || '#9cbb54',
         background_color: this.branding?.brandColor || '#b0a0a4',
         logo_url: this.branding?.logoUrl || '',
-        image_url: this.branding?.imageUrl || ''
+        image_url: this.branding?.imageUrl || '',
+        business_name: this.profile?.businessName || ''
       }
     };
 
@@ -523,6 +541,7 @@ export class CreateQuestionnaireQuestionsComponent implements OnInit {
         });
 
         this.questions.push(...mappedQuestions);
+        this.aiSuggestionsUsed = true; // Mark AI suggestions as used
         const message = mappedQuestions.length === 1
           ? this.lang.t('toast.questionAddedDesc')
           : `${mappedQuestions.length} ${this.lang.t('toast.questionsAddedDesc')}`;
@@ -552,6 +571,7 @@ export class CreateQuestionnaireQuestionsComponent implements OnInit {
       'yes_no': 'radio',
       'email': 'email',
       'phone': 'phone',
+      'date': 'date',
       'single': 'radio',
       'multi': 'checkbox',
       'number': 'number',

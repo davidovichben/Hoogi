@@ -28,7 +28,7 @@ export class LandingHeroComponent {
   ) {}
 
   get logoClass(): string {
-    return this.variant === 'signup' ? 'h-24 w-24 object-contain' : 'h-32 mx-auto';
+    return this.variant === 'signup' ? 'h-20 w-20 sm-h-24 sm-w-24 object-contain' : 'h-24 sm-h-28 md-h-32 mx-auto';
   }
 
   get containerClass(): string {
@@ -37,14 +37,14 @@ export class LandingHeroComponent {
 
   get titleClass(): string {
     return this.variant === 'signup'
-      ? 'text-3xl md-text-5xl font-extrabold'
-      : 'text-5xl md-text-6xl font-bold mb-4';
+      ? 'text-2xl sm-text-3xl md-text-5xl font-extrabold'
+      : 'text-3xl sm-text-4xl md-text-5xl lg-text-6xl font-bold mb-4';
   }
 
   get subtitleClass(): string {
     return this.variant === 'signup'
-      ? 'mt-3 text-muted max-w-2xl mx-auto'
-      : 'mt-3 text-muted max-w-2xl mx-auto text-xl';
+      ? 'mt-3 text-muted max-w-2xl mx-auto text-base sm-text-lg'
+      : 'mt-3 text-muted max-w-2xl mx-auto text-base sm-text-lg md-text-xl';
   }
 
   get subtitleKey(): string {
@@ -79,14 +79,14 @@ export class LandingHeroComponent {
 
   get benefitTitleClass(): string {
     return this.variant === 'signup'
-      ? 'font-semibold text-lg mb-1'
-      : 'text-xl font-bold';
+      ? 'font-semibold text-base sm-text-lg mb-1'
+      : 'text-base sm-text-lg md-text-xl font-bold';
   }
 
   get benefitDescClass(): string {
     return this.variant === 'signup'
-      ? 'text-sm text-muted leading-relaxed'
-      : 'text-gray-600 text-sm';
+      ? 'text-sm sm-text-base text-muted leading-relaxed'
+      : 'text-gray-600 text-sm sm-text-base';
   }
 
   get benefits(): Benefit[] {

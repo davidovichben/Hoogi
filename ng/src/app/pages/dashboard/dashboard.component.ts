@@ -42,6 +42,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   error: string | null = null;
   userName = '';
   businessName = '';
+  logoUrl = '';
 
   // Stats
   totalLeadQuota = 180; // Total lead quota
@@ -90,17 +91,22 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
       const { data, error } = await this.supabaseService.client
         .from('profiles')
-        .select('email, company')
+        .select('email, company, username, logo_url')
         .eq('id', userId)
         .single();
 
       if (error) throw error;
 
-      if (data?.company) {
-        this.userName = data.company;
-        this.businessName = data.company;
-      } else if (data?.email) {
-        this.userName = data.email.split('@')[0];
+      if (data) {
+        this.businessName = data.company || '';
+        this.logoUrl = data.logo_url || '';
+
+        // Use username if available, otherwise fall back to email
+        if (data.username) {
+          this.userName = data.username;
+        } else if (data.email) {
+          this.userName = data.email.split('@')[0];
+        }
       }
     } catch (e) {
       const email = this.supabaseService.currentUser?.email;

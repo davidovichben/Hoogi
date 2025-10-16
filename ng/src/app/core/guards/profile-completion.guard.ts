@@ -25,6 +25,14 @@ export class ProfileCompletionGuard implements CanDeactivate<ProfileComponent> {
       return true;
     }
 
+    // Check for unsaved changes first
+    if (component.profileDetailsComponent && component.profileDetailsComponent.hasUnsavedChanges()) {
+      const confirmLeave = confirm(this.lang.t('profile.unsavedChangesWarning'));
+      if (!confirmLeave) {
+        return false;
+      }
+    }
+
     // If profile details component exists and profile is not complete, prevent navigation
     if (component.profileDetailsComponent && !component.profileDetailsComponent.checkProfileComplete()) {
       this.toast.show(this.lang.t('profile.completeRequiredFields'), 'error');

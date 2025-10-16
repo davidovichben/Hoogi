@@ -6,14 +6,21 @@
     <div class="flex items-center justify-end gap-3">
       <button
         (click)="addQuestion()"
-        class="px-6 py-2 text-blue-500 bg-white border border-blue-500 rounded-lg hover:bg-blue-50 transition">
+        [disabled]="loadingSuggestions"
+        class="px-6 py-2 text-blue-500 bg-white border border-blue-500 rounded-lg hover:bg-blue-50 transition disabled:opacity-50 disabled:cursor-not-allowed">
         + {{ lang.t('createQuestionnaire.buildQuestionnaire') }}
       </button>
       <button
         (click)="loadAiSuggestedQuestions()"
-        [disabled]="loadingSuggestions"
+        [disabled]="loadingSuggestions || aiSuggestionsUsed"
         class="px-6 py-2 text-white bg-teal-500 rounded-lg hover:bg-teal-600 transition disabled:opacity-50 disabled:cursor-not-allowed">
-        {{ loadingSuggestions ? lang.t('common.loading') : lang.t('createQuestionnaire.aiSuggestions') }}
+        {{ loadingSuggestions ? lang.t('common.loading') : (aiSuggestionsUsed ? (lang.currentLanguage === 'he' ? 'נוצר בעזרת AI' : 'AI Generated') : lang.t('createQuestionnaire.aiSuggestions')) }}
+      </button>
+      <button
+        (click)="cancel()"
+        class="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition"
+        [attr.aria-label]="lang.t('common.close')">
+        <lucide-icon [img]="XIcon" [size]="24"></lucide-icon>
       </button>
     </div>
   </div>
@@ -28,13 +35,13 @@
         <div class="flex items-center justify-between mb-4">
           <div class="flex items-center gap-3">
             <span class="font-semibold text-sm text-grey">Q{{ i + 1 }}</span>
-            <label class="flex items-center gap-2" [class.cursor-pointer]="!question.isFixed" [class.cursor-not-allowed]="!!question.isFixed">
+            <label class="flex items-center gap-2" [class.cursor-pointer]="!question.isFixed && !loadingSuggestions" [class.cursor-not-allowed]="!!question.isFixed || loadingSuggestions">
               <input
                 type="checkbox"
                 [(ngModel)]="question.isRequired"
-                [disabled]="!!question.isFixed"
+                [disabled]="!!question.isFixed || loadingSuggestions"
                 class="rounded disabled:cursor-not-allowed">
-              <span class="text-sm text-black" [class.text-gray-500]="!!question.isFixed">{{ lang.t('createQuestionnaire.required') }}</span>
+              <span class="text-sm text-black" [class.text-gray-500]="!!question.isFixed || loadingSuggestions">{{ lang.t('createQuestionnaire.required') }}</span>
             </label>
           </div>
 
@@ -44,7 +51,8 @@
             @if (!question.isFixed) {
               <button
                 (click)="duplicateQuestion(i)"
-                class="p-2 hover:text-blue-700 hover:bg-blue-50 rounded transition"
+                [disabled]="loadingSuggestions"
+                class="p-2 hover:text-blue-700 hover:bg-blue-50 rounded transition disabled:opacity-50 disabled:cursor-not-allowed"
                 [attr.aria-label]="lang.t('common.duplicate')">
                 <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
@@ -57,7 +65,8 @@
             @if (canDeleteQuestion(question)) {
               <button
                 (click)="deleteQuestion(question.id)"
-                class="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition"
+                [disabled]="loadingSuggestions"
+                class="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition disabled:opacity-50 disabled:cursor-not-allowed"
                 [attr.aria-label]="lang.t('common.delete')">
                 <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <polyline points="3 6 5 6 21 6"></polyline>
@@ -81,7 +90,7 @@
             <mat-select
               [(ngModel)]="question.type"
               (ngModelChange)="onQuestionTypeChange(question)"
-              [disabled]="!!question.isFixed"
+              [disabled]="!!question.isFixed || loadingSuggestions"
               class="text-right">
               <mat-select-trigger>
                 <div class="flex items-center gap-2">
@@ -113,7 +122,7 @@
           <textarea
             [(ngModel)]="question.text"
             [placeholder]="lang.t('createQuestionnaire.enterQuestionHere')"
-            [disabled]="!!question.isFixed"
+            [disabled]="!!question.isFixed || loadingSuggestions"
             rows="3"
             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-right resize-none disabled:bg-gray-100 disabled:cursor-not-allowed"></textarea>
         </div>
@@ -131,9 +140,10 @@
                   type="number"
                   [(ngModel)]="question.minRating"
                   [placeholder]="lang.t('createQuestionnaire.defaultOne')"
+                  [disabled]="loadingSuggestions"
                   min="1"
                   max="5"
-                  class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 text-right"
+                  class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 text-right disabled:bg-gray-100 disabled:cursor-not-allowed"
                   [class.border-red-500]="hasRatingError(question)"
                   [class.border-gray-300]="!hasRatingError(question)"
                   [class.focus:ring-red-500]="hasRatingError(question)"
@@ -149,9 +159,10 @@
                   type="number"
                   [(ngModel)]="question.maxRating"
                   [placeholder]="lang.t('createQuestionnaire.defaultFive')"
+                  [disabled]="loadingSuggestions"
                   min="1"
                   max="5"
-                  class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 text-right"
+                  class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 text-right disabled:bg-gray-100 disabled:cursor-not-allowed"
                   [class.border-red-500]="hasRatingError(question)"
                   [class.border-gray-300]="!hasRatingError(question)"
                   [class.focus:ring-red-500]="hasRatingError(question)"
@@ -192,12 +203,13 @@
                     type="text"
                     [(ngModel)]="question.options![optIdx]"
                     [placeholder]="lang.t('createQuestionnaire.optionText')"
-                    class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-right">
+                    [disabled]="loadingSuggestions"
+                    class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-right disabled:bg-gray-100 disabled:cursor-not-allowed">
 
                   <!-- Delete Button on Left -->
                   <button
                     (click)="question.options!.splice(optIdx, 1)"
-                    [disabled]="!canDeleteOption(question)"
+                    [disabled]="!canDeleteOption(question) || loadingSuggestions"
                     class="p-2 text-gray-400 hover:text-red-500 transition disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:text-gray-400"
                     [attr.aria-label]="lang.t('common.delete')">
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -213,7 +225,8 @@
             <div class="text-center mt-4">
               <button
                 (click)="addOptionToQuestionByRef(question)"
-                class="text-sm text-blue-500 hover:text-blue-700 font-medium">
+                [disabled]="loadingSuggestions"
+                class="text-sm text-blue-500 hover:text-blue-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed">
                 + {{ lang.t('createQuestionnaire.addOption') }}
               </button>
             </div>
@@ -225,13 +238,13 @@
           <div class="flex gap-2 mt-4">
             <button
               (click)="moveQuestionDown(i)"
-              [disabled]="i === questions.length - 1 || (questions[i + 1]?.isFixed)"
+              [disabled]="i === questions.length - 1 || (questions[i + 1]?.isFixed) || loadingSuggestions"
               class="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-100 transition disabled:opacity-50 disabled:cursor-not-allowed">
               {{ lang.t('createQuestionnaire.moveDown') }}
             </button>
             <button
               (click)="moveQuestionUp(i)"
-              [disabled]="i === 0 || (questions[i - 1]?.isFixed)"
+              [disabled]="i === 0 || (questions[i - 1]?.isFixed) || loadingSuggestions"
               class="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-100 transition disabled:opacity-50 disabled:cursor-not-allowed">
               {{ lang.t('createQuestionnaire.moveUp') }}
             </button>
@@ -243,7 +256,8 @@
 	    <div>
 		    <button
 						    (click)="addQuestion()"
-						    class="px-6 py-2 w-full text-blue-500 bg-white border border-blue-500 rounded-lg hover:bg-blue-50 transition">
+						    [disabled]="loadingSuggestions"
+						    class="px-6 py-2 w-full text-blue-500 bg-white border border-blue-500 rounded-lg hover:bg-blue-50 transition disabled:opacity-50 disabled:cursor-not-allowed">
 			    + {{ lang.t('createQuestionnaire.addQuestion') }}
 		    </button>
 	    </div>
@@ -253,7 +267,8 @@
         <button
           mat-button
           (click)="cancel()"
-          class="px-6 py-3 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+          [disabled]="loadingSuggestions"
+          class="px-6 py-3 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed">
           {{ lang.t('common.cancel') }}
         </button>
         <button

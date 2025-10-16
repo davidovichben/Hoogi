@@ -8,6 +8,7 @@ export const routes: Routes = [
   { path: 'login', loadComponent: () => import('./pages/login/login.component').then(m => m.LoginComponent) },
   { path: 'auth', redirectTo: '/login', pathMatch: 'full' },
   { path: 'register', loadComponent: () => import('./pages/register/register.component').then(m => m.RegisterComponent) },
+  { path: 'onboarding', loadComponent: () => import('./pages/onboarding/onboarding.component').then(m => m.OnboardingComponent) },
   { path: 'auth/update-password', loadComponent: () => import('./pages/update-password/update-password.component').then(m => m.UpdatePasswordComponent) },
   { path: 'q/:id', loadComponent: () => import('./pages/questionnaire-live/questionnaire-live').then(m => m.QuestionnaireLive) },
   { path: 'q/:id/chat', loadComponent: () => import('./pages/questionnaire-chat/questionnaire-chat').then(m => m.QuestionnaireChat) },

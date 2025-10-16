@@ -122,7 +122,9 @@ export class QuestionnaireLive implements OnInit {
           is_active: false,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
-          user_id: data.questionnaire.owner_id
+          user_id: data.questionnaire.owner_id,
+          link_url: data.questionnaire.link_url || null,
+          attachment_url: data.questionnaire.attachment_url || null
         } as Questionnaire;
 
         this.questions = data.questions;

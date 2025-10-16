@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -33,6 +33,7 @@ interface ProfileFormData {
   occupation?: string;
   subOccupation?: string;
   urlSources?: string[];
+  fileSources?: string[];
   socialMedia?: SocialMedia;
 }
 
@@ -59,6 +60,7 @@ export class ProfileDetailsComponent implements OnInit {
     occupation: '',
     subOccupation: '',
     urlSources: [],
+    fileSources: [],
     socialMedia: {
       facebook: '',
       instagram: '',
@@ -77,6 +79,7 @@ export class ProfileDetailsComponent implements OnInit {
   newLink = '';
   private welcomeDialogShown = false;
   private isFirstTimeCompletion = false;
+  private originalFormData: string = '';
 
   // Separate fields for "Other" option textboxes
   customOccupation = '';
@@ -173,8 +176,9 @@ export class ProfileDetailsComponent implements OnInit {
         this.formData.primaryColor = data.brand_primary || '#199f3a';
         this.formData.secondaryColor = data.brand_secondary || '#9cbb54';
         this.formData.brandColor = data.background_color || '#b0a0a4';
-        this.formData.logoUrl = data.logo_url || '';
-        this.formData.imageUrl = data.image_url || '';
+        // Add cache-busting timestamp to image URLs when loading
+        this.formData.logoUrl = data.logo_url ? `${data.logo_url}?t=${Date.now()}` : '';
+        this.formData.imageUrl = data.image_url ? `${data.image_url}?t=${Date.now()}` : '';
 
         // Handle occupation
         const occupation = data.occupation || '';
@@ -210,6 +214,7 @@ export class ProfileDetailsComponent implements OnInit {
         }
 
         this.formData.urlSources = data.url_sources || [];
+        this.formData.fileSources = data.file_sources || [];
         this.formData.socialMedia = data.social_networks || {
           facebook: '',
           instagram: '',
@@ -218,6 +223,13 @@ export class ProfileDetailsComponent implements OnInit {
           youtube: ''
         };
       }
+
+      // Store original data for change detection
+      this.originalFormData = JSON.stringify({
+        ...this.formData,
+        customOccupation: this.customOccupation,
+        customSubOccupation: this.customSubOccupation
+      });
     } catch (e: any) {
       console.error('Error loading profile data:', e);
     }
@@ -537,6 +549,23 @@ export class ProfileDetailsComponent implements OnInit {
     }
   }
 
+  @HostListener('window:beforeunload', ['$event'])
+  unloadNotification($event: any): void {
+    if (this.hasUnsavedChanges()) {
+      $event.preventDefault();
+      $event.returnValue = true;
+    }
+  }
+
+  hasUnsavedChanges(): boolean {
+    const currentData = JSON.stringify({
+      ...this.formData,
+      customOccupation: this.customOccupation,
+      customSubOccupation: this.customSubOccupation
+    });
+    return this.originalFormData !== '' && this.originalFormData !== currentData;
+  }
+
   onLanguageChange(event: any) {
     const language = event.target.value;
     this.formData.language = language;
@@ -547,10 +576,13 @@ export class ProfileDetailsComponent implements OnInit {
   }
 
   addLink() {
-    if (!this.formData.urlSources) {
-      this.formData.urlSources = [];
+    if (this.newLink.trim()) {
+      if (!this.formData.urlSources) {
+        this.formData.urlSources = [];
+      }
+      this.formData.urlSources.push(this.newLink.trim());
+      this.newLink = '';
     }
-    this.formData.urlSources.push('');
   }
 
   removeLink(index: number) {
@@ -559,11 +591,83 @@ export class ProfileDetailsComponent implements OnInit {
     }
   }
 
-  updateUrlSource(index: number, event: Event) {
-    const input = event.target as HTMLInputElement;
-    if (this.formData.urlSources) {
-      this.formData.urlSources[index] = input.value;
+  removeFile(index: number) {
+    if (this.formData.fileSources) {
+      this.formData.fileSources.splice(index, 1);
     }
+  }
+
+  getFileName(url: string): string {
+    const parts = url.split('/');
+    const filename = parts[parts.length - 1];
+    // Remove timestamp prefix if exists
+    const match = filename.match(/^\d+_(.+)$/);
+    return match ? match[1] : filename;
+  }
+
+  getFileType(filename: string): 'pdf' | 'image' | 'other' {
+    const ext = filename.split('.').pop()?.toLowerCase() || '';
+    if (ext === 'pdf') return 'pdf';
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext)) return 'image';
+    return 'other';
+  }
+
+  async onDataSourceFileSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+
+    try {
+      if (!this.currentUserId) {
+        this.toast.show('Please log in to upload', 'error');
+        return;
+      }
+
+      const files = Array.from(input.files);
+
+      for (const file of files) {
+        // Generate unique file path
+        const timestamp = Date.now();
+        const fileExt = file.name.split('.').pop()?.toLowerCase() || 'file';
+        const filePath = `users/${this.currentUserId}/data-sources/${timestamp}_${file.name}`;
+
+        // Upload to Supabase storage in "branding" bucket
+        const { error: uploadError } = await this.supabaseService.client.storage
+          .from('branding')
+          .upload(filePath, file, {
+            upsert: false,
+            contentType: file.type
+          });
+
+        if (uploadError) throw uploadError;
+
+        // Get public URL
+        const { data } = this.supabaseService.client.storage
+          .from('branding')
+          .getPublicUrl(filePath);
+
+        if (!this.formData.fileSources) {
+          this.formData.fileSources = [];
+        }
+        this.formData.fileSources.push(data.publicUrl);
+      }
+
+      this.toast.show(this.lang.t('profile.filesUploadedSuccess'), 'success');
+
+      // Clear input
+      input.value = '';
+    } catch (e: any) {
+      this.toast.show(e.message || String(e), 'error');
+    }
+  }
+
+  resetLogo() {
+    this.formData.logoUrl = '';
+    this.selectedFileName = '';
+  }
+
+  resetProfileImage() {
+    this.formData.imageUrl = '';
+    this.selectedImageFileName = '';
   }
 
   async onFileSelected(event: Event) {
@@ -597,12 +701,14 @@ export class ProfileDetailsComponent implements OnInit {
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
+      // Get public URL with cache-busting timestamp
       const { data } = this.supabaseService.client.storage
         .from('branding')
         .getPublicUrl(filePath);
 
-      this.formData.logoUrl = data.publicUrl;
+      // Add timestamp to prevent browser caching of old image
+      const cacheBustingUrl = `${data.publicUrl}?t=${Date.now()}`;
+      this.formData.logoUrl = cacheBustingUrl;
       this.toast.show(this.lang.t('profile.logoUploadedSuccess'), 'success');
     } catch (e: any) {
       this.toast.show(e.message || String(e), 'error');
@@ -642,12 +748,14 @@ export class ProfileDetailsComponent implements OnInit {
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
+      // Get public URL with cache-busting timestamp
       const { data } = this.supabaseService.client.storage
         .from('branding')
         .getPublicUrl(filePath);
 
-      this.formData.imageUrl = data.publicUrl;
+      // Add timestamp to prevent browser caching of old image
+      const cacheBustingUrl = `${data.publicUrl}?t=${Date.now()}`;
+      this.formData.imageUrl = cacheBustingUrl;
       this.toast.show(this.lang.t('profile.imageUploadedSuccess'), 'success');
     } catch (e: any) {
       this.toast.show(e.message || String(e), 'error');
@@ -722,6 +830,12 @@ export class ProfileDetailsComponent implements OnInit {
       // Clean phone number before saving
       const cleanedPhone = (this.formData.mobile || '').replace(/\D/g, '');
 
+      // Helper function to remove timestamp query parameter before saving
+      const cleanUrl = (url: string | undefined) => {
+        if (!url) return '';
+        return url.split('?')[0]; // Remove query parameters
+      };
+
       const profileData = {
         id: this.currentUserId,
         username: this.formData.username,
@@ -733,12 +847,13 @@ export class ProfileDetailsComponent implements OnInit {
         brand_primary: this.formData.primaryColor,
         brand_secondary: this.formData.secondaryColor,
         background_color: this.formData.brandColor,
-        logo_url: this.formData.logoUrl,
-        image_url: this.formData.imageUrl,
+        logo_url: cleanUrl(this.formData.logoUrl),
+        image_url: cleanUrl(this.formData.imageUrl),
         // Save custom values if OTHER is selected, otherwise save dropdown value
         occupation: this.formData.occupation === OTHER ? this.customOccupation : this.formData.occupation,
         suboccupation: this.formData.subOccupation === OTHER ? this.customSubOccupation : this.formData.subOccupation,
         url_sources: this.formData.urlSources,
+        file_sources: this.formData.fileSources,
         social_networks: this.formData.socialMedia
       };
 
@@ -752,6 +867,13 @@ export class ProfileDetailsComponent implements OnInit {
       console.log('Save result:', { data, error });
 
       if (error) throw error;
+
+      // Update original data after successful save
+      this.originalFormData = JSON.stringify({
+        ...this.formData,
+        customOccupation: this.customOccupation,
+        customSubOccupation: this.customSubOccupation
+      });
 
       // Check if this is the first time profile completion
       if (this.isFirstTimeCompletion) {

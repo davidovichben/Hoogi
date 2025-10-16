@@ -215,15 +215,28 @@
             accept="image/*"
             class="file-input"
             #fileInput>
-          <button
-            (click)="fileInput.click()"
-            type="button"
-            class="upload-btn btn-primary">
-            <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-            </svg>
-            {{ lang.t('profile.uploadLogo') }}
-          </button>
+          <div class="upload-btn-group">
+            <button
+              (click)="fileInput.click()"
+              type="button"
+              class="upload-btn btn-primary">
+              <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+              {{ lang.t('profile.uploadLogo') }}
+            </button>
+            @if (formData.logoUrl) {
+              <button
+                (click)="resetLogo()"
+                type="button"
+                class="reset-upload-btn"
+                [title]="lang.t('profile.removeImage')">
+                <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            }
+          </div>
         </div>
 
         <!-- Profile Image Upload -->
@@ -231,7 +244,7 @@
           <h3 class="upload-title">{{ lang.t('profile.profileImage') }}</h3>
           <div class="upload-preview" [class.has-image]="formData.imageUrl">
             @if (formData.imageUrl) {
-              <img [src]="formData.imageUrl" [alt]="lang.t('profile.profileImage')" class="preview-img preview-img-round">
+              <img [src]="formData.imageUrl" [alt]="lang.t('profile.profileImage')" class="preview-img">
             } @else {
               <div class="upload-placeholder">
                 <svg class="placeholder-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -248,15 +261,28 @@
             accept="image/*"
             class="file-input"
             #imageInput>
-          <button
-            (click)="imageInput.click()"
-            type="button"
-            class="upload-btn btn-secondary">
-            <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-            </svg>
-            {{ lang.t('profile.uploadImage') }}
-          </button>
+          <div class="upload-btn-group">
+            <button
+              (click)="imageInput.click()"
+              type="button"
+              class="upload-btn btn-secondary">
+              <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+              {{ lang.t('profile.uploadImage') }}
+            </button>
+            @if (formData.imageUrl) {
+              <button
+                (click)="resetProfileImage()"
+                type="button"
+                class="reset-upload-btn"
+                [title]="lang.t('profile.removeImage')">
+                <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            }
+          </div>
         </div>
       </div>
     </div>
@@ -286,6 +312,15 @@
               type="text"
               [(ngModel)]="formData.primaryColor"
               class="color-text">
+            <button
+              type="button"
+              (click)="formData.primaryColor = '#ffffff'"
+              class="color-reset-btn"
+              title="Reset to white">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="reset-icon">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </button>
           </div>
         </div>
 
@@ -300,6 +335,15 @@
               type="text"
               [(ngModel)]="formData.secondaryColor"
               class="color-text">
+            <button
+              type="button"
+              (click)="formData.secondaryColor = '#ffffff'"
+              class="color-reset-btn"
+              title="Reset to white">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="reset-icon">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </button>
           </div>
         </div>
 
@@ -314,6 +358,15 @@
               type="text"
               [(ngModel)]="formData.brandColor"
               class="color-text">
+            <button
+              type="button"
+              (click)="formData.brandColor = '#ffffff'"
+              class="color-reset-btn"
+              title="Reset to white">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="reset-icon">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </button>
           </div>
         </div>
       </div>
@@ -436,6 +489,7 @@
       <div class="info-card">
         <label class="info-label">{{ lang.t('profile.infoSources') }}</label>
 
+        <!-- Add Link Section -->
         <div class="add-link-section">
           <p class="section-hint">{{ lang.t('profile.addLink') }}</p>
           <div class="add-link-input">
@@ -456,18 +510,72 @@
           </div>
         </div>
 
-        @if (formData.urlSources && formData.urlSources.length > 0) {
+        <!-- Upload Files Section -->
+        <div class="upload-files-section">
+          <p class="section-hint">{{ lang.t('profile.uploadFiles') }}</p>
+          <input
+            type="file"
+            #dataFileInput
+            (change)="onDataSourceFileSelected($event)"
+            accept=".pdf,.jpg,.jpeg,.png,.gif,.webp"
+            multiple
+            class="file-input">
+          <button
+            type="button"
+            (click)="dataFileInput.click()"
+            class="upload-files-btn">
+            <svg class="btn-icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+            </svg>
+            {{ lang.t('profile.uploadFilesButton') }}
+          </button>
+        </div>
+
+        <!-- Display Added Sources -->
+        @if ((formData.urlSources && formData.urlSources.length > 0) || (formData.fileSources && formData.fileSources.length > 0)) {
           <div class="sources-display">
             <p class="sources-title">{{ lang.t('profile.sourcesAdded') }}</p>
             <div class="sources-list">
+              <!-- Links -->
               @for (url of formData.urlSources; track $index) {
-                <div class="source-badge">
+                <div class="source-badge badge-link">
                   <svg class="badge-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   <span class="badge-text">{{ url.length > 30 ? url.substring(0, 30) + '...' : url }}</span>
                   <button
                     (click)="removeLink($index)"
+                    type="button"
+                    class="remove-btn">
+                    <svg class="remove-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
+              }
+
+              <!-- Files -->
+              @for (fileUrl of formData.fileSources; track $index) {
+                <div class="source-badge"
+                     [class.badge-pdf]="getFileType(getFileName(fileUrl)) === 'pdf'"
+                     [class.badge-image]="getFileType(getFileName(fileUrl)) === 'image'"
+                     [class.badge-file]="getFileType(getFileName(fileUrl)) === 'other'">
+                  @if (getFileType(getFileName(fileUrl)) === 'pdf') {
+                    <svg class="badge-icon" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd" />
+                    </svg>
+                  } @else if (getFileType(getFileName(fileUrl)) === 'image') {
+                    <svg class="badge-icon" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" />
+                    </svg>
+                  } @else {
+                    <svg class="badge-icon" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd" />
+                    </svg>
+                  }
+                  <span class="badge-text">{{ getFileName(fileUrl).length > 20 ? getFileName(fileUrl).substring(0, 20) + '...' : getFileName(fileUrl) }}</span>
+                  <button
+                    (click)="removeFile($index)"
                     type="button"
                     class="remove-btn">
                     <svg class="remove-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">

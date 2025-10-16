@@ -1,0 +1,27 @@
+<div class="toast-container">
+  <div *ngFor="let toast of toasts"
+       class="toast-item"
+       [ngClass]="getToastConfig(toast.type).bgGradient + ' ' + getToastConfig(toast.type).border">
+    <div class="toast-content">
+      <!-- Icon -->
+      <div class="toast-icon-wrapper"
+           [ngClass]="getToastConfig(toast.type).bgGradient + ' ' + getToastConfig(toast.type).border">
+        <lucide-icon
+          [img]="getToastConfig(toast.type).icon"
+          [size]="20"
+          [ngClass]="getToastConfig(toast.type).iconColor">
+        </lucide-icon>
+      </div>
+
+      <!-- Message -->
+      <div class="toast-message">
+        <p class="toast-text">{{ toast.message }}</p>
+      </div>
+
+      <!-- Avatar -->
+      <div class="toast-avatar">
+        <img src="/img/logo.png" alt="iHoogi" class="avatar-img">
+      </div>
+    </div>
+  </div>
+</div>

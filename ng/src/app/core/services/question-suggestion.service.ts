@@ -32,59 +32,34 @@ export class QuestionSuggestionService {
     const otherText = (profile.extra || "").trim();
     const linksText = (profile.links || []).filter(Boolean).join(", ");
 
-    // Determine the primary service focus
-    const serviceFocus = suboccupation || otherText || occupation || "שירות כללי";
+    // Build business info context
+    const businessInfo = `
+שם העסק: ${businessName || "—"}
+תחום עיקרי: ${occupation || "—"}
+תת-תחום: ${suboccupation || "—"}
+${otherText ? `מידע נוסף: ${otherText}` : ''}
+${linksText ? `קישורים/מסמכים: ${linksText}` : ''}`.trim();
 
-    return `אתה מומחה UX ושיווק שמפתח שאלוני לידים ספציפיים לעסקים.
+    const systemPrompt = locale === "he"
+      ? `אתה מומחה ביצירת שאלונים שיווקיים.
+שים דגש על התאמה אישית לעיסוק ולתת־תחום של המשתמש.
+אם קיימים קישורים, מסמכים או מידע נוסף – השתמש בהם כדי לדייק את השאלות.
+המטרה: לייצר שאלון שמוביל לשיחת מכירה.
+בשאלות הראשונות תמיד כלול לפי הסדר: שם מלא, כתובת אימייל, מספר טלפון.
+החזר אך ורק JSON בפורמט הבא:
+{ "questions": [ { "text": string, "type": "text|single|multi|yes_no|date|email|phone", "options"?: string[], "isRequired"?: boolean } ] }`
+      : `You are an expert in generating smart business questionnaires.
+Focus on tailoring questions to the business type and sub-type.
+If links or extra info are provided – use them to personalize the questions.
+The goal: create a lead-generating form that prepares users for a sales call.
+Always include these 3 questions at the beginning, in order: full name, email, phone number.
+Respond ONLY in the following JSON format:
+{ "questions": [ { "text": string, "type": "text|single|multi|yes_no|date|email|phone", "options"?: string[], "isRequired"?: boolean } ] }`;
 
-## 📋 פרטי העסק:
-- שם העסק: ${businessName || "—"}
-- תחום עיקרי: ${occupation || "—"}
-- תת-תחום/התמחות: ${suboccupation || "—"}
-${otherText ? `- פרטים נוספים: ${otherText}` : ''}
-${linksText ? `- קישורים: ${linksText}` : ''}
+    return `${systemPrompt}
 
-## 🎯 המשימה שלך:
-צור שאלון של 5-7 שאלות **ספציפיות** ל**${serviceFocus}**.
-
-**חשוב מאוד:**
-- השאלות צריכות להיות רלוונטיות **בדיוק** לתחום ${serviceFocus}
-- שאל את הלקוח הקצה מה **הוא** צריך (לא שאלות על נותן השירות)
-- השאלות צריכות לעזור להבין את הצורך הספציפי של הלקוח
-
-## 📌 דרישות טכניות:
-- **חובה** לכלול לפחות:
-  - שאלה אחת מסוג "בחירה מרובה" (3-5 אופציות)
-  - שאלה אחת מסוג "בחירה יחידה" (3-5 אופציות)
-  - שאלה אחת מסוג "כן/לא"
-- שאר השאלות יכולות להיות "שדה טקסט חופשי"
-
-## 🔧 פורמט החזרה:
-החזר **רק** JSON תקין, ללא markdown ו-backticks:
-
-[
-  {
-    "type": "בחירה יחידה",
-    "text": "שאלה ספציפית ל-${serviceFocus}?",
-    "options": ["אופציה 1", "אופציה 2", "אופציה 3"]
-  },
-  {
-    "type": "כן/לא",
-    "text": "שאלה כן/לא?"
-  },
-  {
-    "type": "בחירה מרובה",
-    "text": "מה חשוב לך?",
-    "options": ["א", "ב", "ג", "ד"]
-  },
-  {
-    "type": "שדה טקסט חופשי",
-    "text": "שאלה פתוחה?"
-  }
-]
-
-שפה: ${locale}
-**זכור: השאלות חייבות להיות ספציפיות לתחום ${serviceFocus}, לא שאלות גנריות!**`;
+פרטי העסק:
+${businessInfo}`;
   }
 
   async fetchSuggestedQuestions(
