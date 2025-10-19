@@ -72,6 +72,13 @@ export class LeadsComponent implements OnInit {
       if (params['status']) {
         this.filterStatus = params['status'];
       }
+      if (params['tab']) {
+        // Set active tab from query parameter
+        const tabParam = params['tab'];
+        if (tabParam === 'answers-analytics' || tabParam === 'leads') {
+          this.activeTab = tabParam;
+        }
+      }
     });
 
     await this.loadLeads();

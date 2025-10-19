@@ -62,8 +62,12 @@ export class UpdatePasswordComponent implements OnInit, OnDestroy {
     // Check for existing cooldown
     this.loadCooldownState();
 
-    // Load code expiry time and calculate remaining time
-    this.loadCodeExpiryState();
+    // Always reset timer when entering the component (don't load from localStorage)
+    // This ensures a fresh 5-minute timer every time
+    localStorage.removeItem(this.CODE_EXPIRY_KEY);
+    this.timeLeft = 300; // 5 minutes
+    this.saveCodeExpiryState();
+    this.startTimer();
 
     // Auto-focus first digit input after view init
     setTimeout(() => {

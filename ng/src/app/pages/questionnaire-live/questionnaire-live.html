@@ -40,7 +40,7 @@
             </div>
             @if (questionnaire.attachment_url) {
               <div class="text-center" style="margin-top: 19px;">
-                <img [src]="questionnaire.attachment_url" alt="Questionnaire attachment" class="mx-auto rounded-lg max-w-full" style="max-height: 10rem; sm:max-height: 14rem;" />
+                <img [src]="questionnaire.attachment_url" alt="Questionnaire attachment" class="w-full rounded-lg object-contain" style="max-height: 160px;" />
                 @if (questionnaire.attachment_size) {
                   <div class="text-xs text-gray-500 mt-2">({{ formatFileSize(questionnaire.attachment_size) }})</div>
                 }
@@ -516,7 +516,7 @@
                 </div>
                 @if (questionnaire.attachment_url) {
                   <div class="text-center" style="margin-top: 19px;">
-                    <img [src]="questionnaire.attachment_url" alt="Questionnaire attachment" class="mx-auto rounded-lg max-w-full" [class.mb-4]="!questionnaire.link_url" style="max-height: 10rem; sm:max-height: 14rem;" />
+                    <img [src]="questionnaire.attachment_url" alt="Questionnaire attachment" class="w-full rounded-lg object-contain" [class.mb-4]="!questionnaire.link_url" style="max-height: 160px;" />
                     @if (questionnaire.attachment_size) {
                       <div class="text-xs text-gray-500 mt-2">({{ formatFileSize(questionnaire.attachment_size) }})</div>
                     }
@@ -825,7 +825,7 @@
                     <p class="text-sm mt-4" [style.color]="secondaryColor">{{ lang.t('questionnaireLive.assistantHelper') }}</p>
                     @if (questionnaire.attachment_url) {
                       <div class="text-center" style="margin-top: 23px;">
-                        <img [src]="questionnaire.attachment_url" alt="Questionnaire attachment" class="mx-auto rounded-lg max-w-full" [class.mb-4]="!questionnaire.link_url" style="max-height: 14rem;" />
+                        <img [src]="questionnaire.attachment_url" alt="Questionnaire attachment" class="w-full rounded-lg object-contain" [class.mb-4]="!questionnaire.link_url" style="max-height: 160px;" />
                         @if (questionnaire.attachment_size) {
                           <div class="text-xs text-gray-500 mt-2">({{ formatFileSize(questionnaire.attachment_size) }})</div>
                         }

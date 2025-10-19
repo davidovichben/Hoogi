@@ -142,6 +142,18 @@ serve(async (req) => {
     const code = generateCode();
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
 
+    // Delete any existing unused codes for this email to ensure fresh timer
+    const { error: deleteError } = await supabase
+      .from("password_reset_codes")
+      .delete()
+      .eq("email", email)
+      .eq("used", false);
+
+    if (deleteError) {
+      console.error("Error deleting old codes:", deleteError);
+      // Don't throw - continue with insertion even if deletion fails
+    }
+
     // Store code in database
     const { error: insertError } = await supabase
       .from("password_reset_codes")

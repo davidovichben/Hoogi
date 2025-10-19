@@ -652,7 +652,7 @@ export class LanguageService {
     'createQuestionnaire.linkLabelPlaceholder': { en: 'Enter link label (e.g., "Click here", "Website")...', he: 'הזנת תווית לקישור (לדוגמה: "לחץ כאן", "אתר")...' },
     'createQuestionnaire.linkPlaceholder': { en: 'Enter link...', he: 'הזנת קישור...' },
     'createQuestionnaire.invalidUrl': { en: 'Please enter a valid URL (e.g., https://example.com)', he: 'אנא הזן כתובת URL תקינה (לדוגמה: https://example.com)' },
-    'createQuestionnaire.uploadFile': { en: 'Upload image (160x160)', he: 'העלאת תמונה\n (160x160)' },
+    'createQuestionnaire.uploadFile': { en: 'Upload image', he: 'העלאת תמונה\n ' },
     'createQuestionnaire.chooseFile': { en: 'Choose File · Enable Location', he: 'בחירת קובץ · לאפשר מיקום' },
     'createQuestionnaire.questionCreation': { en: 'Question creation', he: 'בניית שאלות' },
     'createQuestionnaire.questionCreationDesc': { en: 'Create and edit questions', he: 'יצירה ועריכה של שאלות' },

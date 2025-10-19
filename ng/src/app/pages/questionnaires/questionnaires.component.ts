@@ -697,4 +697,14 @@ export class QuestionnairesComponent implements OnInit {
 
     this.router.navigate(['/questionnaires/new']);
   }
+
+  handleViewStatistics(questionnaireId: string) {
+    // Navigate to leads page with response analysis tab active
+    this.router.navigate(['/leads'], {
+      queryParams: {
+        questionnaireId: questionnaireId,
+        tab: 'answers-analytics'
+      }
+    });
+  }
 }
