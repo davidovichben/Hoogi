@@ -11,8 +11,9 @@ export const routes: Routes = [
   { path: 'register', loadComponent: () => import('./pages/register/register.component').then(m => m.RegisterComponent) },
   { path: 'onboarding', loadComponent: () => import('./pages/onboarding/onboarding.component').then(m => m.OnboardingComponent) },
   { path: 'auth/update-password', loadComponent: () => import('./pages/update-password/update-password.component').then(m => m.UpdatePasswordComponent) },
-  { path: 'q/:id', loadComponent: () => import('./pages/questionnaire-live/questionnaire-live').then(m => m.QuestionnaireLive) },
-  { path: 'q/:id/chat', loadComponent: () => import('./pages/questionnaire-chat/questionnaire-chat').then(m => m.QuestionnaireChat) },
+  { path: 'q/:token', loadComponent: () => import('./pages/questionnaire-live/questionnaire-live').then(m => m.QuestionnaireLive) },
+  { path: 'q/:token/chat', loadComponent: () => import('./pages/questionnaire-chat/questionnaire-chat').then(m => m.QuestionnaireChat) },
+  { path: 'q/:token/qr', loadComponent: () => import('./pages/questionnaire-qr/questionnaire-qr.component').then(m => m.QuestionnaireQrComponent) },
   { path: 'questionnaires/chat/preview', loadComponent: () => import('./pages/questionnaire-chat/questionnaire-chat').then(m => m.QuestionnaireChat) },
   { path: 'questionnaires/live/preview', loadComponent: () => import('./pages/questionnaire-live/questionnaire-live').then(m => m.QuestionnaireLive) },
   {

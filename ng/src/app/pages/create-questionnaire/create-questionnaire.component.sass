@@ -252,7 +252,7 @@
 	border: 1px solid #e5e7eb
 	border-radius: 0.5rem
 	transition: background-color 0.2s
-	font-size: 1rem
+	font-size: 0.875rem
 	color: #374151
 	text-align: start
 	cursor: pointer
@@ -262,6 +262,9 @@
 
 	&:hover
 		background-color: #f9fafb
+
+	&.has-file
+		padding-inline-start: 3.5rem
 
 .remove-button
 	position: absolute
@@ -274,9 +277,15 @@
 	border: none
 	cursor: pointer
 	padding: 0
+	z-index: 1
+	white-space: nowrap
 
 	&:hover
 		color: #b91c1c
+
+	[dir="rtl"] &
+		left: auto
+		right: 0.5rem
 
 // Questions card with primary gradient
 .questions-card

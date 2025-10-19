@@ -46,6 +46,11 @@ export class LayoutComponent {
     this.sidebarOpen = !this.sidebarOpen;
   }
 
+  closeSidebarOnMobile() {
+    // Close sidebar on mobile after clicking a link
+    this.sidebarOpen = false;
+  }
+
   toggleDemoMode() {
     this.isDemoMode = !this.isDemoMode;
   }

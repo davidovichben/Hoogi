@@ -74,8 +74,10 @@ export class QuestionnaireLive implements OnInit {
     this.detectedChannel = this.referralTracking.detectChannel();
     console.log('Detected channel:', this.detectedChannel);
 
+    const token = this.route.snapshot.paramMap.get('token');
     const id = this.route.snapshot.paramMap.get('id');
-    console.log('Route ID parameter:', id);
+    const tokenOrId = token || id;
+    console.log('Route parameters:', { token, id, tokenOrId });
 
     // Determine view mode based on route path
     const currentPath = this.router.url;
@@ -97,11 +99,11 @@ export class QuestionnaireLive implements OnInit {
     if (currentPath.includes('/preview')) {
       console.log('Loading preview mode...');
       this.loadPreviewData();
-    } else if (id) {
+    } else if (tokenOrId) {
       console.log('Loading questionnaire by ID/token...');
-      this.loadQuestionnaire(id);
+      this.loadQuestionnaire(tokenOrId);
     } else {
-      console.error('No ID parameter found in route!');
+      console.error('No ID or token parameter found in route!');
     }
   }
 
@@ -487,6 +489,16 @@ export class QuestionnaireLive implements OnInit {
       };
     }
 
+    // Check for consecutive dots
+    if (/\.\./.test(email)) {
+      return {
+        valid: false,
+        message: this.lang.currentLanguage === 'he'
+          ? 'נא להזין כתובת אימייל תקינה'
+          : 'Please enter a valid email address'
+      };
+    }
+
     // Standard email regex
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email.trim())) {
@@ -536,43 +548,21 @@ export class QuestionnaireLive implements OnInit {
     if (!this.questionnaire) return;
 
     try {
-      // Validate first three questions with specific validation rules
+      // Validate first question as name (if it's a text field)
       if (this.questions.length >= 1) {
-        // Question 1: Name validation
-        const nameQuestion = this.questions[0];
-        const nameValue = this.responses[nameQuestion.id] || '';
-        const nameValidation = this.validateName(nameValue);
-        if (!nameValidation.valid) {
-          this.toastService.show(nameValidation.message, 'error');
-          return;
+        const firstQuestion = this.questions[0];
+        if (firstQuestion.question_type === 'text') {
+          const nameValue = this.responses[firstQuestion.id] || '';
+          const nameValidation = this.validateName(nameValue);
+          if (!nameValidation.valid) {
+            this.toastService.show(nameValidation.message, 'error');
+            return;
+          }
         }
       }
 
-      if (this.questions.length >= 2) {
-        // Question 2: Email validation
-        const emailQuestion = this.questions[1];
-        const emailValue = this.responses[emailQuestion.id] || '';
-        const emailValidation = this.validateEmail(emailValue);
-        if (!emailValidation.valid) {
-          this.toastService.show(emailValidation.message, 'error');
-          return;
-        }
-      }
-
-      if (this.questions.length >= 3) {
-        // Question 3: Phone validation
-        const phoneQuestion = this.questions[2];
-        const phoneValue = this.responses[phoneQuestion.id] || '';
-        const phoneValidation = this.validateIsraeliPhone(phoneValue);
-        if (!phoneValidation.valid) {
-          this.toastService.show(phoneValidation.message, 'error');
-          return;
-        }
-      }
-
-      // Validate all email fields (beyond the first 3 questions)
-      for (let i = 3; i < this.questions.length; i++) {
-        const question = this.questions[i];
+      // Validate all email fields by question type
+      for (const question of this.questions) {
         if (question.question_type === 'email') {
           const emailValue = this.responses[question.id] || '';
           // Only validate if there's a value (required check happens separately)
@@ -593,9 +583,8 @@ export class QuestionnaireLive implements OnInit {
         }
       }
 
-      // Validate all phone fields (beyond the first 3 questions)
-      for (let i = 3; i < this.questions.length; i++) {
-        const question = this.questions[i];
+      // Validate all phone fields by question type
+      for (const question of this.questions) {
         if (question.question_type === 'phone') {
           const phoneValue = this.responses[question.id] || '';
           // Only validate if there's a value (required check happens separately)
@@ -900,9 +889,16 @@ export class QuestionnaireLive implements OnInit {
       if (this.router.url.includes('/preview')) {
         this.router.navigate(['/questionnaires/chat/preview']);
       } else {
+        const token = this.route.snapshot.paramMap.get('token');
         const id = this.route.snapshot.paramMap.get('id');
-        if (id) {
-          this.router.navigate(['/questionnaires/chat', id]);
+        const tokenOrId = token || id;
+        if (tokenOrId) {
+          // If it's a public route (token), navigate to q/:token/chat
+          if (token) {
+            this.router.navigate(['/q', tokenOrId, 'chat']);
+          } else {
+            this.router.navigate(['/questionnaires/chat', tokenOrId]);
+          }
         }
       }
     } else {
@@ -936,5 +932,17 @@ export class QuestionnaireLive implements OnInit {
     }
     // Add https:// if no protocol is present
     return 'https://' + url;
+  }
+
+  formatFileSize(bytes: number | undefined): string {
+    if (!bytes) return '';
+
+    if (bytes < 1024) {
+      return bytes + ' B';
+    } else if (bytes < 1024 * 1024) {
+      return (bytes / 1024).toFixed(1) + ' KB';
+    } else {
+      return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
   }
 }

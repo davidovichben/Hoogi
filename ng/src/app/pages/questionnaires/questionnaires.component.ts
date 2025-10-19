@@ -5,6 +5,7 @@ import { SupabaseService } from '../../core/services/supabase.service';
 import { LanguageService } from '../../core/services/language.service';
 import { ToastService } from '../../core/services/toast.service';
 import { ProfileValidatorService } from '../../core/services/profile-validator.service';
+import * as QRCode from 'qrcode';
 
 interface Questionnaire {
   id: string;
@@ -29,6 +30,8 @@ export class QuestionnairesComponent implements OnInit {
   respCount: Record<string, number> = {};
   leadCount: Record<string, number> = {};
   openDistributionId: string | null = null;
+  showQRCodeId: string | null = null;
+  qrCodeDataUrl: string = '';
 
   constructor(
     private supabaseService: SupabaseService,
@@ -446,12 +449,24 @@ export class QuestionnairesComponent implements OnInit {
 
   getCardColor(index: number): string {
     const colors = [
-      'bg-blue-50/40 border-blue-200/50',
-      'bg-green-50/40 border-green-200/50',
-      'bg-purple-50/40 border-purple-200/50',
-      'bg-orange-50/40 border-orange-200/50',
-      'bg-pink-50/40 border-pink-200/50',
-      'bg-cyan-50/40 border-cyan-200/50',
+      'bg-blue-50/40 border-blue-300 border-2 shadow-md shadow-blue-100',
+      'bg-green-50/40 border-green-300 border-2 shadow-md shadow-green-100',
+      'bg-purple-50/40 border-purple-300 border-2 shadow-md shadow-purple-100',
+      'bg-orange-50/40 border-orange-300 border-2 shadow-md shadow-orange-100',
+      'bg-pink-50/40 border-pink-300 border-2 shadow-md shadow-pink-100',
+      'bg-cyan-50/40 border-cyan-300 border-2 shadow-md shadow-cyan-100',
+    ];
+    return colors[index % colors.length];
+  }
+
+  getDataBackgroundColor(index: number): string {
+    const colors = [
+      'bg-blue-100/60',
+      'bg-green-100/60',
+      'bg-purple-100/60',
+      'bg-orange-100/60',
+      'bg-pink-100/60',
+      'bg-cyan-100/60',
     ];
     return colors[index % colors.length];
   }
@@ -591,6 +606,73 @@ export class QuestionnairesComponent implements OnInit {
 
   handleDistribute(id: string) {
     this.router.navigate(['/distribution-hub'], { queryParams: { questionnaireId: id } });
+  }
+
+  async handleShowQRCode(q: Questionnaire) {
+    // Check if questionnaire has a token
+    if (!q.token) {
+      this.toast.show(
+        this.lang.currentLanguage === 'he' ? 'השאלון חייב להיות פעיל כדי ליצור QR' : 'Questionnaire must be active to generate QR code',
+        'error'
+      );
+      return;
+    }
+
+    try {
+      // Generate the external URL for the form version
+      const url = `${window.location.origin}/q/${q.token}`;
+
+      // Generate QR code as data URL
+      const qrDataUrl = await QRCode.toDataURL(url, {
+        width: 300,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        }
+      });
+
+      this.qrCodeDataUrl = qrDataUrl;
+      this.showQRCodeId = q.id;
+    } catch (error) {
+      console.error('Error generating QR code:', error);
+      this.toast.show(
+        this.lang.currentLanguage === 'he' ? 'שגיאה ביצירת QR' : 'Error generating QR code',
+        'error'
+      );
+    }
+  }
+
+  closeQRCode() {
+    this.showQRCodeId = null;
+    this.qrCodeDataUrl = '';
+  }
+
+  async downloadQRCode() {
+    if (!this.qrCodeDataUrl || !this.showQRCodeId) return;
+
+    try {
+      const questionnaire = this.questionnaires.find(q => q.id === this.showQRCodeId);
+      if (!questionnaire) return;
+
+      // Create a temporary link element
+      const link = document.createElement('a');
+      link.href = this.qrCodeDataUrl;
+      link.download = `${questionnaire.title || 'questionnaire'}-qr-code.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      this.toast.show(
+        this.lang.currentLanguage === 'he' ? 'QR הורד בהצלחה' : 'QR code downloaded successfully',
+        'success'
+      );
+    } catch (error) {
+      this.toast.show(
+        this.lang.currentLanguage === 'he' ? 'שגיאה בהורדת QR' : 'Error downloading QR code',
+        'error'
+      );
+    }
   }
 
   async goToOnboarding() {

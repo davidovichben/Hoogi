@@ -1,0 +1,153 @@
+.qr-page-container
+  min-height: 100vh
+  display: flex
+  align-items: center
+  justify-content: center
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%)
+  padding: 2rem
+
+.loading-container, .error-container
+  text-align: center
+  background: white
+  padding: 3rem 2rem
+  border-radius: 1.5rem
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2)
+
+.loading-spinner
+  width: 50px
+  height: 50px
+  border: 4px solid rgba(0, 0, 0, 0.1)
+  border-top-color: #667eea
+  border-radius: 50%
+  animation: spin 1s linear infinite
+  margin: 0 auto 1rem
+
+@keyframes spin
+  to
+    transform: rotate(360deg)
+
+.loading-text
+  font-size: 1.125rem
+  color: #666
+  margin: 0
+
+.error-container
+  max-width: 400px
+
+.error-icon
+  font-size: 4rem
+  margin-bottom: 1rem
+
+.error-title
+  font-size: 1.875rem
+  font-weight: 700
+  color: #333
+  margin: 0 0 1rem 0
+
+.error-message
+  font-size: 1.125rem
+  color: #666
+  margin: 0
+
+.qr-content
+  background: white
+  padding: 3rem 2rem
+  border-radius: 1.5rem
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2)
+  max-width: 600px
+  width: 100%
+
+.qr-header
+  text-align: center
+  margin-bottom: 2rem
+
+.business-logo
+  max-width: 120px
+  max-height: 80px
+  object-fit: contain
+  margin-bottom: 1rem
+
+.business-name
+  font-size: 1.875rem
+  font-weight: 700
+  margin: 0
+
+.qr-section
+  text-align: center
+
+.qr-title
+  font-size: 1.5rem
+  font-weight: 600
+  margin: 0 0 1.5rem 0
+
+.qr-instructions
+  margin-bottom: 2rem
+
+  p
+    font-size: 1.125rem
+    color: #666
+    margin: 0
+
+.qr-code-container
+  display: flex
+  justify-content: center
+  margin-bottom: 2rem
+
+.qr-code-wrapper
+  background: white
+  padding: 1.5rem
+  border-radius: 1rem
+  border: 4px solid
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1)
+
+.qr-code-image
+  width: 100%
+  max-width: 400px
+  height: auto
+  display: block
+
+.qr-footer
+  display: flex
+  justify-content: center
+
+.download-button
+  display: flex
+  align-items: center
+  gap: 0.5rem
+  padding: 0.875rem 2rem
+  border: none
+  border-radius: 0.75rem
+  color: white
+  font-size: 1rem
+  font-weight: 600
+  cursor: pointer
+  transition: all 0.2s
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15)
+
+  &:hover
+    transform: translateY(-2px)
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2)
+
+  &:active
+    transform: translateY(0)
+
+  svg
+    flex-shrink: 0
+
+// Responsive
+@media (max-width: 640px)
+  .qr-page-container
+    padding: 1rem
+
+  .qr-content
+    padding: 2rem 1.5rem
+
+  .qr-title
+    font-size: 1.25rem
+
+  .qr-code-image
+    max-width: 300px
+
+  .download-button
+    padding: 0.75rem 1.5rem
+    font-size: 0.875rem

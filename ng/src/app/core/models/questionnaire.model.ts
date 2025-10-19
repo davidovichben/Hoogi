@@ -37,6 +37,7 @@ export interface Questionnaire {
   token?: string;
   automation_template_id?: string;
   attachment_url?: string;
+  attachment_size?: number;
   link_url?: string;
   link_label?: string;
 }

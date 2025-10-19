@@ -1,0 +1,21 @@
+<div class="dialog-overlay">
+  <div class="dialog-container">
+    <div class="dialog-header">
+      <div class="icon-wrapper">
+        <img src="/img/logo.png" alt="Hoogi" class="hoogi-logo">
+      </div>
+      <h1 class="dialog-title">{{ lang.t('profile.completionTitle') }}</h1>
+    </div>
+
+    <div class="dialog-body">
+      <p class="message-line">{{ lang.t('profile.completionMessage1') }}</p>
+      <p class="message-line highlight">{{ lang.t('profile.completionMessage2') }}</p>
+    </div>
+
+    <div class="dialog-footer">
+      <button class="btn-primary" (click)="close()">
+        {{ lang.t('profile.completionButton') }}
+      </button>
+    </div>
+  </div>
+</div>

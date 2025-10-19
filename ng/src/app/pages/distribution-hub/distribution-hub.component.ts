@@ -195,10 +195,12 @@ export class DistributionHubComponent implements OnInit {
     const base = window.location.origin;
     let url = '';
 
-    if (type === 'form' || type === 'qr') {
+    if (type === 'form') {
       url = `${base}/q/${questionnaire.token}`;
     } else if (type === 'chat') {
       url = `${base}/q/${questionnaire.token}/chat`;
+    } else if (type === 'qr') {
+      url = `${base}/q/${questionnaire.token}/qr`;
     }
 
     this.currentMode = type;

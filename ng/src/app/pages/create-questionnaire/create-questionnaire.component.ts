@@ -45,6 +45,7 @@ interface QuestionnaireState {
   linkUrl?: string;
   linkLabel?: string;
   attachmentUrl?: string;
+  attachmentSize?: number;
   aiSuggestionsUsed?: boolean;
 }
 
@@ -302,6 +303,7 @@ export class CreateQuestionnaireComponent implements OnInit, ComponentCanDeactiv
         this.formData.linkUrl = questionnaire.link_url || '';
         this.formData.linkLabel = questionnaire.link_label || '';
         this.formData.attachmentUrl = questionnaire.attachment_url || '';
+        this.formData.attachmentSize = questionnaire.attachment_size || undefined;
         this.formData.showLogo = questionnaire.show_logo ?? true;
         this.formData.showProfileImage = questionnaire.show_profile_image ?? true;
         this.formData.questions = convertedQuestions;
@@ -356,6 +358,7 @@ export class CreateQuestionnaireComponent implements OnInit, ComponentCanDeactiv
         linkUrl: this.formData.linkUrl,
         linkLabel: this.formData.linkLabel,
         attachmentUrl: this.formData.attachmentUrl,
+        attachmentSize: this.formData.attachmentSize,
         description: this.formData.description,
         aiSuggestionsUsed: this.formData.aiSuggestionsUsed,
         branding: {
@@ -471,6 +474,7 @@ export class CreateQuestionnaireComponent implements OnInit, ComponentCanDeactiv
         link_url: this.formData.linkUrl || null,
         link_label: this.formData.linkLabel || null,
         attachment_url: this.formData.attachmentUrl || null,
+        attachment_size: this.formData.attachmentSize || null,
         show_logo: this.formData.showLogo ?? true,
         show_profile_image: this.formData.showProfileImage ?? true
       };
@@ -622,6 +626,7 @@ export class CreateQuestionnaireComponent implements OnInit, ComponentCanDeactiv
         .getPublicUrl(filePath);
 
       this.formData.attachmentUrl = data.publicUrl;
+      this.formData.attachmentSize = file.size;
       this.onFormInput(); // Track form interaction
       this.toast.show(this.lang.t('createQuestionnaire.fileUploadSuccess'), 'success');
     } catch (e: any) {
@@ -641,6 +646,7 @@ export class CreateQuestionnaireComponent implements OnInit, ComponentCanDeactiv
 
   removeAttachment() {
     this.formData.attachmentUrl = '';
+    this.formData.attachmentSize = undefined;
     this.attachmentFileName = '';
     const fileInput = document.getElementById('attachmentFileInput') as HTMLInputElement;
     if (fileInput) {
@@ -674,6 +680,30 @@ export class CreateQuestionnaireComponent implements OnInit, ComponentCanDeactiv
     const end = endLength > 0 ? nameWithoutExt.substring(nameWithoutExt.length - endLength) : '';
 
     return start + ellipsis + end + extension;
+  }
+
+  formatFileSize(bytes: number | undefined): string {
+    if (!bytes) return '';
+
+    if (bytes < 1024) {
+      return bytes + ' B';
+    } else if (bytes < 1024 * 1024) {
+      return (bytes / 1024).toFixed(1) + ' KB';
+    } else {
+      return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+  }
+
+  getFileNameWithSize(): string {
+    if (!this.attachmentFileName) return '';
+
+    const trimmedName = this.getTrimmedFileName(this.attachmentFileName, 25);
+    const fileSize = this.formatFileSize(this.formData.attachmentSize);
+
+    if (fileSize) {
+      return `${trimmedName} (${fileSize})`;
+    }
+    return trimmedName;
   }
 
   // Track form interaction

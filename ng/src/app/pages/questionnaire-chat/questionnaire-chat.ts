@@ -50,6 +50,7 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
   private shouldScrollToBottom = false;
   showOptions = true; // Always show options immediately
   optionsLoading = false; // Show spinner while options are loading
+  isScrolling = false; // Prevent clicks during scroll animation
 
   // File upload
   uploadedFileName = '';
@@ -95,13 +96,15 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
       this.isOwnerView = true;
     }
 
+    const token = this.route.snapshot.paramMap.get('token');
     const id = this.route.snapshot.paramMap.get('id');
+    const tokenOrId = token || id;
 
     // Check if this is a preview request (by path, not ID)
     if (currentPath.includes('/preview')) {
       this.loadPreviewData();
-    } else if (id) {
-      this.loadQuestionnaire(id);
+    } else if (tokenOrId) {
+      this.loadQuestionnaire(tokenOrId);
     }
   }
 
@@ -125,6 +128,15 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
   private validateEmail(email: string): { valid: boolean; message: string } {
     if (!email || !email.trim()) {
       return { valid: false, message: this.lang.currentLanguage === 'he' ? 'נא להזין כתובת מייל' : 'Please enter an email address' };
+    }
+    // Check for consecutive dots
+    if (/\.\./.test(email)) {
+      return {
+        valid: false,
+        message: this.lang.currentLanguage === 'he'
+          ? 'נא להזין כתובת מייל תקינה'
+          : 'Please enter a valid email address'
+      };
     }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email.trim())) {
@@ -163,21 +175,27 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
 
   ngAfterViewChecked() {
     if (this.shouldScrollToBottom) {
-      this.scrollToBottom();
       this.shouldScrollToBottom = false;
+      this.scrollToBottom();
     }
   }
 
   private scrollToBottom(): void {
     try {
       if (this.messagesContainer) {
+        this.isScrolling = true;
         this.messagesContainer.nativeElement.scrollTo({
           top: this.messagesContainer.nativeElement.scrollHeight,
           behavior: 'smooth'
         });
+        // Re-enable clicks after scroll animation completes (smooth scroll takes ~300-500ms)
+        setTimeout(() => {
+          this.isScrolling = false;
+        }, 600);
       }
     } catch (err) {
       console.error('Error scrolling to bottom:', err);
+      this.isScrolling = false;
     }
   }
 
@@ -321,9 +339,33 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
       text: this.lang.t('questionnaireLive.userGreeting')
     });
 
-    // Show first question
+    // Pre-render all questions in the DOM but keep them hidden
+    this.questions.forEach((question, index) => {
+      this.chatMessages.push({
+        type: 'bot',
+        text: question.question_text,
+        questionIndex: index
+      });
+
+      // Add placeholder for user answer (will be updated when answered)
+      this.chatMessages.push({
+        type: 'user',
+        text: '',
+        questionIndex: index
+      });
+    });
+
+    // Trigger initial scroll after DOM updates
     if (this.questions.length > 0) {
-      this.showCurrentQuestion();
+      this.cdr.detectChanges();
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setTimeout(() => {
+            this.shouldScrollToBottom = true;
+            this.cdr.detectChanges();
+          }, 100);
+        });
+      });
     }
   }
 
@@ -334,43 +376,18 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
     this.audioFileName = '';
     this.audioBlob = null;
     this.isRecording = false;
+    this.currentAnswer = '';
 
-    if (this.currentQuestionIndex < this.questions.length) {
-      const question = this.questions[this.currentQuestionIndex];
-      this.chatMessages.push({
-        type: 'bot',
-        text: question.question_text,
-        questionIndex: this.currentQuestionIndex
-      });
-      this.currentAnswer = '';
-
-      // Check if this question has options (choice questions)
-      const hasOptions = this.isSingleChoiceQuestion(question) || this.isMultiChoiceQuestion(question);
-
-      if (hasOptions) {
-        // Show spinner for choice questions
-        this.optionsLoading = true;
-        this.showOptions = true;
-
-        // Wait for DOM to render the options, then scroll
-        setTimeout(() => {
-          this.optionsLoading = false;
-          // Use requestAnimationFrame to ensure DOM is fully updated
-          requestAnimationFrame(() => {
-            setTimeout(() => {
-              this.shouldScrollToBottom = true;
-            }, 50);
-          });
-        }, 400);
-      } else {
-        // For text questions, show immediately and scroll
-        this.optionsLoading = false;
-        this.showOptions = true;
+    // Questions are pre-rendered, just trigger scroll to current question
+    this.cdr.detectChanges();
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
         setTimeout(() => {
           this.shouldScrollToBottom = true;
+          this.cdr.detectChanges();
         }, 100);
-      }
-    }
+      });
+    });
   }
 
   getCurrentQuestion(): Question | null {
@@ -411,7 +428,26 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
            question.question_type === 'conditional';
   }
 
+  isRatingQuestion(question: Question): boolean {
+    return question.question_type === 'rating';
+  }
+
+  getRatingRange(question: Question): number[] {
+    const min = (question as any).min_rating || 1;
+    const max = (question as any).max_rating || 5;
+    const range: number[] = [];
+    for (let i = min; i <= max; i++) {
+      range.push(i);
+    }
+    return range;
+  }
+
   onOptionClick(question: Question, optionValue: string) {
+    // Prevent clicks during scroll animation
+    if (this.isScrolling) {
+      return;
+    }
+
     if (this.isSingleChoiceQuestion(question)) {
       // For single choice, set the response and move to next
       this.responses[question.id] = optionValue;
@@ -422,6 +458,10 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
         this.multiResponses[question.id] = {};
       }
       this.multiResponses[question.id][optionValue] = !this.multiResponses[question.id][optionValue];
+    } else if (this.isRatingQuestion(question)) {
+      // For rating, set the response and move to next
+      this.responses[question.id] = optionValue;
+      this.submitCurrentAnswer(optionValue);
     }
   }
 
@@ -430,11 +470,18 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
       return this.responses[question.id] === optionValue;
     } else if (this.isMultiChoiceQuestion(question)) {
       return this.multiResponses[question.id]?.[optionValue] || false;
+    } else if (this.isRatingQuestion(question)) {
+      return this.responses[question.id] === optionValue;
     }
     return false;
   }
 
   submitCurrentAnswer(answerText?: string) {
+    // Prevent submission during scroll animation
+    if (this.isScrolling) {
+      return;
+    }
+
     const question = this.getCurrentQuestion();
     if (!question) return;
 
@@ -474,23 +521,23 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
         return;
       }
 
-      // Validate first 3 questions (name, email, phone)
-      if (this.currentQuestionIndex === 0) {
+      // Validate based on question type
+      if (question.question_type === 'text' && this.currentQuestionIndex === 0) {
         // First question: Name validation
         const nameValidation = this.validateName(response);
         if (!nameValidation.valid) {
           this.toastService.show(nameValidation.message, 'error');
           return;
         }
-      } else if (this.currentQuestionIndex === 1) {
-        // Second question: Email validation
+      } else if (question.question_type === 'email') {
+        // Email validation for any email field
         const emailValidation = this.validateEmail(response);
         if (!emailValidation.valid) {
           this.toastService.show(emailValidation.message, 'error');
           return;
         }
-      } else if (this.currentQuestionIndex === 2) {
-        // Third question: Israeli phone validation
+      } else if (question.question_type === 'phone') {
+        // Phone validation for any phone field
         const phoneValidation = this.validateIsraeliPhone(response);
         if (!phoneValidation.valid) {
           this.toastService.show(phoneValidation.message, 'error');
@@ -502,18 +549,17 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
     // Store the response
     this.responses[question.id] = response;
 
-    // Add user's answer to chat and auto-advance (same for both guest and owner)
-    this.chatMessages.push({
-      type: 'user',
-      text: displayText
-    });
-    // Delay scroll to allow DOM to render the user's message
-    setTimeout(() => {
-      this.shouldScrollToBottom = true;
-    }, 100);
+    // Update the existing user message for this question
+    const userMessageIndex = this.chatMessages.findIndex(
+      msg => msg.type === 'user' && msg.questionIndex === this.currentQuestionIndex
+    );
+    if (userMessageIndex !== -1) {
+      this.chatMessages[userMessageIndex].text = displayText;
+    }
 
     // Move to next question or finish
     this.currentQuestionIndex++;
+    this.cdr.detectChanges();
 
     if (this.currentQuestionIndex < this.questions.length) {
       setTimeout(() => {
@@ -543,9 +589,15 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
         isSuccess: true
       });
       // Delay scroll to allow DOM to render the thank you message
-      setTimeout(() => {
-        this.shouldScrollToBottom = true;
-      }, 100);
+      this.cdr.detectChanges();
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setTimeout(() => {
+            this.shouldScrollToBottom = true;
+            this.cdr.detectChanges();
+          }, 100);
+        });
+      });
       return;
     }
 
@@ -585,9 +637,15 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
         isSuccess: true
       });
       // Delay scroll to allow DOM to render the thank you message
-      setTimeout(() => {
-        this.shouldScrollToBottom = true;
-      }, 100);
+      this.cdr.detectChanges();
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setTimeout(() => {
+            this.shouldScrollToBottom = true;
+            this.cdr.detectChanges();
+          }, 100);
+        });
+      });
 
     } catch (error: any) {
       this.toastService.show('Error submitting response: ' + (error.message || 'Unknown error'), 'error');
@@ -689,6 +747,11 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
   }
 
   skipCurrentQuestion() {
+    // Prevent skipping during scroll animation
+    if (this.isScrolling) {
+      return;
+    }
+
     const question = this.getCurrentQuestion();
     if (!question) return;
 
@@ -701,22 +764,21 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
       return;
     }
 
-    // Add a "skipped" message to chat
+    // Update the existing user message for this question with skip message
     const skipMessage = this.lang.currentLanguage === 'he' ? 'ללא תשובה' : 'No answer';
-    this.chatMessages.push({
-      type: 'user',
-      text: skipMessage
-    });
+    const userMessageIndex = this.chatMessages.findIndex(
+      msg => msg.type === 'user' && msg.questionIndex === this.currentQuestionIndex
+    );
+    if (userMessageIndex !== -1) {
+      this.chatMessages[userMessageIndex].text = skipMessage;
+    }
 
     // Clear the response for this question
     this.responses[question.id] = null;
 
-    setTimeout(() => {
-      this.shouldScrollToBottom = true;
-    }, 100);
-
     // Move to next question or finish
     this.currentQuestionIndex++;
+    this.cdr.detectChanges();
 
     if (this.currentQuestionIndex < this.questions.length) {
       setTimeout(() => {
@@ -752,9 +814,16 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
     if (this.router.url.includes('/preview')) {
       this.router.navigate(['/questionnaires/live/preview']);
     } else {
+      const token = this.route.snapshot.paramMap.get('token');
       const id = this.route.snapshot.paramMap.get('id');
-      if (id) {
-        this.router.navigate(['/questionnaires/live', id]);
+      const tokenOrId = token || id;
+      if (tokenOrId) {
+        // If it's a public route (token), navigate to q/:token
+        if (token) {
+          this.router.navigate(['/q', tokenOrId]);
+        } else {
+          this.router.navigate(['/questionnaires/live', tokenOrId]);
+        }
       }
     }
   }
@@ -804,8 +873,8 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
     this.audioBlob = null;
     this.isRecording = false;
 
-    // Update options loading state for choice questions
-    const hasOptions = this.isSingleChoiceQuestion(question) || this.isMultiChoiceQuestion(question);
+    // Update options loading state for choice questions and rating
+    const hasOptions = this.isSingleChoiceQuestion(question) || this.isMultiChoiceQuestion(question) || this.isRatingQuestion(question);
     if (hasOptions) {
       this.optionsLoading = true;
       this.showOptions = true;
@@ -974,5 +1043,17 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
     }
     // Add https:// if no protocol is present
     return 'https://' + url;
+  }
+
+  formatFileSize(bytes: number | undefined): string {
+    if (!bytes) return '';
+
+    if (bytes < 1024) {
+      return bytes + ' B';
+    } else if (bytes < 1024 * 1024) {
+      return (bytes / 1024).toFixed(1) + ' KB';
+    } else {
+      return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
   }
 }

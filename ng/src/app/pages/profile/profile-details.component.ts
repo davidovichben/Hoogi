@@ -8,6 +8,7 @@ import { LanguageService } from '../../core/services/language.service';
 import { ToastService } from '../../core/services/toast.service';
 import { OCCUPATIONS, OTHER } from '../../core/constants/occupations.constant';
 import { ProfileWelcomeDialogComponent } from './profile-welcome-dialog.component';
+import { ProfileCompletionDialogComponent } from './profile-completion-dialog.component';
 import { take } from 'rxjs/operators';
 
 interface SocialMedia {
@@ -398,18 +399,20 @@ export class ProfileDetailsComponent implements OnInit {
     // Remove all non-digit characters for validation
     const cleanPhone = phone.replace(/\D/g, '');
 
-    // Israeli phone number validation:
-    // - Must be 9-10 digits
-    // - Mobile: starts with 05 (10 digits) or 5 (9 digits)
-    // - Landline: starts with 0 followed by 2-9 (9-10 digits)
-    const israeliPhoneRegex = /^(0?(5[0-9]|[2-9])\d{7})$/;
+    // Israeli mobile number validation (strict):
+    // - Must be exactly 9 or 10 digits
+    // - Must start with 05 (10 digits) or 5 (9 digits)
+    // - Second digit after 05 or 5 must be 0-9 (carrier code)
+    // - Followed by 7 more digits
+    // Valid formats: 0501234567, 0521234567, 0541234567, etc.
+    const israeliMobileRegex = /^(0?5[0-9]\d{7})$/;
 
-    if (!israeliPhoneRegex.test(cleanPhone)) {
+    if (!israeliMobileRegex.test(cleanPhone)) {
       return {
         valid: false,
         message: this.lang.currentLanguage === 'he'
-          ? 'נא להזין מספר טלפון ישראלי תקין (לדוגמה: 050-1234567)'
-          : 'Please enter a valid Israeli phone number (e.g., 050-1234567)'
+          ? 'נא להזין מספר נייד ישראלי תקין (לדוגמה: 050-1234567)'
+          : 'Please enter a valid Israeli mobile number (e.g., 050-1234567)'
       };
     }
 
@@ -877,16 +880,24 @@ export class ProfileDetailsComponent implements OnInit {
 
       // Check if this is the first time profile completion
       if (this.isFirstTimeCompletion) {
-        // Show special message and navigate to create questionnaire
-        this.toast.show(this.lang.t('profile.savedMovingToQuestionnaire'), 'success');
+        // Show completion dialog and navigate to create questionnaire
+        const dialogRef = this.dialog.open(ProfileCompletionDialogComponent, {
+          width: '600px',
+          maxWidth: '95vw',
+          panelClass: 'welcome-dialog-panel',
+          disableClose: false,
+          autoFocus: false,
+          hasBackdrop: true,
+          backdropClass: 'welcome-dialog-backdrop'
+        });
 
-        // Wait a bit for the toast to be visible, then navigate
-        setTimeout(() => {
+        // Navigate when dialog is closed
+        dialogRef.afterClosed().subscribe(() => {
           this.router.navigate(['/questionnaires/new']).then(() => {
             // Scroll to top after navigation
             window.scrollTo({ top: 0, behavior: 'smooth' });
           });
-        }, 1500);
+        });
       } else {
         // Normal save message
         this.toast.show(this.lang.t('profile.savedSuccessfully'), 'success');

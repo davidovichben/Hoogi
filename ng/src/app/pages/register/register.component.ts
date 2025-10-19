@@ -23,7 +23,7 @@ export class RegisterComponent {
   passwordConfirm = '';
   language = 'עברית';
   agreeToTerms = false;
-  agreeToMarketing = false;
+  agreeToMarketing = true;
   isLoading = false;
 
   emailTouched = false;
@@ -43,6 +43,10 @@ export class RegisterComponent {
   ) {}
 
   validateEmail(email: string): boolean {
+    // Check for consecutive dots
+    if (/\.\./.test(email)) {
+      return false;
+    }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   }
@@ -168,11 +172,6 @@ export class RegisterComponent {
 
     if (!this.agreeToTerms) {
       this.toast.show(this.lang.t('register.errors.termsRequired'), 'error');
-      return;
-    }
-
-    if (!this.agreeToMarketing) {
-      this.toast.show(this.lang.t('register.errors.marketingRequired'), 'error');
       return;
     }
 

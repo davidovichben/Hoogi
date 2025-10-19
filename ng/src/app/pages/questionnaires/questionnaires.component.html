@@ -1,10 +1,10 @@
-<div class="mx-auto p-6 space-y-6 w-[96%]" [class.rtl]="lang.currentLanguage === 'he'" dir="rtl">
+<div class="mx-auto p-0 md:p-6 space-y-3 md:space-y-6 w-full md:w-[96%] bg-white md:bg-transparent" [class.rtl]="lang.currentLanguage === 'he'" dir="rtl">
   <!-- Header -->
-  <div class="flex items-center justify-between">
-    <h1 class="text-2xl font-semibold">{{ lang.t('questionnaires.title') }}</h1>
+  <div class="flex flex-col md:flex-row items-center justify-between gap-3 md:gap-0 p-4 md:p-0 text-center md:text-right">
+    <h1 class="text-xl md:text-2xl font-semibold w-full md:w-auto">{{ lang.t('questionnaires.title') }}</h1>
     <button
       (click)="goToOnboarding()"
-      class="px-6 py-3 text-white rounded-lg font-semibold shadow-md"
+      class="w-full md:w-auto px-6 py-3 text-white rounded-lg font-semibold shadow-md min-h-[44px]"
       style="background-color: hsl(186, 74%, 35%);"
       onmouseover="this.style.backgroundColor='hsl(186, 74%, 30%)'"
       onmouseout="this.style.backgroundColor='hsl(186, 74%, 35%)'">
@@ -24,13 +24,40 @@
 
   <!-- Questionnaires Grid -->
   @if (!loading && !error) {
-    <div class="space-y-3">
+    <div class="space-y-3 sm:space-y-4">
       @for (q of questionnaires; track q.id; let index = $index) {
-        <div class="rounded-lg shadow-sm border p-6 hover:shadow-md transition-shadow" [ngClass]="getCardColor(index)">
+        <div class="rounded-none md:rounded-xl p-4 md:p-6 hover:shadow-lg transition-all border-t border-b md:border border-l-0 border-r-0 md:border-l md:border-r shadow-sm md:shadow-md mb-0 md:mb-0" [ngClass]="getCardColor(index)">
 
           <!-- Top section: Status, Title, Stats -->
-          <div class="mb-6">
-            <div class="flex items-center justify-between gap-4">
+          <div class="mb-4 md:mb-6">
+            <!-- Mobile Layout -->
+            <div class="md:hidden">
+              <div class="flex items-center justify-between mb-3">
+                <button
+                  (click)="toggleActive(q.id)"
+                  class="px-3 py-1 rounded-full text-sm font-medium cursor-pointer hover:opacity-80 transition-opacity min-h-[32px]"
+                  [ngClass]="q.status === 'active' ? 'bg-teal-500 text-white' : 'bg-gray-300 text-gray-700'">
+                  {{ q.status === 'active' ? lang.t('questionnaires.active') : lang.t('questionnaires.draft') }}
+                </button>
+                <div class="flex gap-3">
+                  <div class="text-center cursor-pointer">
+                    <div class="text-lg font-bold text-teal-600">{{ respCount[q.id] || 0 }}</div>
+                    <div class="text-xs text-gray-600">סה״כ</div>
+                  </div>
+                  <div class="text-center cursor-pointer">
+                    <div class="text-lg font-bold text-green-600">{{ leadCount[q.id] || 0 }}</div>
+                    <div class="text-xs text-gray-600">חדשים</div>
+                  </div>
+                </div>
+              </div>
+              <div class="text-right">
+                <h3 class="font-semibold text-base mb-1">{{ q.title || lang.t('questionnaires.untitled') }}</h3>
+                <p class="text-sm text-gray-600">{{ lang.t('questionnaires.createdAt') }} {{ q.created_at ? (q.created_at | date:'d.M.yyyy') : '3.10.2025' }}</p>
+              </div>
+            </div>
+
+            <!-- Desktop Layout -->
+            <div class="hidden md:flex items-center justify-between gap-4">
               <button
                 (click)="toggleActive(q.id)"
                 class="px-3 py-1 rounded-full text-sm font-medium cursor-pointer hover:opacity-80 transition-opacity"
@@ -46,88 +73,20 @@
               <div class="flex gap-4">
                 <div class="text-center cursor-pointer">
                   <div class="text-2xl font-bold text-teal-600">{{ respCount[q.id] || 0 }}</div>
-                  <div class="text-xs text-gray-600">{{ lang.t('questionnaires.responses') }}</div>
+                  <div class="text-xs text-gray-600">סה״כ</div>
                 </div>
                 <div class="text-center cursor-pointer">
                   <div class="text-2xl font-bold text-green-600">{{ leadCount[q.id] || 0 }}</div>
-                  <div class="text-xs text-gray-600">{{ lang.t('questionnaires.leads') }}</div>
+                  <div class="text-xs text-gray-600">חדשים</div>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- Action buttons -->
-          <div class="mb-6 grid grid-cols-6 gap-2">
-            <button
-              (click)="handleView(q.id)"
-              class="flex flex-col items-center gap-1.5 py-3 px-2 rounded-lg hover:bg-teal-50 transition-colors">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-teal-600">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                <circle cx="12" cy="12" r="3"></circle>
-              </svg>
-              <span class="text-xs font-medium">{{ lang.t('questionnaires.view') }}</span>
-            </button>
-
-            <button
-              (click)="handleDistribute(q.id)"
-              class="flex flex-col items-center gap-1.5 py-3 px-2 rounded-lg hover:bg-teal-50 transition-colors">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-teal-600">
-                <circle cx="18" cy="5" r="3"></circle>
-                <circle cx="6" cy="12" r="3"></circle>
-                <circle cx="18" cy="19" r="3"></circle>
-                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
-                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
-              </svg>
-              <span class="text-xs font-medium">{{ lang.t('questionnaires.distribute') }}</span>
-            </button>
-
-            <button
-              (click)="handleEdit(q.id)"
-              class="flex flex-col items-center gap-1.5 py-3 px-2 rounded-lg hover:bg-gray-100 transition-colors">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-600">
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-              </svg>
-              <span class="text-xs font-medium">{{ lang.t('questionnaires.edit') }}</span>
-            </button>
-
-            <button
-              (click)="handleDuplicate(q)"
-              class="flex flex-col items-center gap-1.5 py-3 px-2 rounded-lg hover:bg-gray-100 transition-colors">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-600">
-                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-              </svg>
-              <span class="text-xs font-medium">{{ lang.t('questionnaires.duplicate') }}</span>
-            </button>
-
-            <button
-              class="flex flex-col items-center gap-1.5 py-3 px-2 rounded-lg hover:bg-teal-50 transition-colors">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-teal-600">
-                <line x1="12" y1="20" x2="12" y2="10"></line>
-                <line x1="18" y1="20" x2="18" y2="4"></line>
-                <line x1="6" y1="20" x2="6" y2="16"></line>
-              </svg>
-              <span class="text-xs font-medium">{{ lang.t('questionnaires.data') }}</span>
-            </button>
-
-            <button
-              (click)="handleDelete(q)"
-              class="flex flex-col items-center gap-1.5 py-3 px-2 rounded-lg hover:bg-red-50 transition-colors">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-red-600">
-                <polyline points="3 6 5 6 21 6"></polyline>
-                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                <line x1="10" y1="11" x2="10" y2="17"></line>
-                <line x1="14" y1="11" x2="14" y2="17"></line>
-              </svg>
-              <span class="text-xs font-medium">{{ lang.t('common.delete') }}</span>
-            </button>
-          </div>
-
-          <!-- Bottom section: Sources and Partners -->
-          <div class="pt-4 border-t border-gray-200/50 grid grid-cols-2 gap-3">
+          <!-- Middle section: Sources and Partners -->
+          <div class="mb-4 md:mb-6 grid grid-cols-1 md:grid-cols-2 gap-3">
             <!-- Lead Sources -->
-            <div class="bg-gray-100/50 rounded-lg p-3">
+            <div class="rounded-lg p-3" [ngClass]="getDataBackgroundColor(index)">
               <div class="flex items-center justify-between mb-2">
                 <div class="flex items-center gap-2">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-teal-600">
@@ -139,19 +98,19 @@
                   <h4 class="font-semibold text-sm">{{ lang.t('questionnaires.leadSources') }}</h4>
                 </div>
                 <div class="flex gap-2 text-xs">
-                  <span class="text-teal-600">15 {{ lang.t('questionnaires.total') }}</span>
+                  <span class="text-teal-600">15 סה״כ</span>
                   <span class="text-gray-400">/</span>
-                  <span class="text-green-600">5 {{ lang.t('questionnaires.new') }}</span>
+                  <span class="text-green-600">5 חדשים</span>
                 </div>
               </div>
               <div class="flex flex-wrap gap-1.5">
-                <span class="bg-gray-100 border border-gray-200 px-2 py-1.5 rounded text-xs">פייסבוק (15 / 5)</span>
-                <span class="bg-gray-100 border border-gray-200 px-2 py-1.5 rounded text-xs">אינסטגרם (12 / 4)</span>
+                <span class="bg-white/60 border border-gray-200 px-2 py-1.5 rounded text-xs">פייסבוק (15 / 5)</span>
+                <span class="bg-white/60 border border-gray-200 px-2 py-1.5 rounded text-xs">אינסטגרם (12 / 4)</span>
               </div>
             </div>
 
             <!-- Partners -->
-            <div class="bg-gray-100/30 rounded-lg p-3">
+            <div class="rounded-lg p-3" [ngClass]="getDataBackgroundColor(index)">
               <div class="flex items-center justify-between mb-2">
                 <div class="flex items-center gap-2">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-teal-600">
@@ -163,16 +122,98 @@
                   <h4 class="font-semibold text-sm">{{ lang.t('questionnaires.partners') }}</h4>
                 </div>
                 <div class="flex gap-2 text-xs">
-                  <span class="text-teal-600">32 {{ lang.t('questionnaires.total') }}</span>
+                  <span class="text-teal-600">32 סה״כ</span>
                   <span class="text-gray-400">/</span>
-                  <span class="text-green-600">12 {{ lang.t('questionnaires.new') }}</span>
+                  <span class="text-green-600">12 חדשים</span>
                 </div>
               </div>
               <div class="flex flex-wrap gap-1.5">
-                <span class="bg-slate-100 border border-slate-200 px-2 py-1.5 rounded text-xs">דני כהן (15 / 6)</span>
-                <span class="bg-slate-100 border border-slate-200 px-2 py-1.5 rounded text-xs">יעל לוי (10 / 4)</span>
+                <span class="bg-white/60 border border-slate-200 px-2 py-1.5 rounded text-xs">דני כהן (15 / 6)</span>
+                <span class="bg-white/60 border border-slate-200 px-2 py-1.5 rounded text-xs">יעל לוי (10 / 4)</span>
               </div>
             </div>
+          </div>
+
+          <!-- Customer Response Templates Section -->
+          <div class="mb-4 md:mb-6">
+            <div class="rounded-lg p-3" [ngClass]="getDataBackgroundColor(index)" style="color: rgb(124 45 18 / var(--tw-text-opacity, 1));">
+              <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center gap-2">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 8V4H8"></path>
+                    <rect width="16" height="12" x="4" y="8" rx="2"></rect>
+                    <path d="M2 14h2"></path>
+                    <path d="M20 14h2"></path>
+                    <path d="M15 13v2"></path>
+                    <path d="M9 13v2"></path>
+                  </svg>
+                  <h4 class="font-semibold text-sm">תבניות מענה ללקוח</h4>
+                </div>
+              </div>
+              <!-- Template items would go here with orange background -->
+              <!-- Example: <div class="rounded px-2 py-1.5 text-sm" style="background-color: rgb(254 215 170);">Template Name</div> -->
+              <div class="text-sm">
+                לא הוגדרו תבניות
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom section: Action buttons -->
+          <div class="pt-3 md:pt-4 border-t border-gray-200/50 grid grid-cols-3 md:grid-cols-5 gap-2">
+            <button
+              (click)="handleView(q.id)"
+              class="flex flex-col items-center gap-1 md:gap-1.5 py-2 md:py-3 px-1 md:px-2 rounded-lg hover:bg-teal-50 transition-colors min-h-[64px]">
+              <svg class="w-4 h-4 md:w-5 md:h-5 text-teal-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+              <span class="text-[0.65rem] md:text-xs font-medium leading-tight text-center">{{ lang.t('questionnaires.view') }}</span>
+            </button>
+
+            <button
+              (click)="handleDistribute(q.id)"
+              class="flex flex-col items-center gap-1 md:gap-1.5 py-2 md:py-3 px-1 md:px-2 rounded-lg hover:bg-teal-50 transition-colors min-h-[64px]">
+              <svg class="w-4 h-4 md:w-5 md:h-5 text-teal-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="18" cy="5" r="3"></circle>
+                <circle cx="6" cy="12" r="3"></circle>
+                <circle cx="18" cy="19" r="3"></circle>
+                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+              </svg>
+              <span class="text-[0.65rem] md:text-xs font-medium leading-tight text-center">{{ lang.t('questionnaires.distribute') }}</span>
+            </button>
+
+            <button
+              (click)="handleEdit(q.id)"
+              class="flex flex-col items-center gap-1 md:gap-1.5 py-2 md:py-3 px-1 md:px-2 rounded-lg hover:bg-gray-100 transition-colors min-h-[64px]">
+              <svg class="w-4 h-4 md:w-5 md:h-5 text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+              </svg>
+              <span class="text-[0.65rem] md:text-xs font-medium leading-tight text-center">{{ lang.t('questionnaires.edit') }}</span>
+            </button>
+
+            <button
+              (click)="handleDuplicate(q)"
+              class="flex flex-col items-center gap-1 md:gap-1.5 py-2 md:py-3 px-1 md:px-2 rounded-lg hover:bg-gray-100 transition-colors min-h-[64px]">
+              <svg class="w-4 h-4 md:w-5 md:h-5 text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+              <span class="text-[0.65rem] md:text-xs font-medium leading-tight text-center">{{ lang.t('questionnaires.duplicate') }}</span>
+            </button>
+
+            <button
+              (click)="handleDelete(q)"
+              class="flex flex-col items-center gap-1 md:gap-1.5 py-2 md:py-3 px-1 md:px-2 rounded-lg hover:bg-red-50 transition-colors min-h-[64px]">
+              <svg class="w-4 h-4 md:w-5 md:h-5 text-red-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                <line x1="10" y1="11" x2="10" y2="17"></line>
+                <line x1="14" y1="11" x2="14" y2="17"></line>
+              </svg>
+              <span class="text-[0.65rem] md:text-xs font-medium leading-tight text-center">{{ lang.t('common.delete') }}</span>
+            </button>
           </div>
         </div>
       }
@@ -193,3 +234,65 @@
     </div>
   }
 </div>
+
+<!-- QR Code Modal -->
+@if (showQRCodeId) {
+  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" (click)="closeQRCode()">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6" (click)="$event.stopPropagation()" [dir]="lang.currentLanguage === 'he' ? 'rtl' : 'ltr'">
+      <!-- Header -->
+      <div class="flex items-center justify-between mb-6">
+        <h3 class="text-xl font-bold" [style.color]="'hsl(186, 74%, 35%)'">
+          {{ lang.currentLanguage === 'he' ? 'קוד QR לשאלון' : 'Questionnaire QR Code' }}
+        </h3>
+        <button
+          (click)="closeQRCode()"
+          class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <!-- QR Code Image -->
+      <div class="flex justify-center mb-6">
+        <div class="bg-white p-4 rounded-lg border-2 border-gray-200 shadow-sm">
+          <img [src]="qrCodeDataUrl" alt="QR Code" class="w-64 h-64" />
+        </div>
+      </div>
+
+      <!-- Info Text -->
+      <div class="mb-6 text-center">
+        <p class="text-sm text-gray-600">
+          {{ lang.currentLanguage === 'he'
+            ? 'סרוק את קוד ה-QR כדי לפתוח את השאלון בטופס'
+            : 'Scan the QR code to open the questionnaire in form mode' }}
+        </p>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex gap-3">
+        <button
+          (click)="downloadQRCode()"
+          class="flex-1 px-4 py-3 rounded-lg font-semibold text-white shadow-md hover:shadow-lg transition-all"
+          style="background-color: hsl(186, 74%, 35%);"
+          onmouseover="this.style.backgroundColor='hsl(186, 74%, 30%)'"
+          onmouseout="this.style.backgroundColor='hsl(186, 74%, 35%)'">
+          <div class="flex items-center justify-center gap-2">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            <span>{{ lang.currentLanguage === 'he' ? 'הורד QR' : 'Download QR' }}</span>
+          </div>
+        </button>
+        <button
+          (click)="closeQRCode()"
+          class="flex-1 px-4 py-3 bg-gray-100 rounded-lg font-semibold text-gray-700 hover:bg-gray-200 transition-all">
+          {{ lang.currentLanguage === 'he' ? 'סגור' : 'Close' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

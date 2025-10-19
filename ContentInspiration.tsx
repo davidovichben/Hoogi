@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent } from "@/components/ui/card";
-import { FileText, Calendar, MessageSquare, Users, BarChart3, Edit, Copy, Share2, FileInput, QrCode, Facebook, MessagesSquare, ExternalLink, Instagram, Linkedin, Globe, Mail, Bot, Link as LinkIcon, MessageCircle, Eye, ChevronDown, ArrowRight, Menu, X } from "lucide-react";
+import { FileText, Calendar, MessageSquare, Users, BarChart3, Edit, Copy, Share2, FileInput, QrCode, Facebook, MessagesSquare, ExternalLink, Instagram, Linkedin, Globe, Mail, Bot, Link as LinkIcon, MessageCircle, Eye, ChevronDown, ArrowRight, Menu, X, Plus } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import questionnairesIcon from "@/assets/questionnaires-icon-new.png";
@@ -40,6 +40,15 @@ interface Questionnaire {
     total: number;
     new: number;
   }[];
+  templates: {
+    id: number;
+    name: string;
+    type: string;
+    channels: string[];
+    status: string;
+    usageCount: number;
+    sentCount: number;
+  }[];
 }
 
 const ContentInspiration = () => {
@@ -71,6 +80,36 @@ const ContentInspiration = () => {
         { name: "דני כהן", total: 15, new: 6 },
         { name: "יעל לוי", total: 10, new: 4 },
         { name: "רון אבני", total: 7, new: 2 }
+      ],
+      templates: [
+        { 
+          id: 1,
+          name: "תבנית מענה סטנדרטית", 
+          type: "standard",
+          channels: ["email"],
+          status: "active",
+          usageCount: 45,
+          sentCount: 12,
+          channelStats: {
+            email: 12,
+            whatsapp: 0,
+            sms: 0
+          }
+        },
+        { 
+          id: 2,
+          name: "מענה AI מותאם", 
+          type: "ai",
+          channels: ["email", "whatsapp"],
+          status: "active",
+          usageCount: 23,
+          sentCount: 8,
+          channelStats: {
+            email: 5,
+            whatsapp: 3,
+            sms: 0
+          }
+        }
       ]
     },
     {
@@ -92,6 +131,36 @@ const ContentInspiration = () => {
       partners: [
         { name: "מיכל גרין", total: 12, new: 4 },
         { name: "אורי שמש", total: 6, new: 2 }
+      ],
+      templates: [
+        { 
+          id: 3,
+          name: "תבנית תזכורת שבועית", 
+          type: "reminder",
+          channels: ["whatsapp", "message"],
+          status: "inactive",
+          usageCount: 12,
+          sentCount: 5,
+          channelStats: {
+            email: 0,
+            whatsapp: 3,
+            sms: 2
+          }
+        },
+        { 
+          id: 4,
+          name: "מענה משולב אישי", 
+          type: "combined",
+          channels: ["email", "whatsapp", "message"],
+          status: "active",
+          usageCount: 67,
+          sentCount: 15,
+          channelStats: {
+            email: 8,
+            whatsapp: 4,
+            sms: 3
+          }
+        }
       ]
     },
     {
@@ -104,7 +173,8 @@ const ContentInspiration = () => {
       leads: { total: 0, new: 0, cancellations: 0 },
       sources: [],
       automations: [],
-      partners: []
+      partners: [],
+      templates: []
     }
   ]);
 
@@ -114,12 +184,25 @@ const ContentInspiration = () => {
 
   const getCardBackgroundColor = (index: number) => {
     const colors = [
-      'bg-blue-50/30 border-blue-200/50',
-      'bg-green-50/30 border-green-200/50', 
-      'bg-purple-50/30 border-purple-200/50',
-      'bg-orange-50/30 border-orange-200/50',
-      'bg-pink-50/30 border-pink-200/50',
-      'bg-cyan-50/30 border-cyan-200/50'
+      'bg-blue-50/40 border-blue-300 border-2 shadow-md shadow-blue-100',
+      'bg-green-50/40 border-green-300 border-2 shadow-md shadow-green-100', 
+      'bg-purple-50/40 border-purple-300 border-2 shadow-md shadow-purple-100',
+      'bg-orange-50/40 border-orange-300 border-2 shadow-md shadow-orange-100',
+      'bg-pink-50/40 border-pink-300 border-2 shadow-md shadow-pink-100',
+      'bg-cyan-50/40 border-cyan-300 border-2 shadow-md shadow-cyan-100'
+    ];
+    return colors[index % colors.length];
+  };
+
+  // קבל צבע רקע כהה יותר לנתונים (ערוצים ושותפים)
+  const getDataBackgroundColor = (index: number) => {
+    const colors = [
+      'bg-blue-100/60',      // כחול כהה יותר
+      'bg-green-100/60',     // ירוק כהה יותר
+      'bg-purple-100/60',    // סגול כהה יותר
+      'bg-orange-100/60',    // כתום כהה יותר
+      'bg-pink-100/60',      // ורוד כהה יותר
+      'bg-cyan-100/60'       // ציאן כהה יותר
     ];
     return colors[index % colors.length];
   };
@@ -200,10 +283,21 @@ const ContentInspiration = () => {
           </Button>
         </div>
 
-        <h1 className="text-2xl md:text-3xl font-bold mb-6 flex items-center justify-end">
-          <img src={questionnairesIcon} alt="שאלונים" className="h-7 w-7 md:h-8 md:w-8 ml-3" />
-          השאלונים שלי
-        </h1>
+        {/* Header with Title and New Questionnaire Button */}
+        <div className="flex items-center justify-between mb-6">
+          <Button 
+            onClick={() => window.location.href = '/create-questionnaire'}
+            className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2"
+          >
+            <Plus className="h-5 w-5" />
+            שאלון חדש
+          </Button>
+          
+          <h1 className="text-2xl md:text-3xl font-bold flex items-center">
+            <img src={questionnairesIcon} alt="שאלונים" className="h-7 w-7 md:h-8 md:w-8 ml-3" />
+            השאלונים שלי
+          </h1>
+        </div>
         
         <div className="space-y-4">
           {questionnaires.length === 0 ? (
@@ -214,21 +308,8 @@ const ContentInspiration = () => {
           ) : (
             <div className="space-y-3 sm:space-y-4">
               {questionnaires.map((q, index) => {
-                const bgColors = [
-                  'bg-blue-50/40 border-blue-200/50',
-                  'bg-green-50/40 border-green-200/50',
-                  'bg-purple-50/40 border-purple-200/50',
-                  'bg-orange-50/40 border-orange-200/50',
-                  'bg-pink-50/40 border-pink-200/50',
-                  'bg-cyan-50/40 border-cyan-200/50',
-                  'bg-indigo-50/40 border-indigo-200/50',
-                  'bg-emerald-50/40 border-emerald-200/50',
-                ];
-                // לוודא שכל שאלון מקבל צבע שונה
-                const bgColor = bgColors[index % bgColors.length];
-                
                 return (
-                <Card key={q.id} className={`border shadow-sm hover:shadow-md transition-shadow ${bgColor}`}>
+                <Card key={q.id} className={`rounded-xl ${getCardBackgroundColor(index)} hover:shadow-lg transition-all`}>
                   <CardContent className="p-4 md:p-6">
                     
                     {/* חלק ראשון: כותרת השאלון - מותאם לנייד */}
@@ -286,8 +367,168 @@ const ContentInspiration = () => {
                       </div>
                     </div>
 
-                    {/* חלק שני: כלי הפעולה - מותאם לנייד */}
+                    {/* חלק שני: נתונים - מקורות לידים ושותפים - מותאם לנייד */}
                     <div className="mb-4 sm:mb-6">
+                      <div className="space-y-4 sm:space-y-0 sm:grid sm:grid-cols-2 sm:gap-3">
+                        {/* מקורות לידים */}
+                        <div className={`${getDataBackgroundColor(index)} rounded-lg p-3`}>
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <Users className="h-4 w-4 text-primary" />
+                              <h4 className="font-semibold text-sm">מקורות לידים</h4>
+                            </div>
+                            <div className="flex gap-2 text-xs">
+                              <span 
+                                className="cursor-pointer text-primary hover:underline"
+                                onClick={() => window.open(`/leads-responses?id=${q.id}&tab=leads&filter=source&source=all`, '_blank')}
+                              >
+                                {q.sources.reduce((sum, source) => sum + (source.total || 0), 0)} סה"כ
+                              </span>
+                              <span className="text-muted-foreground">/</span>
+                              <span 
+                                className="cursor-pointer text-green-600 hover:underline"
+                                onClick={() => window.open(`/leads-responses?id=${q.id}&tab=leads&filter=source&source=new`, '_blank')}
+                              >
+                                {q.sources.reduce((sum, source) => sum + (source.new || 0), 0)} חדשים
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {q.sources.length > 0 ? (
+                              q.sources.map((source, idx) => {
+                                const getSourceIcon = (sourceName: string) => {
+                                  switch (sourceName.toLowerCase()) {
+                                    case 'פייסבוק':
+                                    case 'facebook':
+                                      return <Facebook className="h-3 w-3 text-blue-600" />;
+                                    case 'אינסטגרם':
+                                    case 'instagram':
+                                      return <Instagram className="h-3 w-3 text-pink-600" />;
+                                    case 'לינקדאין':
+                                    case 'linkedin':
+                                      return <Linkedin className="h-3 w-3 text-blue-700" />;
+                                    case 'ווטסאפ':
+                                    case 'whatsapp':
+                                      return <MessagesSquare className="h-3 w-3 text-green-600" />;
+                                    case 'אתר':
+                                    case 'website':
+                                      return <Globe className="h-3 w-3 text-purple-600" />;
+                                    case 'טיקטוק':
+                                    case 'tiktok':
+                                      return <MessageCircle className="h-3 w-3 text-black" />;
+                                    case 'טוויטר':
+                                    case 'twitter':
+                                      return <MessageCircle className="h-3 w-3 text-sky-600" />;
+                                    default:
+                                      return <FileText className="h-3 w-3 text-gray-600" />;
+                                  }
+                                };
+                                return (
+                                  <div 
+                                    key={idx} 
+                                    className="bg-gray-100 text-gray-800 border border-gray-200 px-2 py-1.5 rounded text-xs flex items-center gap-1.5 cursor-pointer hover:bg-gray-200 transition-colors min-w-0 flex-shrink-0"
+                                    onClick={() => window.open(`/leads-responses?id=${q.id}&tab=leads&filter=source&source=${encodeURIComponent(source.name)}`, '_blank')}
+                                  >
+                                    {getSourceIcon(source.name)}
+                                    <span className="truncate">{source.name}</span>
+                                    <span className="text-xs opacity-75 flex-shrink-0">
+                                      ({source.total || 0} / {source.new || 0})
+                                    </span>
+                                  </div>
+                                );
+                              })
+                            ) : (
+                              <span className="text-muted-foreground text-xs">אין מקורות</span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* שותפים */}
+                        <div className={`${getDataBackgroundColor(index)} rounded-lg p-3`}>
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <Users className="h-4 w-4 text-primary" />
+                              <h4 className="font-semibold text-sm">שותפים</h4>
+                            </div>
+                            <div className="flex gap-2 text-xs">
+                              <span 
+                                className="cursor-pointer text-primary hover:underline"
+                                onClick={() => window.open(`/leads-responses?id=${q.id}&tab=leads&filter=partner&partner=all`, '_blank')}
+                              >
+                                {q.partners.reduce((sum, partner) => sum + (partner.total || 0), 0)} סה"כ
+                              </span>
+                              <span className="text-muted-foreground">/</span>
+                              <span 
+                                className="cursor-pointer text-green-600 hover:underline"
+                                onClick={() => window.open(`/leads-responses?id=${q.id}&tab=leads&filter=partner&partner=new`, '_blank')}
+                              >
+                                {q.partners.reduce((sum, partner) => sum + (partner.new || 0), 0)} חדשים
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {q.partners.length > 0 ? (
+                              q.partners.map((partner, idx) => (
+                                <div
+                                  key={idx}
+                                  className="bg-slate-100 text-slate-800 border border-slate-200 px-2 py-1.5 rounded text-xs flex items-center gap-1.5 cursor-pointer hover:bg-slate-200 transition-colors min-w-0 flex-shrink-0"
+                                  onClick={() => window.open(`/leads-responses?id=${q.id}&tab=leads&filter=partner&partner=${encodeURIComponent(partner.name)}`, '_blank')}
+                                >
+                                  <span className="truncate">{partner.name}</span>
+                                  <span className="text-xs opacity-75 flex-shrink-0">
+                                    ({partner.total || 0} / {partner.new || 0})
+                                  </span>
+                                </div>
+                              ))
+                            ) : (
+                              <span className="text-muted-foreground text-xs">אין שותפים</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* תבניות מענה לקוח - רק ערוצים שנשלחו מהם */}
+                    {q.templates && q.templates.length > 0 && (
+                      <div className="mt-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Bot className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+                          <h4 className="font-semibold text-sm text-orange-900 dark:text-orange-100">תבניות מענה לקוח</h4>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {q.templates.map((template, idx) => {
+                            // בנה רשימת ערוצים שנשלחו מהם
+                            const sentChannels = [];
+                            if (template.channelStats?.email > 0) {
+                              sentChannels.push(`${template.channelStats.email} מייל`);
+                            }
+                            if (template.channelStats?.whatsapp > 0) {
+                              sentChannels.push(`${template.channelStats.whatsapp} וואטסאפ`);
+                            }
+                            if (template.channelStats?.sms > 0) {
+                              sentChannels.push(`${template.channelStats.sms} SMS`);
+                            }
+                            
+                            return (
+                              <div
+                                key={idx}
+                                className="bg-orange-100 text-orange-800 border border-orange-200 px-2 py-1.5 rounded text-xs flex items-center gap-1.5 cursor-pointer hover:bg-orange-200 transition-colors min-w-0 flex-shrink-0"
+                                onClick={() => window.open(`/create-template`, '_blank')}
+                                title={`ערוך תבנית: ${template.name}`}
+                              >
+                                <span className="truncate font-medium">{template.name}</span>
+                                <span className="text-xs opacity-75 flex-shrink-0">
+                                  ({sentChannels.join(', ')})
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* חלק שלישי: כלי הפעולה - מותאם לנייד */}
+                    <div className="pt-3 sm:pt-4 border-t">
                       {/* נייד - כפתור המבורגר */}
                       <div className="block sm:hidden">
                         <Button 
@@ -427,129 +668,6 @@ const ContentInspiration = () => {
                           <BarChart3 className="h-5 w-5 text-primary" />
                           <span className="text-xs font-medium">נתונים</span>
                         </Button>
-                      </div>
-                    </div>
-
-                    {/* חלק שלישי: נתונים - מקורות לידים ושותפים - מותאם לנייד */}
-                    <div className="pt-3 sm:pt-4 border-t">
-                      <div className="space-y-4 sm:space-y-0 sm:grid sm:grid-cols-2 sm:gap-3">
-                        {/* מקורות לידים */}
-                        <div className="bg-muted/50 rounded-lg p-3">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              <Users className="h-4 w-4 text-primary" />
-                              <h4 className="font-semibold text-sm">מקורות לידים</h4>
-                            </div>
-                            <div className="flex gap-2 text-xs">
-                              <span 
-                                className="cursor-pointer text-primary hover:underline"
-                                onClick={() => window.open(`/leads-responses?id=${q.id}&tab=leads&filter=source&source=all`, '_blank')}
-                              >
-                                {q.sources.reduce((sum, source) => sum + (source.total || 0), 0)} סה"כ
-                              </span>
-                              <span className="text-muted-foreground">/</span>
-                              <span 
-                                className="cursor-pointer text-green-600 hover:underline"
-                                onClick={() => window.open(`/leads-responses?id=${q.id}&tab=leads&filter=source&source=new`, '_blank')}
-                              >
-                                {q.sources.reduce((sum, source) => sum + (source.new || 0), 0)} חדשים
-                              </span>
-                        </div>
-                      </div>
-                        <div className="flex flex-wrap gap-1.5">
-                            {q.sources.length > 0 ? (
-                              q.sources.map((source, index) => {
-                                // לוגו מייצג לרשתות חברתיות
-                                const getSourceIcon = (sourceName: string) => {
-                                  switch (sourceName.toLowerCase()) {
-                                    case 'פייסבוק':
-                                    case 'facebook':
-                                      return <Facebook className="h-3 w-3 text-blue-600" />;
-                                    case 'אינסטגרם':
-                                    case 'instagram':
-                                      return <Instagram className="h-3 w-3 text-pink-600" />;
-                                    case 'לינקדאין':
-                                    case 'linkedin':
-                                      return <Linkedin className="h-3 w-3 text-blue-700" />;
-                                    case 'ווטסאפ':
-                                    case 'whatsapp':
-                                      return <MessagesSquare className="h-3 w-3 text-green-600" />;
-                                    case 'אתר':
-                                    case 'website':
-                                      return <Globe className="h-3 w-3 text-purple-600" />;
-                                    case 'טיקטוק':
-                                    case 'tiktok':
-                                      return <MessageCircle className="h-3 w-3 text-black" />;
-                                    case 'טוויטר':
-                                    case 'twitter':
-                                      return <MessageCircle className="h-3 w-3 text-sky-600" />;
-                                    default:
-                                      return <FileText className="h-3 w-3 text-gray-600" />;
-                                  }
-                                };
-
-                                return (
-                                  <div 
-                                    key={index} 
-                                    className="bg-gray-100 text-gray-800 border border-gray-200 px-2 py-1.5 rounded text-xs flex items-center gap-1.5 cursor-pointer hover:bg-gray-200 transition-colors min-w-0 flex-shrink-0"
-                                    onClick={() => window.open(`/leads-responses?id=${q.id}&tab=leads&filter=source&source=${encodeURIComponent(source.name)}`, '_blank')}
-                                  >
-                                    {getSourceIcon(source.name)}
-                                    <span className="truncate">{source.name}</span>
-                                    <span className="text-xs opacity-75 flex-shrink-0">
-                                      ({source.total || 0} / {source.new || 0})
-                              </span>
-                                  </div>
-                                );
-                              })
-                          ) : (
-                              <span className="text-muted-foreground text-xs">אין מקורות</span>
-                          )}
-                        </div>
-                      </div>
-
-                        {/* שותפים */}
-                        <div className="bg-muted/30 rounded-lg p-3">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              <Users className="h-4 w-4 text-primary" />
-                              <h4 className="font-semibold text-sm">שותפים</h4>
-                            </div>
-                            <div className="flex gap-2 text-xs">
-                              <span 
-                                className="cursor-pointer text-primary hover:underline"
-                                onClick={() => window.open(`/leads-responses?id=${q.id}&tab=leads&filter=partner&partner=all`, '_blank')}
-                              >
-                                {q.partners.reduce((sum, partner) => sum + (partner.total || 0), 0)} סה"כ
-                              </span>
-                              <span className="text-muted-foreground">/</span>
-                              <span 
-                                className="cursor-pointer text-green-600 hover:underline"
-                                onClick={() => window.open(`/leads-responses?id=${q.id}&tab=leads&filter=partner&partner=new`, '_blank')}
-                              >
-                                {q.partners.reduce((sum, partner) => sum + (partner.new || 0), 0)} חדשים
-                              </span>
-                            </div>
-                          </div>
-                          <div className="flex flex-wrap gap-1.5">
-                            {q.partners.length > 0 ? (
-                              q.partners.map((partner, index) => (
-                                <div 
-                                  key={index} 
-                                  className="bg-slate-100 text-slate-800 border border-slate-200 px-2 py-1.5 rounded text-xs flex items-center gap-1.5 cursor-pointer hover:bg-slate-200 transition-colors min-w-0 flex-shrink-0"
-                                  onClick={() => window.open(`/leads-responses?id=${q.id}&tab=leads&filter=partner&partner=${encodeURIComponent(partner.name)}`, '_blank')}
-                                >
-                                  <span className="truncate">{partner.name}</span>
-                                  <span className="text-xs opacity-75 flex-shrink-0">
-                                    ({partner.total || 0} / {partner.new || 0})
-                                  </span>
-                                </div>
-                              ))
-                            ) : (
-                              <span className="text-muted-foreground text-xs">אין שותפים</span>
-                            )}
-                          </div>
-                        </div>
                       </div>
                     </div>
                   </CardContent>

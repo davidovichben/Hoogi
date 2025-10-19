@@ -48,6 +48,7 @@ export interface QuestionDialogData {
   linkUrl?: string;
   linkLabel?: string;
   attachmentUrl?: string;
+  attachmentSize?: number;
   description?: string;
   aiSuggestionsUsed?: boolean;
   branding?: {
@@ -76,6 +77,7 @@ export class CreateQuestionnaireQuestionsComponent implements OnInit {
   linkUrl?: string;
   linkLabel?: string;
   attachmentUrl?: string;
+  attachmentSize?: number;
   description?: string;
   branding?: {
     primaryColor?: string;
@@ -171,6 +173,7 @@ export class CreateQuestionnaireQuestionsComponent implements OnInit {
     this.linkUrl = data.linkUrl;
     this.linkLabel = data.linkLabel;
     this.attachmentUrl = data.attachmentUrl;
+    this.attachmentSize = data.attachmentSize;
     this.description = data.description;
     this.branding = data.branding;
     this.aiSuggestionsUsed = data.aiSuggestionsUsed ?? false;
@@ -459,7 +462,8 @@ export class CreateQuestionnaireQuestionsComponent implements OnInit {
         show_profile_image: this.branding?.showProfileImage ?? true,
         link_url: this.linkUrl || null,
         link_label: this.linkLabel || null,
-        attachment_url: this.attachmentUrl || null
+        attachment_url: this.attachmentUrl || null,
+        attachment_size: this.attachmentSize || null
       },
       questions: previewQuestions,
       options: [],

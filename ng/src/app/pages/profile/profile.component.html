@@ -1,12 +1,4 @@
 <div class="profile-page" [class.rtl]="lang.currentLanguage === 'he'" [class.ltr]="lang.currentLanguage === 'en'">
-  <!-- Back Button -->
-  <div class="back-button-container">
-    <button class="btn-back" (click)="goBack()">
-      <span class="arrow-icon">←</span>
-      {{ lang.t('common.back') }}
-    </button>
-  </div>
-
   <!-- Page Title -->
   <h1 class="page-title">{{ lang.t('profile.myProfile') }}</h1>
 

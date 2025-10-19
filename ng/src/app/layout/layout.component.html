@@ -26,7 +26,7 @@
       class="fixed left-0 top-0 h-full w-48 border-r z-50 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:z-auto flex flex-col">
 
       <!-- Logo -->
-      <div class="logo-section flex items-center justify-center py-6 border-b">
+      <div class="logo-section flex items-center justify-center py-6 border-b flex-shrink-0">
         <img src="/img/logo.png" alt="Logo" class="w-24 h-24 object-contain">
         <button
           (click)="toggleSidebar()"
@@ -36,11 +36,12 @@
       </div>
 
       <!-- Navigation Grid (2 columns) -->
-      <nav class="flex-1 py-6 px-3">
+      <nav class="flex-1 py-6 px-3 overflow-y-auto">
         <div class="grid grid-cols-2 gap-3">
 	        @for (item of navigation; track item) {
           <a
             [routerLink]="item.href"
+            (click)="closeSidebarOnMobile()"
             class="flex flex-col items-center justify-center rounded-xl transition-all duration-200 h-20"
             [class.bg-white]="isActive(item.href)"
             [class.shadow-lg]="isActive(item.href)"
@@ -56,9 +57,9 @@
       </nav>
 
       <!-- Logout button -->
-      <div class="px-3 pb-4">
+      <div class="px-3 pb-4 flex-shrink-0">
         <button
-          (click)="logout()"
+          (click)="logout(); closeSidebarOnMobile()"
           class="w-full flex items-center justify-center gap-2 p-3 rounded-xl transition-all duration-200 bg-white hover:bg-red-50 border-2 border-transparent hover:border-red-400"
           style="color: hsl(0, 70%, 50%);">
           <span class="text-2xl">🚪</span>
@@ -69,7 +70,7 @@
 
     <!-- Main content -->
     <main class="flex-1 layout-bg">
-	    <div class="white-bg p-5">
+	    <div class="white-bg p-0 md:p-5">
 		    <router-outlet></router-outlet>
 	    </div>
     </main>

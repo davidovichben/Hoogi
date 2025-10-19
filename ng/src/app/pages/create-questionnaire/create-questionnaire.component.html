@@ -151,8 +151,9 @@
                 type="button"
                 (click)="triggerFileUpload()"
                 class="file-button"
+                [class.has-file]="attachmentFileName"
                 [title]="attachmentFileName">
-                {{ attachmentFileName ? getTrimmedFileName(attachmentFileName) : (uploadingAttachment ? lang.t('common.loading') : lang.t('createQuestionnaire.chooseFile')) }}
+                {{ attachmentFileName ? getFileNameWithSize() : (uploadingAttachment ? lang.t('common.loading') : lang.t('createQuestionnaire.chooseFile')) }}
               </button>
               @if (attachmentFileName) {
                 <button
