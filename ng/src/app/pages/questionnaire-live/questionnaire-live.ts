@@ -43,6 +43,7 @@ export class QuestionnaireLive implements OnInit {
   responses: Record<string, any> = {};
   multiResponses: Record<string, Record<string, boolean>> = {};
   otherTextResponses: Record<string, string> = {}; // Store "other" text inputs
+  validationErrors: Record<string, string> = {}; // Store validation errors per question
 
   // File upload
   uploadedFiles: Record<string, { file: File; name: string }> = {};
@@ -458,6 +459,52 @@ export class QuestionnaireLive implements OnInit {
     return range;
   }
 
+  // Clear validation error for a specific question
+  clearValidationError(questionId: string) {
+    if (this.validationErrors[questionId]) {
+      delete this.validationErrors[questionId];
+    }
+  }
+
+  // Validate email on blur
+  validateEmailField(questionId: string) {
+    const emailValue = this.responses[questionId] || '';
+    if (emailValue) {
+      const emailValidation = this.validateEmail(emailValue);
+      if (!emailValidation.valid) {
+        this.validationErrors[questionId] = emailValidation.message;
+      } else {
+        this.clearValidationError(questionId);
+      }
+    }
+  }
+
+  // Validate phone on blur
+  validatePhoneField(questionId: string) {
+    const phoneValue = this.responses[questionId] || '';
+    if (phoneValue) {
+      const phoneValidation = this.validateIsraeliPhone(phoneValue);
+      if (!phoneValidation.valid) {
+        this.validationErrors[questionId] = phoneValidation.message;
+      } else {
+        this.clearValidationError(questionId);
+      }
+    }
+  }
+
+  // Validate URL on blur
+  validateUrlField(questionId: string) {
+    const urlValue = this.responses[questionId] || '';
+    if (urlValue) {
+      const urlValidation = this.validateUrl(urlValue);
+      if (!urlValidation.valid) {
+        this.validationErrors[questionId] = urlValidation.message;
+      } else {
+        this.clearValidationError(questionId);
+      }
+    }
+  }
+
   // Validation methods
   private validateName(name: string): { valid: boolean; message: string } {
     if (!name || !name.trim()) {
@@ -489,24 +536,67 @@ export class QuestionnaireLive implements OnInit {
       };
     }
 
+    const trimmedEmail = email.trim();
+
     // Check for consecutive dots
-    if (/\.\./.test(email)) {
+    if (/\.\./.test(trimmedEmail)) {
       return {
         valid: false,
         message: this.lang.currentLanguage === 'he'
-          ? 'נא להזין כתובת אימייל תקינה'
-          : 'Please enter a valid email address'
+          ? 'כתובת מייל לא יכולה להכיל נקודות רצופות'
+          : 'Email cannot contain consecutive dots'
       };
     }
 
-    // Standard email regex
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email.trim())) {
+    // Strict email validation: xxxx@xxxx.xxx format
+    // - Must start and end with alphanumeric in local part
+    // - Can contain letters, numbers, dots, underscores, hyphens, plus in middle
+    // - Domain must be valid
+    // - TLD must be at least 2 characters
+    const emailRegex = /^[a-zA-Z0-9][a-zA-Z0-9._+-]*[a-zA-Z0-9]@[a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}$/;
+
+    // Special case: single character before @
+    const singleCharRegex = /^[a-zA-Z0-9]@[a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}$/;
+
+    if (!emailRegex.test(trimmedEmail) && !singleCharRegex.test(trimmedEmail)) {
       return {
         valid: false,
         message: this.lang.currentLanguage === 'he'
-          ? 'נא להזין כתובת אימייל תקינה'
-          : 'Please enter a valid email address'
+          ? 'נא להזין כתובת מייל בפורמט: example@domain.com'
+          : 'Please enter email in format: example@domain.com'
+      };
+    }
+
+    // Additional validation: check for valid structure
+    const parts = trimmedEmail.split('@');
+    if (parts.length !== 2) {
+      return {
+        valid: false,
+        message: this.lang.currentLanguage === 'he'
+          ? 'כתובת מייל חייבת להכיל @ אחד בלבד'
+          : 'Email must contain exactly one @'
+      };
+    }
+
+    const [localPart, domainPart] = parts;
+
+    // Check local part doesn't start or end with dot
+    if (localPart.startsWith('.') || localPart.endsWith('.')) {
+      return {
+        valid: false,
+        message: this.lang.currentLanguage === 'he'
+          ? 'כתובת מייל לא תקינה'
+          : 'Invalid email address'
+      };
+    }
+
+    // Check domain has at least one dot
+    if (!domainPart.includes('.')) {
+      return {
+        valid: false,
+        message: this.lang.currentLanguage === 'he'
+          ? 'דומיין חייב להכיל נקודה'
+          : 'Domain must contain a dot'
       };
     }
 
@@ -524,22 +614,95 @@ export class QuestionnaireLive implements OnInit {
     // Remove all non-digit characters for validation
     const cleanPhone = phone.replace(/\D/g, '');
 
-    // Israeli phone number validation:
-    // - Must be 9-10 digits
-    // - Mobile: starts with 05 (10 digits) or 5 (9 digits)
-    // - Landline: starts with 0 followed by 2-9 (9-10 digits)
-    const israeliPhoneRegex = /^(0?(5[0-9]|[2-9])\d{7})$/;
+    // Israeli mobile phone validation (strict):
+    // - Must be exactly 10 digits
+    // - Must start with 05
+    // - Second digit after 05 must be 0-9 (050, 051, 052, 053, 054, 055, 056, 057, 058, 059)
+    // - Followed by 7 more digits
+    const israeliMobileRegex = /^05[0-9]\d{7}$/;
 
-    if (!israeliPhoneRegex.test(cleanPhone)) {
+    if (!israeliMobileRegex.test(cleanPhone)) {
       return {
         valid: false,
         message: this.lang.currentLanguage === 'he'
-          ? 'נא להזין מספר טלפון ישראלי תקין (לדוגמה: 050-1234567)'
-          : 'Please enter a valid Israeli phone number (e.g., 050-1234567)'
+          ? 'נא להזין מספר סלולרי ישראלי תקין (10 ספרות, מתחיל ב-05)'
+          : 'Please enter a valid Israeli mobile number (10 digits, starts with 05)'
+      };
+    }
+
+    // Additional check: verify it's a known Israeli mobile prefix
+    const prefix = cleanPhone.substring(0, 3);
+    const validPrefixes = ['050', '051', '052', '053', '054', '055', '056', '057', '058', '059'];
+
+    if (!validPrefixes.includes(prefix)) {
+      return {
+        valid: false,
+        message: this.lang.currentLanguage === 'he'
+          ? 'קידומת מספר לא תקינה (חייב להתחיל ב-050 עד 059)'
+          : 'Invalid prefix (must start with 050-059)'
       };
     }
 
     return { valid: true, message: '' };
+  }
+
+  private validateUrl(url: string): { valid: boolean; message: string } {
+    if (!url || !url.trim()) {
+      return {
+        valid: false,
+        message: this.lang.currentLanguage === 'he' ? 'נא להזין כתובת URL' : 'Please enter a URL'
+      };
+    }
+
+    const trimmedUrl = url.trim();
+
+    // URL validation:
+    // - Must start with http:// or https:// or www.
+    // - Must have a valid domain structure
+    // - Can contain path, query params, etc.
+    try {
+      // If URL doesn't start with protocol, add https:// for validation
+      let urlToValidate = trimmedUrl;
+      if (!trimmedUrl.match(/^https?:\/\//i)) {
+        if (trimmedUrl.startsWith('www.')) {
+          urlToValidate = 'https://' + trimmedUrl;
+        } else {
+          // Check if it looks like a domain (contains a dot)
+          if (trimmedUrl.includes('.')) {
+            urlToValidate = 'https://' + trimmedUrl;
+          } else {
+            return {
+              valid: false,
+              message: this.lang.currentLanguage === 'he'
+                ? 'נא להזין כתובת URL תקינה (לדוגמה: https://example.com)'
+                : 'Please enter a valid URL (e.g., https://example.com)'
+            };
+          }
+        }
+      }
+
+      // Try to create a URL object - will throw if invalid
+      const urlObj = new URL(urlToValidate);
+
+      // Check that the hostname has at least one dot (domain.tld)
+      if (!urlObj.hostname.includes('.')) {
+        return {
+          valid: false,
+          message: this.lang.currentLanguage === 'he'
+            ? 'כתובת URL חייבת להכיל דומיין תקין'
+            : 'URL must contain a valid domain'
+        };
+      }
+
+      return { valid: true, message: '' };
+    } catch (e) {
+      return {
+        valid: false,
+        message: this.lang.currentLanguage === 'he'
+          ? 'נא להזין כתובת URL תקינה (לדוגמה: https://example.com)'
+          : 'Please enter a valid URL (e.g., https://example.com)'
+      };
+    }
   }
 
   async submitResponse(event: Event) {
@@ -547,7 +710,12 @@ export class QuestionnaireLive implements OnInit {
 
     if (!this.questionnaire) return;
 
+    // Clear all validation errors before validating
+    this.validationErrors = {};
+
     try {
+      let hasErrors = false;
+
       // Validate first question as name (if it's a text field)
       if (this.questions.length >= 1) {
         const firstQuestion = this.questions[0];
@@ -555,8 +723,8 @@ export class QuestionnaireLive implements OnInit {
           const nameValue = this.responses[firstQuestion.id] || '';
           const nameValidation = this.validateName(nameValue);
           if (!nameValidation.valid) {
-            this.toastService.show(nameValidation.message, 'error');
-            return;
+            this.validationErrors[firstQuestion.id] = nameValidation.message;
+            hasErrors = true;
           }
         }
       }
@@ -569,16 +737,16 @@ export class QuestionnaireLive implements OnInit {
           if (emailValue) {
             const emailValidation = this.validateEmail(emailValue);
             if (!emailValidation.valid) {
-              this.toastService.show(emailValidation.message, 'error');
-              return;
+              this.validationErrors[question.id] = emailValidation.message;
+              hasErrors = true;
             }
           } else if (question.is_required) {
             // If required and empty
             const message = this.lang.currentLanguage === 'he'
-              ? `נא לענות: ${question.question_text}`
-              : `Please answer: ${question.question_text}`;
-            this.toastService.show(message, 'error');
-            return;
+              ? 'שדה חובה'
+              : 'This field is required';
+            this.validationErrors[question.id] = message;
+            hasErrors = true;
           }
         }
       }
@@ -591,16 +759,38 @@ export class QuestionnaireLive implements OnInit {
           if (phoneValue) {
             const phoneValidation = this.validateIsraeliPhone(phoneValue);
             if (!phoneValidation.valid) {
-              this.toastService.show(phoneValidation.message, 'error');
-              return;
+              this.validationErrors[question.id] = phoneValidation.message;
+              hasErrors = true;
             }
           } else if (question.is_required) {
             // If required and empty
             const message = this.lang.currentLanguage === 'he'
-              ? `נא לענות: ${question.question_text}`
-              : `Please answer: ${question.question_text}`;
-            this.toastService.show(message, 'error');
-            return;
+              ? 'שדה חובה'
+              : 'This field is required';
+            this.validationErrors[question.id] = message;
+            hasErrors = true;
+          }
+        }
+      }
+
+      // Validate all URL fields by question type
+      for (const question of this.questions) {
+        if (question.question_type === 'url') {
+          const urlValue = this.responses[question.id] || '';
+          // Only validate if there's a value (required check happens separately)
+          if (urlValue) {
+            const urlValidation = this.validateUrl(urlValue);
+            if (!urlValidation.valid) {
+              this.validationErrors[question.id] = urlValidation.message;
+              hasErrors = true;
+            }
+          } else if (question.is_required) {
+            // If required and empty
+            const message = this.lang.currentLanguage === 'he'
+              ? 'שדה חובה'
+              : 'This field is required';
+            this.validationErrors[question.id] = message;
+            hasErrors = true;
           }
         }
       }
@@ -608,8 +798,8 @@ export class QuestionnaireLive implements OnInit {
       // Validate required fields for remaining questions
       for (const question of this.questions) {
         if (question.is_required) {
-          // Skip email and phone as they're already validated above
-          if (question.question_type === 'email' || question.question_type === 'phone') {
+          // Skip email, phone, and url as they're already validated above
+          if (question.question_type === 'email' || question.question_type === 'phone' || question.question_type === 'url') {
             continue;
           }
 
@@ -617,19 +807,24 @@ export class QuestionnaireLive implements OnInit {
             const selected = Object.values(this.multiResponses[question.id] || {}).some(v => v);
             if (!selected) {
               const message = this.lang.currentLanguage === 'he'
-                ? `נא לענות: ${question.question_text}`
-                : `Please answer: ${question.question_text}`;
-              this.toastService.show(message, 'error');
-              return;
+                ? 'שדה חובה'
+                : 'This field is required';
+              this.validationErrors[question.id] = message;
+              hasErrors = true;
             }
           } else if (!this.responses[question.id]) {
             const message = this.lang.currentLanguage === 'he'
-              ? `נא לענות: ${question.question_text}`
-              : `Please answer: ${question.question_text}`;
-            this.toastService.show(message, 'error');
-            return;
+              ? 'שדה חובה'
+              : 'This field is required';
+            this.validationErrors[question.id] = message;
+            hasErrors = true;
           }
         }
+      }
+
+      // If there are validation errors, stop here
+      if (hasErrors) {
+        return;
       }
 
       // For owner/preview view, just mark as submitted without saving to database
@@ -730,6 +925,9 @@ export class QuestionnaireLive implements OnInit {
           name: file.name
         };
         this.responses[questionId] = `File: ${publicUrlData.publicUrl}`;
+
+        // Clear validation error
+        this.clearValidationError(questionId);
 
         this.toastService.show(
           this.lang.currentLanguage === 'he' ? 'הקובץ הועלה בהצלחה' : 'File uploaded successfully',
@@ -833,6 +1031,9 @@ export class QuestionnaireLive implements OnInit {
 
             // Update response with URL
             this.responses[questionId] = `Audio: ${publicUrlData.publicUrl}`;
+
+            // Clear validation error
+            this.clearValidationError(questionId);
 
             this.toastService.show(
               this.lang.currentLanguage === 'he' ? 'ההקלטה נשמרה בהצלחה' : 'Recording saved successfully',

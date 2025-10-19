@@ -13,8 +13,8 @@
       @if (!isLoading && questionnaire) {
         <div class="rounded-lg p-3 sm:p-4 md:p-6" [style.background-color]="backgroundColor">
           <!-- Header Card -->
-          <div class="rounded-lg p-4 sm:p-6 md:p-8 pb-2" [style.background-color]="backgroundColor">
-            <div class="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 mb-4">
+          <div class="rounded-lg px-4 sm:px-6 md:px-8 pb-2" [style.background-color]="backgroundColor">
+            <div class="flex flex-col sm:flex-row items-start justify-center gap-2 sm:gap-4" style="margin-bottom: 10px;">
               <div class="w-16 h-16 sm:w-24 sm:h-24 md:w-32 md:h-32 flex-shrink-0 order-2 sm:order-1">
                 @if (logoUrl && showLogo) {
                   <img [src]="logoUrl" alt="Logo" class="w-full h-full object-contain" />
@@ -77,12 +77,19 @@
                     <input
                       [type]="question.question_type"
                       [(ngModel)]="responses[question.id]"
+                      (ngModelChange)="clearValidationError(question.id)"
+                      (blur)="question.question_type === 'email' ? validateEmailField(question.id) : null"
                       [name]="'question_' + question.id"
                       [required]="question.is_required"
-                      class="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 transition-all"
+                      class="w-full p-2.5 sm:p-3 text-sm sm:text-base border rounded-lg focus:outline-none focus:ring-2 transition-all"
+                      [class.border-red-500]="validationErrors[question.id]"
+                      [class.border-gray-300]="!validationErrors[question.id]"
                       [style.--focus-color]="primaryColor"
                       [placeholder]="lang.t('questionnaireLive.enterAnswer')"
                     />
+                    @if (validationErrors[question.id]) {
+                      <p class="text-red-500 text-xs sm:text-sm mt-1">{{ validationErrors[question.id] }}</p>
+                    }
                   }
 
                   <!-- Phone Input -->
@@ -90,11 +97,38 @@
                     <input
                       type="tel"
                       [(ngModel)]="responses[question.id]"
+                      (ngModelChange)="clearValidationError(question.id)"
+                      (blur)="validatePhoneField(question.id)"
                       [name]="'question_' + question.id"
                       [required]="question.is_required"
-                      class="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 transition-all"
+                      class="w-full p-2.5 sm:p-3 text-sm sm:text-base border rounded-lg focus:outline-none focus:ring-2 transition-all"
+                      [class.border-red-500]="validationErrors[question.id]"
+                      [class.border-gray-300]="!validationErrors[question.id]"
                       [placeholder]="lang.t('questionnaireLive.enterPhone')"
                     />
+                    @if (validationErrors[question.id]) {
+                      <p class="text-red-500 text-xs sm:text-sm mt-1">{{ validationErrors[question.id] }}</p>
+                    }
+                  }
+
+                  <!-- URL Input -->
+                  @if (question.question_type === 'url') {
+                    <input
+                      type="url"
+                      [(ngModel)]="responses[question.id]"
+                      (ngModelChange)="clearValidationError(question.id)"
+                      (blur)="validateUrlField(question.id)"
+                      [name]="'question_' + question.id"
+                      [required]="question.is_required"
+                      class="w-full p-2.5 sm:p-3 text-sm sm:text-base border rounded-lg focus:outline-none focus:ring-2 transition-all"
+                      [class.border-red-500]="validationErrors[question.id]"
+                      [class.border-gray-300]="!validationErrors[question.id]"
+                      [style.--focus-color]="primaryColor"
+                      [placeholder]="lang.currentLanguage === 'he' ? 'הזן כתובת URL (לדוגמה: https://example.com)' : 'Enter URL (e.g., https://example.com)'"
+                    />
+                    @if (validationErrors[question.id]) {
+                      <p class="text-red-500 text-xs sm:text-sm mt-1">{{ validationErrors[question.id] }}</p>
+                    }
                   }
 
                   <!-- Number Input -->
@@ -102,11 +136,17 @@
                     <input
                       type="number"
                       [(ngModel)]="responses[question.id]"
+                      (ngModelChange)="clearValidationError(question.id)"
                       [name]="'question_' + question.id"
                       [required]="question.is_required"
-                      class="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 transition-all"
+                      class="w-full p-2.5 sm:p-3 text-sm sm:text-base border rounded-lg focus:outline-none focus:ring-2 transition-all"
+                      [class.border-red-500]="validationErrors[question.id]"
+                      [class.border-gray-300]="!validationErrors[question.id]"
                       [placeholder]="lang.t('questionnaireLive.enterNumber')"
                     />
+                    @if (validationErrors[question.id]) {
+                      <p class="text-red-500 text-xs sm:text-sm mt-1">{{ validationErrors[question.id] }}</p>
+                    }
                   }
 
                   <!-- Date Input -->
@@ -114,23 +154,35 @@
                     <input
                       type="date"
                       [(ngModel)]="responses[question.id]"
+                      (ngModelChange)="clearValidationError(question.id)"
                       [name]="'question_' + question.id"
                       [required]="question.is_required"
-                      class="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 transition-all"
+                      class="w-full p-2.5 sm:p-3 text-sm sm:text-base border rounded-lg focus:outline-none focus:ring-2 transition-all"
+                      [class.border-red-500]="validationErrors[question.id]"
+                      [class.border-gray-300]="!validationErrors[question.id]"
                       [style.--focus-color]="primaryColor"
                     />
+                    @if (validationErrors[question.id]) {
+                      <p class="text-red-500 text-xs sm:text-sm mt-1">{{ validationErrors[question.id] }}</p>
+                    }
                   }
 
                   <!-- Textarea -->
                   @if (question.question_type === 'textarea') {
                     <textarea
                       [(ngModel)]="responses[question.id]"
+                      (ngModelChange)="clearValidationError(question.id)"
                       [name]="'question_' + question.id"
                       [required]="question.is_required"
                       rows="3"
-                      class="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 transition-all"
+                      class="w-full p-2.5 sm:p-3 text-sm sm:text-base border rounded-lg resize-none focus:outline-none focus:ring-2 transition-all"
+                      [class.border-red-500]="validationErrors[question.id]"
+                      [class.border-gray-300]="!validationErrors[question.id]"
                       [placeholder]="lang.t('questionnaireLive.enterAnswer')"
                     ></textarea>
+                    @if (validationErrors[question.id]) {
+                      <p class="text-red-500 text-xs sm:text-sm mt-1">{{ validationErrors[question.id] }}</p>
+                    }
                   }
 
                   <!-- Single Choice -->
@@ -141,6 +193,7 @@
                           <input
                             type="radio"
                             [(ngModel)]="responses[question.id]"
+                            (ngModelChange)="clearValidationError(question.id)"
                             [name]="'radio_' + question.id"
                             [value]="option.value"
                             [required]="question.is_required"
@@ -165,6 +218,9 @@
                         </div>
                       }
                     </div>
+                    @if (validationErrors[question.id]) {
+                      <p class="text-red-500 text-xs sm:text-sm mt-1">{{ validationErrors[question.id] }}</p>
+                    }
                   }
 
                   <!-- Multiple Choice -->
@@ -175,6 +231,7 @@
                           <input
                             type="checkbox"
                             [(ngModel)]="multiResponses[question.id][option.value]"
+                            (ngModelChange)="clearValidationError(question.id)"
                             [name]="'checkbox_' + question.id + '_' + $index"
                             [id]="'checkbox_' + question.id + '_' + $index"
                             class="w-4 h-4 rounded"
@@ -197,6 +254,9 @@
                         </div>
                       }
                     </div>
+                    @if (validationErrors[question.id]) {
+                      <p class="text-red-500 text-xs sm:text-sm mt-1">{{ validationErrors[question.id] }}</p>
+                    }
                   }
 
                   <!-- Rating -->
@@ -211,7 +271,7 @@
                       @for (rating of getRatingRange(question); track rating) {
                         <button
                           type="button"
-                          (click)="responses[question.id] = rating"
+                          (click)="responses[question.id] = rating; clearValidationError(question.id)"
                           class="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 text-sm sm:text-base rounded-full border-2 transition-all"
                           [class.selected-rating]="responses[question.id] === rating"
                           [style.border-color]="primaryColor"
@@ -221,6 +281,9 @@
                         </button>
                       }
                     </div>
+                    @if (validationErrors[question.id]) {
+                      <p class="text-red-500 text-xs sm:text-sm mt-1">{{ validationErrors[question.id] }}</p>
+                    }
                   }
 
                   <!-- Audio -->
@@ -249,6 +312,9 @@
                         </div>
                       </button>
                     </div>
+                    @if (validationErrors[question.id]) {
+                      <p class="text-red-500 text-xs sm:text-sm mt-1">{{ validationErrors[question.id] }}</p>
+                    }
                   }
 
                   <!-- File Upload -->
@@ -276,6 +342,9 @@
                         </div>
                       </button>
                     </div>
+                    @if (validationErrors[question.id]) {
+                      <p class="text-red-500 text-xs sm:text-sm mt-1">{{ validationErrors[question.id] }}</p>
+                    }
                   }
                 </div>
               </div>
@@ -420,8 +489,8 @@
           @if (viewMode === 'form') {
             <div class="rounded-lg p-3 sm:p-4 md:p-6" [style.background-color]="backgroundColor">
               <!-- Header Card -->
-              <div class="rounded-lg p-4 sm:p-6 md:p-8 pb-2" [style.background-color]="backgroundColor">
-                <div class="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 mb-4">
+              <div class="rounded-lg px-4 sm:px-6 md:px-8 pb-2" [style.background-color]="backgroundColor">
+                <div class="flex flex-col sm:flex-row items-start justify-center gap-2 sm:gap-4" style="margin-bottom: 10px;">
                   <div class="w-16 h-16 sm:w-24 sm:h-24 md:w-32 md:h-32 flex-shrink-0 order-2 sm:order-1">
                     @if (logoUrl && showLogo) {
                       <img [src]="logoUrl" alt="Logo" class="w-full h-full object-contain" />
@@ -498,6 +567,18 @@
                         [(ngModel)]="responses[question.id]"
                         [name]="'question_' + question.id"
                         [placeholder]="lang.t('questionnaireLive.enterPhone')"
+                        class="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 transition-all"
+                        [style.--focus-color]="primaryColor"
+                      />
+                    }
+
+                    <!-- URL Input -->
+                    @if (question.question_type === 'url') {
+                      <input
+                        type="url"
+                        [(ngModel)]="responses[question.id]"
+                        [name]="'question_' + question.id"
+                        [placeholder]="lang.currentLanguage === 'he' ? 'הזן כתובת URL (לדוגמה: https://example.com)' : 'Enter URL (e.g., https://example.com)'"
                         class="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 transition-all"
                         [style.--focus-color]="primaryColor"
                       />

@@ -1,4 +1,4 @@
-export type QuestionType = 'text' | 'textarea' | 'number' | 'date' | 'email' | 'phone' | 'single' | 'multi' | 'audio' | 'single_choice' | 'multiple_choice' | 'radio' | 'checkbox' | 'select' | 'rating' | 'calendar' | 'file' | 'conditional';
+export type QuestionType = 'text' | 'textarea' | 'number' | 'date' | 'email' | 'phone' | 'url' | 'single' | 'multi' | 'audio' | 'single_choice' | 'multiple_choice' | 'radio' | 'checkbox' | 'select' | 'rating' | 'calendar' | 'file' | 'conditional';
 
 export interface QuestionnaireMeta {
   primaryLanguage?: string;

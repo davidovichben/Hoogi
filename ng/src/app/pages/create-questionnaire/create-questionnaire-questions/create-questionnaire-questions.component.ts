@@ -13,7 +13,7 @@ import { LucideAngularModule, FileText, Circle, SquareCheck, Star, Calendar, Mic
 import { ConfirmationDialogComponent } from '../../../shared/components/confirmation-dialog/confirmation-dialog.component';
 import { firstValueFrom } from 'rxjs';
 
-type QuestionType = 'text' | 'textarea' | 'number' | 'email' | 'phone' | 'date' | 'select' | 'radio' | 'checkbox' | 'single_choice' | 'multiple_choice' | 'rating' | 'audio' | 'file' | 'conditional';
+type QuestionType = 'text' | 'textarea' | 'number' | 'email' | 'phone' | 'url' | 'date' | 'select' | 'radio' | 'checkbox' | 'single_choice' | 'multiple_choice' | 'rating' | 'audio' | 'file' | 'conditional';
 
 export interface Question {
   id: string;
@@ -131,6 +131,7 @@ export class CreateQuestionnaireQuestionsComponent implements OnInit {
         { value: 'conditional', label: isHe ? 'שאלה מותנית' : 'Conditional Question', icon: this.ImageIcon },
         { value: 'email', label: isHe ? 'אימייל' : 'Email', icon: this.MailIcon },
         { value: 'phone', label: isHe ? 'טלפון' : 'Phone', icon: this.PhoneIcon },
+        { value: 'url', label: isHe ? 'כתובת URL' : 'URL', icon: this.FileTextIcon },
         { value: 'file', label: isHe ? 'העלאת קובץ/מסמכים' : 'File/Document Upload', icon: this.PaperclipIcon },
       ];
     }

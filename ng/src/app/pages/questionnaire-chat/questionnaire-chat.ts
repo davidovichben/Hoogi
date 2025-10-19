@@ -44,7 +44,9 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
   // Store responses
   responses: Record<string, any> = {};
   multiResponses: Record<string, Record<string, boolean>> = {};
+  otherTextResponses: Record<string, string> = {}; // Store "other" text inputs
   currentAnswer: string = '';
+  currentAnswerError: string = ''; // Validation error for current answer
 
   // Auto-scroll control
   private shouldScrollToBottom = false;
@@ -108,6 +110,40 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
     }
   }
 
+  // Clear current answer validation error
+  clearCurrentAnswerError() {
+    this.currentAnswerError = '';
+  }
+
+  // Validate current answer based on question type
+  validateCurrentAnswer() {
+    const question = this.getCurrentQuestion();
+    if (!question) return;
+
+    if (question.question_type === 'email' && this.currentAnswer) {
+      const validation = this.validateEmail(this.currentAnswer);
+      if (!validation.valid) {
+        this.currentAnswerError = validation.message;
+      } else {
+        this.currentAnswerError = '';
+      }
+    } else if (question.question_type === 'phone' && this.currentAnswer) {
+      const validation = this.validateIsraeliPhone(this.currentAnswer);
+      if (!validation.valid) {
+        this.currentAnswerError = validation.message;
+      } else {
+        this.currentAnswerError = '';
+      }
+    } else if (question.question_type === 'url' && this.currentAnswer) {
+      const validation = this.validateUrl(this.currentAnswer);
+      if (!validation.valid) {
+        this.currentAnswerError = validation.message;
+      } else {
+        this.currentAnswerError = '';
+      }
+    }
+  }
+
   private validateName(name: string): { valid: boolean; message: string } {
     if (!name || !name.trim()) {
       return { valid: false, message: this.lang.currentLanguage === 'he' ? 'נא להזין שם' : 'Please enter a name' };
@@ -129,24 +165,71 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
     if (!email || !email.trim()) {
       return { valid: false, message: this.lang.currentLanguage === 'he' ? 'נא להזין כתובת מייל' : 'Please enter an email address' };
     }
+
+    const trimmedEmail = email.trim();
+
     // Check for consecutive dots
-    if (/\.\./.test(email)) {
+    if (/\.\./.test(trimmedEmail)) {
       return {
         valid: false,
         message: this.lang.currentLanguage === 'he'
-          ? 'נא להזין כתובת מייל תקינה'
-          : 'Please enter a valid email address'
+          ? 'כתובת מייל לא יכולה להכיל נקודות רצופות'
+          : 'Email cannot contain consecutive dots'
       };
     }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email.trim())) {
+
+    // Strict email validation: xxxx@xxxx.xxx format
+    // - Must start and end with alphanumeric in local part
+    // - Can contain letters, numbers, dots, underscores, hyphens, plus in middle
+    // - Domain must be valid
+    // - TLD must be at least 2 characters
+    const emailRegex = /^[a-zA-Z0-9][a-zA-Z0-9._+-]*[a-zA-Z0-9]@[a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}$/;
+
+    // Special case: single character before @
+    const singleCharRegex = /^[a-zA-Z0-9]@[a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}$/;
+
+    if (!emailRegex.test(trimmedEmail) && !singleCharRegex.test(trimmedEmail)) {
       return {
         valid: false,
         message: this.lang.currentLanguage === 'he'
-          ? 'נא להזין כתובת מייל תקינה'
-          : 'Please enter a valid email address'
+          ? 'נא להזין כתובת מייל בפורמט: example@domain.com'
+          : 'Please enter email in format: example@domain.com'
       };
     }
+
+    // Additional validation: check for valid structure
+    const parts = trimmedEmail.split('@');
+    if (parts.length !== 2) {
+      return {
+        valid: false,
+        message: this.lang.currentLanguage === 'he'
+          ? 'כתובת מייל חייבת להכיל @ אחד בלבד'
+          : 'Email must contain exactly one @'
+      };
+    }
+
+    const [localPart, domainPart] = parts;
+
+    // Check local part doesn't start or end with dot
+    if (localPart.startsWith('.') || localPart.endsWith('.')) {
+      return {
+        valid: false,
+        message: this.lang.currentLanguage === 'he'
+          ? 'כתובת מייל לא תקינה'
+          : 'Invalid email address'
+      };
+    }
+
+    // Check domain has at least one dot
+    if (!domainPart.includes('.')) {
+      return {
+        valid: false,
+        message: this.lang.currentLanguage === 'he'
+          ? 'דומיין חייב להכיל נקודה'
+          : 'Domain must contain a dot'
+      };
+    }
+
     return { valid: true, message: '' };
   }
 
@@ -154,18 +237,99 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
     if (!phone || !phone.trim()) {
       return { valid: false, message: this.lang.currentLanguage === 'he' ? 'נא להזין מספר טלפון' : 'Please enter a phone number' };
     }
+
+    // Remove all non-digit characters for validation
     const cleanPhone = phone.replace(/\D/g, '');
-    // Israeli: 9-10 digits, mobile starts with 05, landline starts with 0 followed by 2-9
-    const israeliPhoneRegex = /^(0?(5[0-9]|[2-9])\d{7})$/;
-    if (!israeliPhoneRegex.test(cleanPhone)) {
+
+    // Israeli mobile phone validation (strict):
+    // - Must be exactly 10 digits
+    // - Must start with 05
+    // - Second digit after 05 must be 0-9 (050, 051, 052, 053, 054, 055, 056, 057, 058, 059)
+    // - Followed by 7 more digits
+    const israeliMobileRegex = /^05[0-9]\d{7}$/;
+
+    if (!israeliMobileRegex.test(cleanPhone)) {
       return {
         valid: false,
         message: this.lang.currentLanguage === 'he'
-          ? 'נא להזין מספר טלפון ישראלי תקין (לדוגמה: 050-1234567)'
-          : 'Please enter a valid Israeli phone number (e.g., 050-1234567)'
+          ? 'נא להזין מספר סלולרי ישראלי תקין (10 ספרות, מתחיל ב-05)'
+          : 'Please enter a valid Israeli mobile number (10 digits, starts with 05)'
       };
     }
+
+    // Additional check: verify it's a known Israeli mobile prefix
+    const prefix = cleanPhone.substring(0, 3);
+    const validPrefixes = ['050', '051', '052', '053', '054', '055', '056', '057', '058', '059'];
+
+    if (!validPrefixes.includes(prefix)) {
+      return {
+        valid: false,
+        message: this.lang.currentLanguage === 'he'
+          ? 'קידומת מספר לא תקינה (חייב להתחיל ב-050 עד 059)'
+          : 'Invalid prefix (must start with 050-059)'
+      };
+    }
+
     return { valid: true, message: '' };
+  }
+
+  private validateUrl(url: string): { valid: boolean; message: string } {
+    if (!url || !url.trim()) {
+      return {
+        valid: false,
+        message: this.lang.currentLanguage === 'he' ? 'נא להזין כתובת URL' : 'Please enter a URL'
+      };
+    }
+
+    const trimmedUrl = url.trim();
+
+    // URL validation:
+    // - Must start with http:// or https:// or www.
+    // - Must have a valid domain structure
+    // - Can contain path, query params, etc.
+    try {
+      // If URL doesn't start with protocol, add https:// for validation
+      let urlToValidate = trimmedUrl;
+      if (!trimmedUrl.match(/^https?:\/\//i)) {
+        if (trimmedUrl.startsWith('www.')) {
+          urlToValidate = 'https://' + trimmedUrl;
+        } else {
+          // Check if it looks like a domain (contains a dot)
+          if (trimmedUrl.includes('.')) {
+            urlToValidate = 'https://' + trimmedUrl;
+          } else {
+            return {
+              valid: false,
+              message: this.lang.currentLanguage === 'he'
+                ? 'נא להזין כתובת URL תקינה (לדוגמה: https://example.com)'
+                : 'Please enter a valid URL (e.g., https://example.com)'
+            };
+          }
+        }
+      }
+
+      // Try to create a URL object - will throw if invalid
+      const urlObj = new URL(urlToValidate);
+
+      // Check that the hostname has at least one dot (domain.tld)
+      if (!urlObj.hostname.includes('.')) {
+        return {
+          valid: false,
+          message: this.lang.currentLanguage === 'he'
+            ? 'כתובת URL חייבת להכיל דומיין תקין'
+            : 'URL must contain a valid domain'
+        };
+      }
+
+      return { valid: true, message: '' };
+    } catch (e) {
+      return {
+        valid: false,
+        message: this.lang.currentLanguage === 'he'
+          ? 'נא להזין כתובת URL תקינה (לדוגמה: https://example.com)'
+          : 'Please enter a valid URL (e.g., https://example.com)'
+      };
+    }
   }
 
   ngOnDestroy() {
@@ -442,6 +606,47 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
     return range;
   }
 
+  hasOtherOption(questionId: string): boolean {
+    const question = this.questions.find(q => q.id === questionId);
+
+    // First check if hasOther is explicitly set
+    if ((question as any)?.hasOther === true) {
+      return true;
+    }
+
+    // Fallback: check if any of the options contain "אחר" or "other"
+    const options = this.getQuestionOptions(questionId);
+    const hasOtherInOptions = options.some(opt => {
+      const lowerLabel = opt.label.toLowerCase().trim();
+      const lowerValue = opt.value.toLowerCase().trim();
+      return lowerLabel === 'אחר' || lowerLabel === 'other' ||
+             lowerValue === 'אחר' || lowerValue === 'other';
+    });
+
+    return hasOtherInOptions;
+  }
+
+  // Check if "other" option is selected for single choice
+  isOtherSelected(questionId: string): boolean {
+    const response = this.responses[questionId];
+    if (!response) return false;
+
+    const lowerResponse = response.toString().toLowerCase().trim();
+    return lowerResponse === 'אחר' || lowerResponse === 'other';
+  }
+
+  // Check if "other" option is checked for multiple choice
+  isOtherChecked(questionId: string): boolean {
+    const multiResponse = this.multiResponses[questionId];
+    if (!multiResponse) return false;
+
+    // Check if any of the checked options is "אחר" or "other"
+    return Object.keys(multiResponse).some(key => {
+      const lowerKey = key.toLowerCase();
+      return multiResponse[key] && (lowerKey === 'אחר' || lowerKey === 'other');
+    });
+  }
+
   onOptionClick(question: Question, optionValue: string) {
     // Prevent clicks during scroll animation
     if (this.isScrolling) {
@@ -449,9 +654,17 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
     }
 
     if (this.isSingleChoiceQuestion(question)) {
-      // For single choice, set the response and move to next
+      // For single choice, set the response
       this.responses[question.id] = optionValue;
-      this.submitCurrentAnswer(optionValue);
+
+      // Check if "Other" was selected
+      const lowerValue = optionValue.toLowerCase().trim();
+      const isOther = lowerValue === 'אחר' || lowerValue === 'other';
+
+      // Only auto-submit if it's NOT "Other" (user needs to fill in text for "Other")
+      if (!isOther) {
+        this.submitCurrentAnswer(optionValue);
+      }
     } else if (this.isMultiChoiceQuestion(question)) {
       // For multi choice, toggle selection
       if (!this.multiResponses[question.id]) {
@@ -502,12 +715,26 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
         return;
       }
 
+      // Format the selected options for display, including "Other" text if applicable
+      const displayOptions = selected.map(value => {
+        const lowerValue = value.toLowerCase().trim();
+        if ((lowerValue === 'אחר' || lowerValue === 'other') && this.otherTextResponses[question.id]) {
+          return `${value}: ${this.otherTextResponses[question.id]}`;
+        }
+        return value;
+      });
+
       response = selected;
-      displayText = selected.join(', ');
+      displayText = displayOptions.join(', ');
     } else if (this.isSingleChoiceQuestion(question)) {
       // Single choice
       response = answerText || this.responses[question.id];
       displayText = response;
+
+      // If "Other" is selected, append the text input
+      if (this.isOtherSelected(question.id) && this.otherTextResponses[question.id]) {
+        displayText = `${response}: ${this.otherTextResponses[question.id]}`;
+      }
     } else {
       // Text-based answers
       response = answerText || this.currentAnswer;
@@ -517,7 +744,7 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
         const message = this.lang.currentLanguage === 'he'
           ? 'נא להזין תשובה'
           : 'Please enter an answer';
-        this.toastService.show(message, 'error');
+        this.currentAnswerError = message;
         return;
       }
 
@@ -526,21 +753,28 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
         // First question: Name validation
         const nameValidation = this.validateName(response);
         if (!nameValidation.valid) {
-          this.toastService.show(nameValidation.message, 'error');
+          this.currentAnswerError = nameValidation.message;
           return;
         }
       } else if (question.question_type === 'email') {
         // Email validation for any email field
         const emailValidation = this.validateEmail(response);
         if (!emailValidation.valid) {
-          this.toastService.show(emailValidation.message, 'error');
+          this.currentAnswerError = emailValidation.message;
           return;
         }
       } else if (question.question_type === 'phone') {
         // Phone validation for any phone field
         const phoneValidation = this.validateIsraeliPhone(response);
         if (!phoneValidation.valid) {
-          this.toastService.show(phoneValidation.message, 'error');
+          this.currentAnswerError = phoneValidation.message;
+          return;
+        }
+      } else if (question.question_type === 'url') {
+        // URL validation for any URL field
+        const urlValidation = this.validateUrl(response);
+        if (!urlValidation.valid) {
+          this.currentAnswerError = urlValidation.message;
           return;
         }
       }
@@ -548,6 +782,9 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
 
     // Store the response
     this.responses[question.id] = response;
+
+    // Clear validation error since submission was successful
+    this.currentAnswerError = '';
 
     // Update the existing user message for this question
     const userMessageIndex = this.chatMessages.findIndex(
@@ -744,6 +981,71 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
       event.preventDefault();
       this.submitCurrentAnswer();
     }
+  }
+
+  goBackOneQuestion() {
+    // Prevent going back during scroll animation
+    if (this.isScrolling) {
+      return;
+    }
+
+    // Can't go back if at the first question or already submitted
+    if (this.currentQuestionIndex === 0 || this.isSubmitted) {
+      return;
+    }
+
+    // Move back to previous question
+    this.currentQuestionIndex--;
+    const previousQuestion = this.getCurrentQuestion();
+
+    if (!previousQuestion) return;
+
+    // Clear the response for the previous question
+    delete this.responses[previousQuestion.id];
+
+    // Clear multi-responses if it's a multi-choice question
+    if (this.multiResponses[previousQuestion.id]) {
+      delete this.multiResponses[previousQuestion.id];
+    }
+
+    // Clear "other" text input if it exists
+    if (this.otherTextResponses[previousQuestion.id]) {
+      delete this.otherTextResponses[previousQuestion.id];
+    }
+
+    // Clear current answer and error
+    this.currentAnswer = '';
+    this.currentAnswerError = '';
+
+    // Clear file upload state if applicable
+    this.uploadedFileName = '';
+    this.uploadedFile = null;
+
+    // Clear audio recording state if applicable
+    this.audioFileName = '';
+    this.audioBlob = null;
+    this.isRecording = false;
+
+    // Clear the user's answer text (but keep the placeholder message)
+    const userMessageIndex = this.chatMessages.findIndex(
+      msg => msg.type === 'user' && msg.questionIndex === this.currentQuestionIndex
+    );
+    if (userMessageIndex !== -1) {
+      this.chatMessages[userMessageIndex].text = '';
+    }
+
+    // Re-initialize multi-responses object for this question if needed
+    if (this.isMultiChoiceQuestion(previousQuestion)) {
+      this.multiResponses[previousQuestion.id] = {};
+      const options = this.getQuestionOptions(previousQuestion.id);
+      options.forEach(opt => {
+        this.multiResponses[previousQuestion.id][opt.value] = false;
+      });
+    }
+
+    // Trigger change detection and scroll to show the question again
+    this.cdr.detectChanges();
+    this.shouldScrollToBottom = true;
   }
 
   skipCurrentQuestion() {

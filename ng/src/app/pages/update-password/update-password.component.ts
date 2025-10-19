@@ -230,8 +230,19 @@ export class UpdatePasswordComponent implements OnInit, OnDestroy {
       }
     } catch (error: any) {
       this.toastService.show(error.message || this.lang.t('auth.resetCodeFailed'), 'error');
+
+      // Restart the timer even if resend failed, so user can try again
+      if (!this.timerInterval) {
+        this.startTimer();
+      }
     } finally {
+      // Ensure isResending is always reset
       this.isResending = false;
+
+      // Force change detection
+      setTimeout(() => {
+        this.isResending = false;
+      }, 0);
     }
   }
 
@@ -321,7 +332,13 @@ export class UpdatePasswordComponent implements OnInit, OnDestroy {
         }
       }, 100);
     } finally {
+      // Ensure isVerifyingCode is always reset
       this.isVerifyingCode = false;
+
+      // Force change detection
+      setTimeout(() => {
+        this.isVerifyingCode = false;
+      }, 0);
     }
   }
 
@@ -512,7 +529,13 @@ export class UpdatePasswordComponent implements OnInit, OnDestroy {
         this.toastService.show(this.lang.t('updatePassword.resetFailed'), 'error');
       }
     } finally {
+      // Ensure isLoading is always reset
       this.isLoading = false;
+
+      // Force change detection
+      setTimeout(() => {
+        this.isLoading = false;
+      }, 0);
     }
   }
 
