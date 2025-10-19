@@ -1,28 +1,28 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { LanguageService } from '../../core/services/language.service';
-import { SupabaseService } from '../../core/services/supabase.service';
 import { ToastService } from '../../core/services/toast.service';
+import { SupabaseService } from '../../core/services/supabase.service';
 
-interface ContactMessage {
-  id: string;
+interface ContactFormData {
+  subject: string;
   name: string;
   email: string;
-  phone?: string;
-  subject: string;
   message: string;
-  status: 'new' | 'responded' | 'closed';
-  date: string;
-  priority: 'low' | 'medium' | 'high';
+  file: File | null;
+  url: string;
 }
 
-interface ContactStats {
-  totalMessages: number;
-  newMessages: number;
-  respondedMessages: number;
-  avgResponseTime: string;
+interface SubjectOption {
+  value: string;
+  label: string;
+}
+
+interface CountryOption {
+  value: string;
+  label: string;
 }
 
 @Component({
@@ -30,201 +30,265 @@ interface ContactStats {
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './contact.component.html',
-  styleUrl: './contact.component.sass'
+  styleUrls: ['./contact.component.sass']
 })
-export class ContactComponent implements OnInit {
-  activeTab: 'messages' | 'analytics' = 'messages';
-  messages: ContactMessage[] = [];
-  stats: ContactStats = {
-    totalMessages: 0,
-    newMessages: 0,
-    respondedMessages: 0,
-    avgResponseTime: '2h'
+export class ContactComponent implements OnInit, OnDestroy {
+  formData: ContactFormData = {
+    subject: '',
+    name: '',
+    email: '',
+    message: '',
+    file: null,
+    url: ''
   };
 
-  isLoading = false;
-  searchQuery = '';
-  selectedMessages: Set<string> = new Set();
+  isSubmitting = false;
+  filePreview: string | null = null;
+  userCountry = 'ישראל';
+
+  availableCountries: CountryOption[] = [
+    { value: 'ישראל', label: 'ישראל' },
+    { value: 'USA', label: 'USA' },
+    { value: 'UK', label: 'UK' },
+    { value: 'קנדה', label: 'קנדה' },
+    { value: 'אוסטרליה', label: 'אוסטרליה' },
+  ];
 
   constructor(
     public lang: LanguageService,
-    private supabase: SupabaseService,
+    private router: Router,
     private toast: ToastService,
-    private router: Router
+    private supabase: SupabaseService
   ) {}
 
-  async ngOnInit() {
-    await this.loadContactMessages();
-  }
-
-  async loadContactMessages() {
-    this.isLoading = true;
-    try {
-      const user = this.supabase.currentUser;
-      if (!user) return;
-
-      // Fetch contact messages from the database
-      // For now, using mock data - replace with actual DB call
-      this.messages = this.getMockMessages();
-
-      this.updateStats();
-    } catch (error) {
-      console.error('Error loading contact messages:', error);
-      this.toast.show('Failed to load contact messages', 'error');
-    } finally {
-      this.isLoading = false;
+  ngOnInit() {
+    // Detect user country based on language
+    const browserLang = navigator.language || 'he';
+    if (browserLang.startsWith('he') || browserLang.startsWith('ar')) {
+      this.userCountry = 'ישראל';
+    } else if (browserLang.startsWith('en')) {
+      this.userCountry = 'USA';
+    } else {
+      this.userCountry = 'ישראל';
     }
   }
 
-  private getMockMessages(): ContactMessage[] {
-    return [
-      {
-        id: '1',
-        name: 'John Doe',
-        email: 'john@example.com',
-        phone: '050-1234567',
-        subject: 'Question about pricing',
-        message: 'Hello, I would like to know more about your pricing plans...',
-        status: 'new',
-        date: new Date().toISOString(),
-        priority: 'high'
-      },
-      {
-        id: '2',
-        name: 'Jane Smith',
-        email: 'jane@example.com',
-        subject: 'Technical support needed',
-        message: 'I am having trouble accessing my account...',
-        status: 'responded',
-        date: new Date(Date.now() - 86400000).toISOString(),
-        priority: 'medium'
-      },
-      {
-        id: '3',
-        name: 'Bob Johnson',
-        email: 'bob@example.com',
-        phone: '052-9876543',
-        subject: 'Partnership inquiry',
-        message: 'We are interested in partnering with your company...',
-        status: 'new',
-        date: new Date(Date.now() - 172800000).toISOString(),
-        priority: 'medium'
+  ngOnDestroy() {
+    if (this.filePreview) {
+      URL.revokeObjectURL(this.filePreview);
+    }
+  }
+
+  getSubjectOptions(): SubjectOption[] {
+    // English subjects for USA, UK
+    if (this.userCountry === 'USA' || this.userCountry === 'UK') {
+      return [
+        { value: 'תמיכה טכנית', label: 'תמיכה טכנית' },
+        { value: 'שירות לקוחות', label: 'שירות לקוחות' },
+        { value: 'בעיה בתשלום', label: 'בעיה בתשלום' },
+        { value: 'דיווח על באג', label: 'דיווח על באג' },
+        { value: 'בקשת פיצ\'ר', label: 'בקשת פיצ\'ר' },
+        { value: 'משוב על המוצר', label: 'משוב על המוצר' },
+        { value: 'שאלה על השימוש', label: 'שאלה על השימוש' },
+        { value: 'שאלה כללית', label: 'שאלה כללית' }
+      ];
+    } else {
+      // Hebrew subjects for all other countries
+      return [
+        { value: 'תמיכה טכנית', label: 'תמיכה טכנית' },
+        { value: 'שירות לקוחות', label: 'שירות לקוחות' },
+        { value: 'בעיה בתשלום', label: 'בעיה בתשלום' },
+        { value: 'דיווח על באג', label: 'דיווח על באג' },
+        { value: 'בקשת פיצ\'ר', label: 'בקשת פיצ\'ר' },
+        { value: 'משוב על המוצר', label: 'משוב על המוצר' },
+        { value: 'שאלה על השימוש', label: 'שאלה על השימוש' },
+        { value: 'שאלה כללית', label: 'שאלה כללית' }
+      ];
+    }
+  }
+
+  onCountryChange() {
+    // Reset subject when country changes
+    this.formData.subject = '';
+  }
+
+  onFileSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] || null;
+
+    // Clear previous preview
+    if (this.filePreview) {
+      URL.revokeObjectURL(this.filePreview);
+      this.filePreview = null;
+    }
+
+    this.formData.file = file;
+
+    // Generate preview for images and videos
+    if (file && (file.type.startsWith('image/') || file.type.startsWith('video/'))) {
+      this.filePreview = URL.createObjectURL(file);
+    }
+  }
+
+  removeFile() {
+    if (this.filePreview) {
+      URL.revokeObjectURL(this.filePreview);
+      this.filePreview = null;
+    }
+    this.formData.file = null;
+
+    // Reset file input
+    const fileInput = document.getElementById('file') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.value = '';
+    }
+  }
+
+  getFileIcon(): string {
+    if (!this.formData.file) return '';
+
+    if (this.formData.file.type.startsWith('image/')) {
+      return '🖼️';
+    } else if (this.formData.file.type.startsWith('video/')) {
+      return '🎥';
+    } else if (this.formData.file.type === 'application/pdf') {
+      return '📄';
+    }
+    return '📎';
+  }
+
+  getFileSizeMB(): string {
+    if (!this.formData.file) return '';
+    return (this.formData.file.size / 1024 / 1024).toFixed(2);
+  }
+
+  validateForm(): boolean {
+    if (!this.formData.subject) {
+      this.toast.show('שגיאה: יש לבחור נושא לפנייה', 'error');
+      return false;
+    }
+
+    if (!this.formData.name.trim()) {
+      this.toast.show('שגיאה: יש להזין שם מלא', 'error');
+      return false;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(this.formData.email)) {
+      this.toast.show('שגיאה: יש להזין כתובת אימייל תקינה', 'error');
+      return false;
+    }
+
+    if (!this.formData.message.trim()) {
+      this.toast.show('שגיאה: יש להזין תיאור לפנייה', 'error');
+      return false;
+    }
+
+    // URL validation - allow URLs with or without http/https
+    if (this.formData.url && this.formData.url.trim()) {
+      const urlPattern = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/i;
+      if (!urlPattern.test(this.formData.url.trim())) {
+        this.toast.show('שגיאה: יש להזין כתובת URL תקינה', 'error');
+        return false;
       }
-    ];
-  }
-
-  private updateStats() {
-    this.stats.totalMessages = this.messages.length;
-    this.stats.newMessages = this.messages.filter(m => m.status === 'new').length;
-    this.stats.respondedMessages = this.messages.filter(m => m.status === 'responded').length;
-  }
-
-  getFilteredMessages(): ContactMessage[] {
-    if (!this.searchQuery) {
-      return this.messages;
     }
 
-    const query = this.searchQuery.toLowerCase();
-    return this.messages.filter(m =>
-      m.name.toLowerCase().includes(query) ||
-      m.email.toLowerCase().includes(query) ||
-      m.subject.toLowerCase().includes(query) ||
-      m.message.toLowerCase().includes(query)
-    );
+    return true;
   }
 
-  getStatusLabel(status: ContactMessage['status']): string {
-    const labels: Record<ContactMessage['status'], { he: string; en: string }> = {
-      new: { he: 'חדש', en: 'New' },
-      responded: { he: 'נענה', en: 'Responded' },
-      closed: { he: 'סגור', en: 'Closed' }
-    };
-    return this.lang.currentLanguage === 'he' ? labels[status].he : labels[status].en;
-  }
+  async onSubmit() {
+    if (!this.validateForm()) return;
 
-  getPriorityLabel(priority: ContactMessage['priority']): string {
-    const labels: Record<ContactMessage['priority'], { he: string; en: string }> = {
-      low: { he: 'נמוך', en: 'Low' },
-      medium: { he: 'בינוני', en: 'Medium' },
-      high: { he: 'גבוה', en: 'High' }
-    };
-    return this.lang.currentLanguage === 'he' ? labels[priority].he : labels[priority].en;
-  }
+    this.isSubmitting = true;
 
-  formatDate(dateStr: string): string {
-    const date = new Date(dateStr);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    try {
+      let filePath: string | null = null;
+      let fileName: string | null = null;
+      let fileSize: number | null = null;
+      let fileType: string | null = null;
 
-    if (diffHours < 1) {
-      return this.lang.currentLanguage === 'he' ? 'לפני רגע' : 'Just now';
-    } else if (diffHours < 24) {
-      return this.lang.currentLanguage === 'he'
-        ? `לפני ${diffHours} שעות`
-        : `${diffHours}h ago`;
-    } else if (diffDays < 7) {
-      return this.lang.currentLanguage === 'he'
-        ? `לפני ${diffDays} ימים`
-        : `${diffDays}d ago`;
-    } else {
-      return date.toLocaleDateString(this.lang.currentLanguage === 'he' ? 'he-IL' : 'en-US');
-    }
-  }
+      // Step 1: Upload file to Supabase storage if exists
+      if (this.formData.file) {
+        const file = this.formData.file;
+        const fileExt = file.name.split('.').pop();
+        const timestamp = Date.now();
+        const uniqueFileName = `${timestamp}_${Math.random().toString(36).substring(7)}.${fileExt}`;
 
-  toggleMessageSelection(messageId: string) {
-    if (this.selectedMessages.has(messageId)) {
-      this.selectedMessages.delete(messageId);
-    } else {
-      this.selectedMessages.add(messageId);
-    }
-  }
+        const { data: uploadData, error: uploadError } = await this.supabase.client.storage
+          .from('contact-attachments')
+          .upload(uniqueFileName, file, {
+            cacheControl: '3600',
+            upsert: false
+          });
 
-  toggleSelectAll() {
-    if (this.selectedMessages.size === this.messages.length) {
-      this.selectedMessages.clear();
-    } else {
-      this.messages.forEach(m => this.selectedMessages.add(m.id));
-    }
-  }
+        if (uploadError) {
+          console.error('Error uploading file:', uploadError);
+          this.toast.show('שגיאה בהעלאת הקובץ. אנא נסה שוב.', 'error');
+          this.isSubmitting = false;
+          return;
+        }
 
-  isMessageSelected(messageId: string): boolean {
-    return this.selectedMessages.has(messageId);
-  }
+        filePath = uploadData.path;
+        fileName = file.name;
+        fileSize = file.size;
+        fileType = file.type;
+      }
 
-  viewMessage(message: ContactMessage) {
-    // Navigate to message detail view or open modal
-    console.log('View message:', message);
-    this.toast.show('Opening message...', 'info');
-  }
+      // Step 2: Call Supabase Edge Function to submit form and send email
+      const { data: functionData, error: functionError } = await this.supabase.client.functions
+        .invoke('submit-contact-form', {
+          body: {
+            country: this.userCountry,
+            subject: this.formData.subject,
+            name: this.formData.name,
+            email: this.formData.email,
+            message: this.formData.message,
+            url: this.formData.url || null,
+            file_name: fileName,
+            file_size: fileSize,
+            file_type: fileType,
+            file_path: filePath
+          }
+        });
 
-  respondToMessage(message: ContactMessage) {
-    // Open email client or response modal
-    window.location.href = `mailto:${message.email}?subject=Re: ${message.subject}`;
-  }
+      if (functionError) {
+        console.error('Error calling submit-contact-form function:', functionError);
+        this.toast.show('שגיאה בשליחת הפנייה. אנא נסה שוב.', 'error');
+        this.isSubmitting = false;
+        return;
+      }
 
-  markAsRead(message: ContactMessage) {
-    message.status = 'responded';
-    this.updateStats();
-    this.toast.show('Message marked as read', 'success');
-  }
+      console.log('Contact form submitted successfully:', functionData);
 
-  deleteMessage(message: ContactMessage) {
-    const index = this.messages.findIndex(m => m.id === message.id);
-    if (index > -1) {
-      this.messages.splice(index, 1);
-      this.updateStats();
-      this.toast.show('Message deleted', 'success');
+      this.toast.show('🎉 הפנייה נשלחה בהצלחה! הפנייה שלך נשלחה לצוות המתאים. נחזור אליך בהקדם האפשרי.', 'success');
+
+      // Clean up
+      if (this.filePreview) {
+        URL.revokeObjectURL(this.filePreview);
+        this.filePreview = null;
+      }
+
+      // Reset form
+      this.formData = {
+        subject: '',
+        name: '',
+        email: '',
+        message: '',
+        file: null,
+        url: ''
+      };
+
+      // Reset file input
+      const fileInput = document.getElementById('file') as HTMLInputElement;
+      if (fileInput) {
+        fileInput.value = '';
+      }
+    } catch (error) {
+      console.error('Error submitting contact form:', error);
+      this.toast.show('שגיאה בשליחת הפנייה. אנא נסה שוב.', 'error');
+    } finally {
+      this.isSubmitting = false;
     }
   }
 
-  goBack() {
-    this.router.navigate(['/dashboard']);
-  }
-
-  exportMessages() {
-    this.toast.show('Exporting messages...', 'info');
-    // Implement export functionality
-  }
 }

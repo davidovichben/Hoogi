@@ -53,14 +53,34 @@ export class QuestionnaireService {
   async fetchQuestionnaireByToken(token: string) {
     const supabase = this.supabaseService.client;
 
-    // First get the questionnaire by token
-    const { data: qData, error: qError } = await supabase
-      .from('questionnaires')
-      .select('*')
-      .eq('token', token)
-      .maybeSingle();
+    // First, check if token starts with 'd_' (distribution token) or 'q_' (questionnaire token)
+    let qData: any = null;
 
-    if (qError) throw qError;
+    if (token.startsWith('d_')) {
+      // It's a distribution token - fetch from distributions table
+      const { data: distData, error: distError } = await supabase
+        .from('distributions')
+        .select('questionnaire_id, questionnaires(*)')
+        .eq('token', token)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (distError) throw distError;
+      if (!distData) return null;
+
+      qData = distData.questionnaires;
+    } else {
+      // It's a questionnaire token - fetch from questionnaires table (legacy support)
+      const { data: questionnaireData, error: qError } = await supabase
+        .from('questionnaires')
+        .select('*')
+        .eq('token', token)
+        .maybeSingle();
+
+      if (qError) throw qError;
+      qData = questionnaireData;
+    }
+
     if (!qData) return null;
 
     // Then get questions

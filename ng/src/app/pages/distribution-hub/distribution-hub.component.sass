@@ -241,6 +241,19 @@
   @media (min-width: 640px)
     font-size: 0.8125rem
 
+.error-text
+  color: #ef4444 !important
+  font-weight: 500
+
+.text-center
+  text-align: center
+
+.mt-1
+  margin-top: 0.25rem
+
+.mt-2
+  margin-top: 0.5rem
+
 // Template Management
 .template-label
   display: block
@@ -404,6 +417,82 @@
 
   p
     margin-top: 0.25rem
+
+// Save Distribution Section
+.save-distribution-section
+  margin: 1rem 0
+  padding: 1.5rem 1rem
+  background: white
+  border: 1px solid #e5e7eb
+  border-radius: 0
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1)
+  border-left: none
+  border-right: none
+  display: flex
+  flex-direction: column
+  align-items: center
+  gap: 0.5rem
+
+  @media (min-width: 768px)
+    padding: 1.5rem
+    margin: 1.5rem 0
+    background: rgba(243, 244, 246, 0.3)
+    box-shadow: none
+    border-radius: 0.75rem
+    border: 1px solid #e5e7eb
+
+.btn-save-distribution
+  display: flex
+  align-items: center
+  justify-content: center
+  gap: 0.5rem
+  padding: 0.875rem 2rem
+  background: #17a2b8
+  border: none
+  border-radius: 0.5rem
+  color: white
+  font-size: 1rem
+  font-weight: 600
+  cursor: pointer
+  transition: all 0.2s
+  min-height: 48px
+  width: 100%
+  max-width: 300px
+
+  @media (min-width: 640px)
+    width: auto
+
+  &:hover:not(:disabled)
+    background: #138496
+    transform: translateY(-1px)
+    box-shadow: 0 4px 12px rgba(23, 162, 184, 0.3)
+
+  &:disabled
+    opacity: 0.6
+    cursor: not-allowed
+
+.save-icon
+  font-size: 1.25rem
+
+.distribution-saved-message
+  margin: 1rem 0
+  padding: 1rem
+  background: #d1fae5
+  border: 1px solid #6ee7b7
+  border-radius: 0
+  border-left: none
+  border-right: none
+
+  @media (min-width: 768px)
+    padding: 1rem
+    background: #d1fae5
+    border-radius: 0.5rem
+    border: 1px solid #6ee7b7
+
+  .success-text
+    text-align: center
+    color: #065f46
+    font-weight: 600
 
 // Quick Links Section
 .quick-links-section

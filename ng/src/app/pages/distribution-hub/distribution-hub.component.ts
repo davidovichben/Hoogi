@@ -12,21 +12,29 @@ interface Questionnaire {
   token?: string | null;
 }
 
+interface Distribution {
+  id: string;
+  questionnaire_id: string;
+  response_template_ids: string[];
+  token: string | null;
+  is_active: boolean;
+}
+
 interface SelectedTemplate {
   id: string;
   name: string;
   channels: Array<'email' | 'whatsapp' | 'sms'>;
 }
 
-type LinkMode = 'form' | 'chat' | 'qr' | null;
+interface AutomationTemplate {
+  id: string;
+  name: string;
+  template_type: string;
+  response_type: string;
+  channels: string[];
+}
 
-// Mock automation templates
-const AUTOMATION_TEMPLATES = [
-  { id: 'template-1', name: 'תבנית תודה בסיסית', triggerType: 'lead' },
-  { id: 'template-2', name: 'תבנית מעקב לאחר מילוי', triggerType: 'lead' },
-  { id: 'template-3', name: 'תבנית הנחה מיוחדת', triggerType: 'lead' },
-  { id: 'template-4', name: 'תבנית זימון לפגישה', triggerType: 'lead' },
-];
+type LinkMode = 'form' | 'chat' | 'qr' | null;
 
 @Component({
   selector: 'app-distribution-hub',
@@ -43,10 +51,11 @@ export class DistributionHubComponent implements OnInit {
   loading = false;
   currentMode: LinkMode = null;
   currentUrl = '';
+  currentDistribution: Distribution | null = null;
 
   // Template management
   selectedTemplates: SelectedTemplate[] = [];
-  availableTemplates = AUTOMATION_TEMPLATES;
+  availableTemplates: AutomationTemplate[] = [];
   newTemplateId = '';
 
   constructor(
@@ -58,7 +67,10 @@ export class DistributionHubComponent implements OnInit {
   ) {}
 
   async ngOnInit() {
-    await this.loadQuestionnaires();
+    await Promise.all([
+      this.loadQuestionnaires(),
+      this.loadAutomationTemplates()
+    ]);
 
     // Check for questionnaireId from query params
     this.route.queryParams.subscribe(params => {
@@ -94,6 +106,25 @@ export class DistributionHubComponent implements OnInit {
     }
   }
 
+  async loadAutomationTemplates() {
+    try {
+      const userId = this.supabaseService.currentUser?.id;
+      if (!userId) return;
+
+      const { data, error } = await this.supabaseService.client
+        .from('automation_templates')
+        .select('id, name, template_type, response_type, channels')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      this.availableTemplates = data || [];
+    } catch (e: any) {
+      console.error('Error loading automation templates:', e);
+    }
+  }
+
   goBack() {
     window.history.back();
   }
@@ -102,6 +133,33 @@ export class DistributionHubComponent implements OnInit {
     // Hide the generated link when questionnaire selection changes
     this.currentMode = null;
     this.currentUrl = '';
+    this.currentDistribution = null;
+    this.selectedTemplates = [];
+
+    // Load existing distribution if available
+    this.loadExistingDistribution();
+  }
+
+  async loadExistingDistribution() {
+    if (!this.selectedQuestionnaire) return;
+
+    try {
+      const { data: existingDistributions, error } = await this.supabaseService.client
+        .from('distributions')
+        .select('*')
+        .eq('questionnaire_id', this.selectedQuestionnaire)
+        .eq('is_active', true)
+        .limit(1);
+
+      if (error) throw error;
+
+      if (existingDistributions && existingDistributions.length > 0) {
+        this.currentDistribution = existingDistributions[0] as Distribution;
+        // TODO: Load selected templates from distribution if needed
+      }
+    } catch (error) {
+      console.error('Error loading existing distribution:', error);
+    }
   }
 
   // Template management methods
@@ -165,28 +223,80 @@ export class DistributionHubComponent implements OnInit {
     return this.selectedTemplates.some(t => t.id === templateId);
   }
 
-  handleBuildLink(type: 'form' | 'chat' | 'qr') {
+  async handleSaveDistribution() {
+    // Validate questionnaire is selected
     if (!this.selectedQuestionnaire) {
-      this.toast.show(this.lang.t('distribution.selectQuestionnaireFirst'), 'error');
-      return;
-    }
-
-    // Find the selected questionnaire to get its token
-    const questionnaire = this.questionnaires.find(q => q.id === this.selectedQuestionnaire);
-
-    if (!questionnaire) {
       this.toast.show(
-        this.lang.currentLanguage === 'he' ? 'שאלון לא נמצא' : 'Questionnaire not found',
+        this.lang.currentLanguage === 'he'
+          ? 'יש לבחור שאלון תחילה'
+          : 'Please select a questionnaire first',
         'error'
       );
       return;
     }
 
-    if (!questionnaire.token) {
+    try {
+      this.loading = true;
+
+      // Get template IDs from selected templates
+      const templateIds = this.selectedTemplates.map(t => t.id);
+
+      // Check if distribution already exists
+      if (this.currentDistribution) {
+        // Update existing distribution
+        const { data, error } = await this.supabaseService.client
+          .from('distributions')
+          .update({
+            response_template_ids: templateIds,
+            is_active: true
+          })
+          .eq('id', this.currentDistribution.id)
+          .select()
+          .single();
+
+        if (error) throw error;
+        this.currentDistribution = data as Distribution;
+      } else {
+        // Create new distribution
+        const { data, error } = await this.supabaseService.client
+          .from('distributions')
+          .insert([{
+            questionnaire_id: this.selectedQuestionnaire,
+            response_template_ids: templateIds,
+            is_active: true
+          }])
+          .select()
+          .single();
+
+        if (error) throw error;
+        this.currentDistribution = data as Distribution;
+      }
+
       this.toast.show(
         this.lang.currentLanguage === 'he'
-          ? 'השאלון חייב להיות פעיל כדי לקבל קישור. אנא פרסם את השאלון תחילה.'
-          : 'Questionnaire must be active to get a link. Please publish the questionnaire first.',
+          ? 'ההפצה נשמרה בהצלחה'
+          : 'Distribution saved successfully',
+        'success'
+      );
+    } catch (error) {
+      console.error('Error saving distribution:', error);
+      this.toast.show(
+        this.lang.currentLanguage === 'he'
+          ? 'שגיאה בשמירת ההפצה'
+          : 'Error saving distribution',
+        'error'
+      );
+    } finally {
+      this.loading = false;
+    }
+  }
+
+  handleBuildLink(type: 'form' | 'chat' | 'qr') {
+    if (!this.currentDistribution || !this.currentDistribution.token) {
+      this.toast.show(
+        this.lang.currentLanguage === 'he'
+          ? 'יש לשמור את ההפצה תחילה'
+          : 'Please save the distribution first',
         'error'
       );
       return;
@@ -196,11 +306,11 @@ export class DistributionHubComponent implements OnInit {
     let url = '';
 
     if (type === 'form') {
-      url = `${base}/q/${questionnaire.token}`;
+      url = `${base}/q/${this.currentDistribution.token}`;
     } else if (type === 'chat') {
-      url = `${base}/q/${questionnaire.token}/chat`;
+      url = `${base}/q/${this.currentDistribution.token}/chat`;
     } else if (type === 'qr') {
-      url = `${base}/q/${questionnaire.token}/qr`;
+      url = `${base}/q/${this.currentDistribution.token}/qr`;
     }
 
     this.currentMode = type;

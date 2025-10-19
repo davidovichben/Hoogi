@@ -104,6 +104,33 @@
           [style.--focus-ring-color]="formData.primaryColor"></textarea>
       </div>
 
+      <!-- Automation Templates -->
+      <div class="automation-templates-card card">
+        <h3 class="card-title">{{ lang.currentLanguage === 'he' ? 'תבניות מענה אוטומטי' : 'Automation Templates' }}</h3>
+        <p class="card-description">{{ lang.currentLanguage === 'he' ? 'בחר תבניות שישלחו אוטומטית בעת קבלת תגובה' : 'Select templates to send automatically when receiving a response' }}</p>
+
+        @if (availableAutomationTemplates.length === 0) {
+          <p class="no-templates-text">{{ lang.currentLanguage === 'he' ? 'אין תבניות זמינות. צור תבניות בעמוד האוטומציות.' : 'No templates available. Create templates in the Automations page.' }}</p>
+        } @else {
+          <div class="templates-grid">
+            @for (template of availableAutomationTemplates; track template.id) {
+              <div
+                class="template-checkbox-item"
+                (click)="toggleAutomationTemplate(template.id)"
+                [class.selected]="isTemplateSelected(template.id)">
+                <input
+                  type="checkbox"
+                  [checked]="isTemplateSelected(template.id)"
+                  (click)="$event.stopPropagation()"
+                  (change)="toggleAutomationTemplate(template.id)"
+                  class="template-checkbox">
+                <span class="template-name">{{ template.name }}</span>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
       <!-- Link or Image upload -->
       <div class="link-card card">
         <h3 class="card-title">{{ lang.t('createQuestionnaire.fileOrLink') }}</h3>

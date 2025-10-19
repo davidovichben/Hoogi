@@ -128,26 +128,62 @@ export class QuestionnairesComponent implements OnInit {
   }
 
   async handleShare(q: Questionnaire) {
-    // Check if published
-    const { data, error } = await this.supabaseService.client
-      .from('questionnaires')
-      .select('is_published, token')
-      .eq('id', q.id)
-      .single();
-
-    if (error || !data?.is_published || !data?.token) {
-      this.toast.show(
-        this.lang.t('questionnaires.publishToShare'),
-        'error'
-      );
-      return;
-    }
-
-    const url = `${window.location.origin}/q/${data.token}`;
     try {
+      // Check if questionnaire is published
+      const { data: questionnaireData, error: qError } = await this.supabaseService.client
+        .from('questionnaires')
+        .select('is_published')
+        .eq('id', q.id)
+        .single();
+
+      if (qError || !questionnaireData?.is_published) {
+        this.toast.show(
+          this.lang.t('questionnaires.publishToShare'),
+          'error'
+        );
+        return;
+      }
+
+      // Get or create an active distribution for this questionnaire
+      let { data: distributions, error: distError } = await this.supabaseService.client
+        .from('distributions')
+        .select('token')
+        .eq('questionnaire_id', q.id)
+        .eq('is_active', true)
+        .limit(1);
+
+      if (distError) throw distError;
+
+      let token: string;
+
+      if (distributions && distributions.length > 0) {
+        // Use existing distribution token
+        token = distributions[0].token;
+      } else {
+        // Create a new distribution
+        const { data: newDist, error: createError } = await this.supabaseService.client
+          .from('distributions')
+          .insert([{
+            questionnaire_id: q.id,
+            response_template_ids: [],
+            is_active: true
+          }])
+          .select('token')
+          .single();
+
+        if (createError) throw createError;
+        token = newDist.token;
+      }
+
+      if (!token) {
+        throw new Error('No token generated');
+      }
+
+      const url = `${window.location.origin}/q/${token}`;
       await navigator.clipboard.writeText(url);
       this.toast.show(this.lang.t('questionnaires.linkCopiedDesc'), 'success');
-    } catch {
+    } catch (error) {
+      console.error('Error sharing questionnaire:', error);
       this.toast.show(this.lang.t('questionnaires.copyErrorDesc'), 'error');
     }
   }

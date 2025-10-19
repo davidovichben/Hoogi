@@ -33,7 +33,8 @@ export const routes: Routes = [
       { path: 'settings', loadComponent: () => import('./pages/settings/settings.component').then(m => m.SettingsComponent) },
       { path: 'profile', loadComponent: () => import('./pages/profile/profile.component').then(m => m.ProfileComponent), canDeactivate: [ProfileCompletionGuard] },
       { path: 'partners', loadComponent: () => import('./pages/partners/partners.component').then(m => m.PartnersComponent) },
-      { path: 'distribution-hub', loadComponent: () => import('./pages/distribution-hub/distribution-hub.component').then(m => m.DistributionHubComponent) }
+      { path: 'distribution-hub', loadComponent: () => import('./pages/distribution-hub/distribution-hub.component').then(m => m.DistributionHubComponent) },
+      { path: 'contact', loadComponent: () => import('./pages/contact/contact.component').then(m => m.ContactComponent) }
     ]
   },
   { path: '**', loadComponent: () => import('./pages/not-found/not-found.component').then(m => m.NotFoundComponent) }

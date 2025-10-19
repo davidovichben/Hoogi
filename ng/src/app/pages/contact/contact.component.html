@@ -1,287 +1,251 @@
-<div class="contact-page bg-white rounded-lg shadow-sm p-4 md:p-6 lg:p-8" [dir]="lang.currentLanguage === 'he' ? 'rtl' : 'ltr'">
-  <!-- Back Button -->
-  <div class="flex items-center mb-4">
-    <button
-      (click)="goBack()"
-      class="back-button flex items-center gap-2 px-3 py-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md transition">
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" [style.transform]="lang.currentLanguage === 'he' ? 'rotate(180deg)' : 'none'">
-        <path d="M19 12H5M12 19l-7-7 7-7"/>
-      </svg>
-      <span class="text-sm">{{ lang.currentLanguage === 'he' ? 'חזור' : 'Back' }}</span>
-    </button>
+<div class="contact-page max-w-lg mx-auto w-full py-4 px-2">
+  <!-- Logo -->
+  <div class="flex justify-center mb-4">
+    <img
+      src="/img/logo.png"
+      alt="Hoogi Logo"
+      class="w-[140px] h-[140px] object-contain"
+    />
   </div>
 
-  <!-- Page Title -->
-  <h1 class="page-title text-xl md:text-2xl lg:text-3xl font-bold mb-6 flex items-center" [class.justify-end]="lang.currentLanguage === 'he'" [class.justify-start]="lang.currentLanguage !== 'he'">
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" [class.mr-2]="lang.currentLanguage !== 'he'" [class.ml-2]="lang.currentLanguage === 'he'">
-      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-    </svg>
-    {{ lang.currentLanguage === 'he' ? 'הודעות יצירת קשר' : 'Contact Messages' }}
-  </h1>
+  <!-- Title -->
+  <h1 class="text-xl md:text-2xl font-bold text-center mb-6">צור קשר עם התמיכה שלנו</h1>
 
-  <!-- Tabs -->
-  <div class="tabs-container mb-6">
-    <div class="tabs-list grid grid-cols-2 gap-2 mb-4">
-      <button
-        [class.active]="activeTab === 'messages'"
-        (click)="activeTab = 'messages'"
-        class="tab-button px-4 py-3 rounded-lg font-medium transition">
-        {{ lang.currentLanguage === 'he' ? 'הודעות' : 'Messages' }}
-      </button>
-      <button
-        [class.active]="activeTab === 'analytics'"
-        (click)="activeTab = 'analytics'"
-        class="tab-button px-4 py-3 rounded-lg font-medium transition flex items-center justify-center gap-2">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="18" y1="20" x2="18" y2="10"></line>
-          <line x1="12" y1="20" x2="12" y2="4"></line>
-          <line x1="6" y1="20" x2="6" y2="14"></line>
-        </svg>
-        {{ lang.currentLanguage === 'he' ? 'ניתוח' : 'Analytics' }}
-      </button>
-    </div>
-  </div>
+  <!-- Form Card -->
+  <div class="bg-white rounded-xl shadow-sm p-4 md:p-6">
+    <form (ngSubmit)="onSubmit()" class="space-y-4">
+      <div class="space-y-4">
 
-  <!-- Tab Content -->
-  <div class="tab-content">
-    <!-- Messages Tab -->
-    @if (activeTab === 'messages') {
-      <div class="messages-tab">
-        <!-- Search and Actions Bar -->
-        <div class="search-actions-bar flex items-center justify-between mb-4 gap-4">
-          <div class="search-box flex-1 max-w-md">
-            <input
-              type="text"
-              [(ngModel)]="searchQuery"
-              [placeholder]="lang.currentLanguage === 'he' ? 'חיפוש הודעות...' : 'Search messages...'"
-              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-          </div>
-          <button
-            (click)="exportMessages()"
-            class="export-button px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
-            {{ lang.currentLanguage === 'he' ? 'ייצוא' : 'Export' }}
-          </button>
-        </div>
-
-        <!-- Messages List -->
-        <div class="messages-list space-y-3">
-          @if (isLoading) {
-            <div class="loading-state text-center py-12">
-              <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-              <p class="mt-4 text-gray-600">{{ lang.currentLanguage === 'he' ? 'טוען...' : 'Loading...' }}</p>
-            </div>
-          }
-
-          @if (!isLoading && getFilteredMessages().length === 0) {
-            <div class="empty-state text-center py-12">
-              <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mx-auto text-gray-400 mb-4">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+        <!-- Country Selection -->
+        <div class="space-y-2">
+          <div class="flex items-center gap-2">
+            <label for="country" class="text-base font-medium">מדינה</label>
+            <div class="relative group">
+              <svg class="w-4 h-4 text-gray-500 cursor-help" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <p class="text-lg font-semibold text-gray-600">
-                {{ lang.currentLanguage === 'he' ? 'אין הודעות להצגה' : 'No messages to display' }}
-              </p>
-              <p class="text-sm text-gray-500 mt-2">
-                {{ lang.currentLanguage === 'he' ? 'הודעות חדשות יופיעו כאן' : 'New messages will appear here' }}
-              </p>
-            </div>
-          }
-
-          @for (message of getFilteredMessages(); track message.id) {
-            <div class="message-card bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
-              <div class="flex items-start gap-4">
-                <!-- Checkbox -->
-                <div class="flex-shrink-0 pt-1">
-                  <input
-                    type="checkbox"
-                    [checked]="isMessageSelected(message.id)"
-                    (change)="toggleMessageSelection(message.id)"
-                    class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-                </div>
-
-                <!-- Avatar -->
-                <div class="flex-shrink-0">
-                  <div class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-semibold text-lg">
-                    {{ message.name.charAt(0).toUpperCase() }}
-                  </div>
-                </div>
-
-                <!-- Message Content -->
-                <div class="flex-1 min-w-0">
-                  <div class="flex items-start justify-between gap-4 mb-2">
-                    <div class="flex-1">
-                      <h3 class="font-semibold text-gray-900">{{ message.name }}</h3>
-                      <p class="text-sm text-gray-600">{{ message.email }}</p>
-                      @if (message.phone) {
-                        <p class="text-sm text-gray-600">{{ message.phone }}</p>
-                      }
-                    </div>
-                    <div class="flex items-center gap-2">
-                      <span
-                        [class.status-new]="message.status === 'new'"
-                        [class.status-responded]="message.status === 'responded'"
-                        [class.status-closed]="message.status === 'closed'"
-                        class="status-badge px-2 py-1 text-xs font-medium rounded-full">
-                        {{ getStatusLabel(message.status) }}
-                      </span>
-                      <span
-                        [class.priority-high]="message.priority === 'high'"
-                        [class.priority-medium]="message.priority === 'medium'"
-                        [class.priority-low]="message.priority === 'low'"
-                        class="priority-badge px-2 py-1 text-xs font-medium rounded-full">
-                        {{ getPriorityLabel(message.priority) }}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div class="mb-3">
-                    <p class="font-medium text-gray-900 mb-1">{{ message.subject }}</p>
-                    <p class="text-sm text-gray-600 line-clamp-2">{{ message.message }}</p>
-                  </div>
-
-                  <div class="flex items-center justify-between">
-                    <span class="text-xs text-gray-500">{{ formatDate(message.date) }}</span>
-                    <div class="flex items-center gap-2">
-                      <button
-                        (click)="viewMessage(message)"
-                        class="action-btn px-3 py-1 text-sm text-blue-600 hover:bg-blue-50 rounded transition">
-                        {{ lang.currentLanguage === 'he' ? 'צפה' : 'View' }}
-                      </button>
-                      <button
-                        (click)="respondToMessage(message)"
-                        class="action-btn px-3 py-1 text-sm text-green-600 hover:bg-green-50 rounded transition">
-                        {{ lang.currentLanguage === 'he' ? 'השב' : 'Respond' }}
-                      </button>
-                      @if (message.status === 'new') {
-                        <button
-                          (click)="markAsRead(message)"
-                          class="action-btn px-3 py-1 text-sm text-gray-600 hover:bg-gray-50 rounded transition">
-                          {{ lang.currentLanguage === 'he' ? 'סמן כנקרא' : 'Mark Read' }}
-                        </button>
-                      }
-                      <button
-                        (click)="deleteMessage(message)"
-                        class="action-btn px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded transition">
-                        {{ lang.currentLanguage === 'he' ? 'מחק' : 'Delete' }}
-                      </button>
-                    </div>
-                  </div>
-                </div>
+              <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-48 bg-gray-900 text-white text-xs rounded py-1 px-2 z-10">
+                בחר את המדינה שלך כדי לראות נושאים בשפה המתאימה
               </div>
             </div>
+          </div>
+          <select
+            id="country"
+            [(ngModel)]="userCountry"
+            name="country"
+            (change)="onCountryChange()"
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            @for (country of availableCountries; track country.value) {
+              <option [value]="country.value">{{ country.label }}</option>
+            }
+          </select>
+        </div>
+
+        <!-- Subject Selection -->
+        <div class="space-y-2">
+          <div class="flex items-center gap-2">
+            <label for="subject" class="text-base font-medium">נושא הפנייה</label>
+            <div class="relative group">
+              <svg class="w-4 h-4 text-gray-500 cursor-help" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-48 bg-gray-900 text-white text-xs rounded py-1 px-2 z-10">
+                בחר נושא כדי לנתב את הפנייה
+              </div>
+            </div>
+          </div>
+          <select
+            id="subject"
+            [(ngModel)]="formData.subject"
+            name="subject"
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="">בחר נושא</option>
+            @for (option of getSubjectOptions(); track option.value) {
+              <option [value]="option.value">{{ option.label }}</option>
+            }
+          </select>
+        </div>
+
+        <!-- Name Field -->
+        <div class="space-y-2">
+          <div class="flex items-center gap-2">
+            <label for="name" class="text-base font-medium">שם מלא</label>
+            <div class="relative group">
+              <svg class="w-4 h-4 text-gray-500 cursor-help" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-48 bg-gray-900 text-white text-xs rounded py-1 px-2 z-10">
+                הזן את שמך המלא
+              </div>
+            </div>
+          </div>
+          <input
+            id="name"
+            type="text"
+            [(ngModel)]="formData.name"
+            name="name"
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+
+        <!-- Email Field -->
+        <div class="space-y-2">
+          <div class="flex items-center gap-2">
+            <label for="email" class="text-base font-medium">אימייל ליצירת קשר</label>
+            <div class="relative group">
+              <svg class="w-4 h-4 text-gray-500 cursor-help" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-48 bg-gray-900 text-white text-xs rounded py-1 px-2 z-10">
+                הזן כתובת אימייל תקינה לתשובה
+              </div>
+            </div>
+          </div>
+          <input
+            id="email"
+            type="email"
+            [(ngModel)]="formData.email"
+            name="email"
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+
+        <!-- Message Field -->
+        <div class="space-y-2">
+          <div class="flex items-center gap-2">
+            <label for="message" class="text-base font-medium">תיאור הפנייה</label>
+            <div class="relative group">
+              <svg class="w-4 h-4 text-gray-500 cursor-help" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-48 bg-gray-900 text-white text-xs rounded py-1 px-2 z-10">
+                תאר את הפנייה שלך בפירוט
+              </div>
+            </div>
+          </div>
+          <textarea
+            id="message"
+            [(ngModel)]="formData.message"
+            name="message"
+            rows="4"
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+        </div>
+
+        <!-- File Upload -->
+        <div class="space-y-2">
+          <div class="flex items-center gap-2">
+            <label for="file" class="text-base font-medium">צרף תמונה או סרטון</label>
+            <div class="relative group">
+              <svg class="w-4 h-4 text-gray-500 cursor-help" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-48 bg-gray-900 text-white text-xs rounded py-1 px-2 z-10">
+                ניתן לצרף תמונות (PNG, JPG), סרטונים (MP4, MOV, WEBM) או מסמכים (PDF)
+              </div>
+            </div>
+          </div>
+          <input
+            id="file"
+            type="file"
+            (change)="onFileSelected($event)"
+            accept=".pdf,.png,.jpg,.jpeg,.mp4,.mov,.avi,.webm"
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+
+          <!-- File Preview -->
+          @if (formData.file) {
+            <div class="mt-3 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+              <!-- File info header -->
+              <div class="p-3 bg-white/80 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-lg flex items-center justify-center text-lg">
+                      {{ getFileIcon() }}
+                    </div>
+                    <div>
+                      <p class="text-sm font-semibold text-gray-800">{{ formData.file.name }}</p>
+                      <p class="text-xs text-gray-500">{{ getFileSizeMB() }} MB</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    (click)="removeFile()"
+                    class="text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full w-8 h-8 p-0 flex items-center justify-center">
+                    ✕
+                  </button>
+                </div>
+              </div>
+
+              <!-- Preview section -->
+              @if (filePreview) {
+                <div class="p-3 bg-white">
+                  <div class="flex items-center gap-2 mb-2">
+                    <div class="w-2 h-2 bg-green-400 rounded-full"></div>
+                    <p class="text-xs text-gray-600 font-medium">תצוגה מקדימה</p>
+                  </div>
+
+                  <!-- Image preview -->
+                  @if (formData.file.type.startsWith('image/')) {
+                    <div class="relative">
+                      <img
+                        [src]="filePreview"
+                        alt="Preview"
+                        class="w-full max-h-48 object-contain rounded-lg border border-gray-200 bg-white shadow-sm"
+                      />
+                      <div class="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
+                        תמונה
+                      </div>
+                    </div>
+                  }
+
+                  <!-- Video preview -->
+                  @if (formData.file.type.startsWith('video/')) {
+                    <div class="relative">
+                      <video
+                        [src]="filePreview"
+                        controls
+                        class="w-full max-h-48 rounded-lg border border-gray-200 bg-black shadow-sm"
+                      ></video>
+                      <div class="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
+                        סרטון
+                      </div>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
           }
+        </div>
+
+        <!-- URL Field (Optional) -->
+        <div class="space-y-2">
+          <div class="flex items-center gap-2">
+            <label for="url" class="text-base font-medium">קישור (אופציונאלי)</label>
+            <div class="relative group">
+              <svg class="w-4 h-4 text-gray-500 cursor-help" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-48 bg-gray-900 text-white text-xs rounded py-1 px-2 z-10">
+                קישור רלוונטי לתיאור הבעיה, אם יש
+              </div>
+            </div>
+          </div>
+          <input
+            id="url"
+            type="text"
+            [(ngModel)]="formData.url"
+            name="url"
+            placeholder="https://..."
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
         </div>
       </div>
-    }
 
-    <!-- Analytics Tab -->
-    @if (activeTab === 'analytics') {
-      <div class="analytics-tab">
-        <!-- Stats Cards -->
-        <div class="stats-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <!-- Total Messages -->
-          <div class="stat-card bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-6 border border-blue-200">
-            <div class="flex items-center justify-between mb-2">
-              <h3 class="text-sm font-medium text-blue-900">
-                {{ lang.currentLanguage === 'he' ? 'סה"כ הודעות' : 'Total Messages' }}
-              </h3>
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-600">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-              </svg>
-            </div>
-            <p class="text-3xl font-bold text-blue-900">{{ stats.totalMessages }}</p>
-          </div>
-
-          <!-- New Messages -->
-          <div class="stat-card bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-6 border border-green-200">
-            <div class="flex items-center justify-between mb-2">
-              <h3 class="text-sm font-medium text-green-900">
-                {{ lang.currentLanguage === 'he' ? 'הודעות חדשות' : 'New Messages' }}
-              </h3>
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-600">
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="12" y1="16" x2="12" y2="12"></line>
-                <line x1="12" y1="8" x2="12.01" y2="8"></line>
-              </svg>
-            </div>
-            <p class="text-3xl font-bold text-green-900">{{ stats.newMessages }}</p>
-          </div>
-
-          <!-- Responded Messages -->
-          <div class="stat-card bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-6 border border-purple-200">
-            <div class="flex items-center justify-between mb-2">
-              <h3 class="text-sm font-medium text-purple-900">
-                {{ lang.currentLanguage === 'he' ? 'הודעות שנענו' : 'Responded' }}
-              </h3>
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-purple-600">
-                <polyline points="20 6 9 17 4 12"></polyline>
-              </svg>
-            </div>
-            <p class="text-3xl font-bold text-purple-900">{{ stats.respondedMessages }}</p>
-          </div>
-
-          <!-- Average Response Time -->
-          <div class="stat-card bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-6 border border-orange-200">
-            <div class="flex items-center justify-between mb-2">
-              <h3 class="text-sm font-medium text-orange-900">
-                {{ lang.currentLanguage === 'he' ? 'זמן תגובה ממוצע' : 'Avg Response Time' }}
-              </h3>
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-orange-600">
-                <circle cx="12" cy="12" r="10"></circle>
-                <polyline points="12 6 12 12 16 14"></polyline>
-              </svg>
-            </div>
-            <p class="text-3xl font-bold text-orange-900">{{ stats.avgResponseTime }}</p>
-          </div>
-        </div>
-
-        <!-- Response Rate Chart Placeholder -->
-        <div class="chart-container bg-white border border-gray-200 rounded-lg p-6 mb-6">
-          <h2 class="text-lg font-semibold text-gray-900 mb-4">
-            {{ lang.currentLanguage === 'he' ? 'מגמת תגובות' : 'Response Trend' }}
-          </h2>
-          <div class="chart-placeholder bg-gray-50 rounded-lg h-64 flex items-center justify-center">
-            <p class="text-gray-500">
-              {{ lang.currentLanguage === 'he' ? 'תרשים יופיע כאן' : 'Chart will appear here' }}
-            </p>
-          </div>
-        </div>
-
-        <!-- Top Topics -->
-        <div class="topics-container bg-white border border-gray-200 rounded-lg p-6">
-          <h2 class="text-lg font-semibold text-gray-900 mb-4">
-            {{ lang.currentLanguage === 'he' ? 'נושאים מובילים' : 'Top Topics' }}
-          </h2>
-          <div class="space-y-3">
-            <div class="topic-item flex items-center justify-between">
-              <span class="text-gray-700">{{ lang.currentLanguage === 'he' ? 'תמיכה טכנית' : 'Technical Support' }}</span>
-              <div class="flex items-center gap-3 flex-1 mx-4">
-                <div class="flex-1 bg-gray-200 rounded-full h-2">
-                  <div class="bg-blue-600 h-2 rounded-full" style="width: 65%;"></div>
-                </div>
-                <span class="font-bold text-blue-600 w-8">65%</span>
-              </div>
-            </div>
-            <div class="topic-item flex items-center justify-between">
-              <span class="text-gray-700">{{ lang.currentLanguage === 'he' ? 'תמחור' : 'Pricing' }}</span>
-              <div class="flex items-center gap-3 flex-1 mx-4">
-                <div class="flex-1 bg-gray-200 rounded-full h-2">
-                  <div class="bg-green-600 h-2 rounded-full" style="width: 25%;"></div>
-                </div>
-                <span class="font-bold text-green-600 w-8">25%</span>
-              </div>
-            </div>
-            <div class="topic-item flex items-center justify-between">
-              <span class="text-gray-700">{{ lang.currentLanguage === 'he' ? 'שותפויות' : 'Partnerships' }}</span>
-              <div class="flex items-center gap-3 flex-1 mx-4">
-                <div class="flex-1 bg-gray-200 rounded-full h-2">
-                  <div class="bg-purple-600 h-2 rounded-full" style="width: 10%;"></div>
-                </div>
-                <span class="font-bold text-purple-600 w-8">10%</span>
-              </div>
-            </div>
-          </div>
-        </div>
+      <!-- Submit Button -->
+      <div class="flex justify-center pt-4">
+        <button
+          type="submit"
+          [disabled]="isSubmitting"
+          class="w-full md:w-auto min-w-[200px] h-12 bg-[#2D66F2] hover:bg-blue-600 text-white text-lg font-semibold px-8 py-2 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg">
+          {{ isSubmitting ? 'שולח...' : 'שלח' }}
+        </button>
       </div>
-    }
+    </form>
   </div>
 </div>

@@ -47,6 +47,15 @@ interface QuestionnaireState {
   attachmentUrl?: string;
   attachmentSize?: number;
   aiSuggestionsUsed?: boolean;
+  automationTemplateIds?: string[];
+}
+
+interface AutomationTemplate {
+  id: string;
+  name: string;
+  template_type: string;
+  response_type: string;
+  channels: string[];
 }
 
 @Component({
@@ -83,7 +92,8 @@ export class CreateQuestionnaireComponent implements OnInit, ComponentCanDeactiv
     occupationFree: '',
     subOccupationFree: '',
     linkLabel: '',
-    aiSuggestionsUsed: false
+    aiSuggestionsUsed: false,
+    automationTemplateIds: []
   };
 
   loading = false;
@@ -92,6 +102,7 @@ export class CreateQuestionnaireComponent implements OnInit, ComponentCanDeactiv
   attachmentFileName = '';
   uploadingAttachment = false;
   currentUserId: string | null = null;
+  availableAutomationTemplates: AutomationTemplate[] = [];
   
   // Error tracking for required fields
   errors = {
@@ -138,7 +149,10 @@ export class CreateQuestionnaireComponent implements OnInit, ComponentCanDeactiv
           return;
         }
 
-        await this.loadProfileData(user.id);
+        await Promise.all([
+          this.loadProfileData(user.id),
+          this.loadAutomationTemplates(user.id)
+        ]);
       }
     });
 
@@ -183,6 +197,22 @@ export class CreateQuestionnaireComponent implements OnInit, ComponentCanDeactiv
       this.router.navigate(['/profile']);
     } else {
       this.router.navigate(['/dashboard']);
+    }
+  }
+
+  async loadAutomationTemplates(userId: string) {
+    try {
+      const { data, error } = await this.supabaseService.client
+        .from('automation_templates')
+        .select('id, name, template_type, response_type, channels')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      this.availableAutomationTemplates = data || [];
+    } catch (e: any) {
+      console.error('Error loading automation templates:', e);
     }
   }
 
@@ -736,6 +766,24 @@ export class CreateQuestionnaireComponent implements OnInit, ComponentCanDeactiv
     if (!this.hasFormInteraction) {
       this.hasFormInteraction = true;
     }
+  }
+
+  toggleAutomationTemplate(templateId: string) {
+    if (!this.formData.automationTemplateIds) {
+      this.formData.automationTemplateIds = [];
+    }
+
+    const index = this.formData.automationTemplateIds.indexOf(templateId);
+    if (index > -1) {
+      this.formData.automationTemplateIds.splice(index, 1);
+    } else {
+      this.formData.automationTemplateIds.push(templateId);
+    }
+    this.onFormInput();
+  }
+
+  isTemplateSelected(templateId: string): boolean {
+    return this.formData.automationTemplateIds?.includes(templateId) || false;
   }
 
   // Browser navigation guard (closing tab, refreshing, etc.)
