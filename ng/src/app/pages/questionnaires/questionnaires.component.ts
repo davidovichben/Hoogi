@@ -153,8 +153,103 @@ export class QuestionnairesComponent implements OnInit {
     this.router.navigate(['/questionnaires/edit', qid]);
   }
 
-  handleViewLive(qid: string) {
-    this.router.navigate(['/questionnaires/live', qid]);
+  async handleViewLive(qid: string) {
+    try {
+      // Load full questionnaire data
+      const { data: questionnaire, error: qError } = await this.supabaseService.client
+        .from('questionnaires')
+        .select('*')
+        .eq('id', qid)
+        .single();
+
+      if (qError || !questionnaire) throw qError;
+
+      // Load questions
+      const { data: questions, error: questionsError } = await this.supabaseService.client
+        .from('questions')
+        .select('*')
+        .eq('questionnaire_id', qid)
+        .order('question_order', { ascending: true });
+
+      if (questionsError) throw questionsError;
+
+      // Load question options
+      let allOptions: any[] = [];
+      if (questions && questions.length > 0) {
+        const questionIds = questions.map((q: any) => q.id);
+        const { data: options, error: optionsError } = await this.supabaseService.client
+          .from('question_options')
+          .select('*')
+          .in('question_id', questionIds)
+          .order('order_index', { ascending: true });
+
+        if (!optionsError && options) {
+          allOptions = options;
+        }
+      }
+
+      // Load profile data for branding
+      const { data: profile, error: profileError } = await this.supabaseService.client
+        .from('profiles')
+        .select('brand_primary, brand_secondary, background_color, logo_url, image_url, business_name')
+        .eq('id', questionnaire.owner_id)
+        .single();
+
+      // Convert questions to preview format
+      const previewQuestions = (questions || []).map((q: any, index: number) => {
+        // Find options for this question
+        const questionOptions = allOptions.filter((opt: any) => opt.question_id === q.id);
+
+        return {
+          id: q.id,
+          question_text: q.question_text,
+          question_type: q.question_type,
+          is_required: q.is_required,
+          question_order: index + 1,
+          order_index: index,
+          min_rating: q.min_rating || null,
+          max_rating: q.max_rating || null,
+          options: questionOptions.map((opt: any) => opt.label || opt.value)
+        };
+      });
+
+      // Store preview data in session storage
+      const previewData = {
+        questionnaire: {
+          id: qid,
+          title: questionnaire.title,
+          description: questionnaire.description || '',
+          language: questionnaire.language || 'he',
+          owner_id: questionnaire.owner_id,
+          show_logo: questionnaire.show_logo ?? true,
+          show_profile_image: questionnaire.show_profile_image ?? true,
+          link_url: questionnaire.link_url || null,
+          attachment_url: questionnaire.attachment_url || null
+        },
+        questions: previewQuestions,
+        options: allOptions,
+        profile: {
+          brand_primary: profile?.brand_primary || '#199f3a',
+          brand_secondary: profile?.brand_secondary || '#9cbb54',
+          background_color: profile?.background_color || '#b0a0a4',
+          logo_url: profile?.logo_url || '',
+          image_url: profile?.image_url || '',
+          business_name: profile?.business_name || ''
+        }
+      };
+
+      sessionStorage.setItem('preview_questionnaire', JSON.stringify(previewData));
+
+      // Open preview in new tab with absolute URL (form view by default)
+      const url = `${window.location.origin}/questionnaires/live/preview`;
+      window.open(url, '_blank');
+    } catch (error: any) {
+      console.error('Error loading questionnaire for preview:', error);
+      this.toast.show(
+        this.lang.currentLanguage === 'he' ? 'שגיאה בטעינת שאלון' : 'Error loading questionnaire',
+        'error'
+      );
+    }
   }
 
   handlePreview(q: Questionnaire) {
@@ -395,8 +490,103 @@ export class QuestionnairesComponent implements OnInit {
     }
   }
 
-  handleView(id: string) {
-    this.router.navigate(['/questionnaires/live', id]);
+  async handleView(id: string) {
+    try {
+      // Load full questionnaire data
+      const { data: questionnaire, error: qError } = await this.supabaseService.client
+        .from('questionnaires')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (qError || !questionnaire) throw qError;
+
+      // Load questions
+      const { data: questions, error: questionsError } = await this.supabaseService.client
+        .from('questions')
+        .select('*')
+        .eq('questionnaire_id', id)
+        .order('question_order', { ascending: true });
+
+      if (questionsError) throw questionsError;
+
+      // Load question options
+      let allOptions: any[] = [];
+      if (questions && questions.length > 0) {
+        const questionIds = questions.map((q: any) => q.id);
+        const { data: options, error: optionsError } = await this.supabaseService.client
+          .from('question_options')
+          .select('*')
+          .in('question_id', questionIds)
+          .order('order_index', { ascending: true });
+
+        if (!optionsError && options) {
+          allOptions = options;
+        }
+      }
+
+      // Load profile data for branding
+      const { data: profile, error: profileError } = await this.supabaseService.client
+        .from('profiles')
+        .select('brand_primary, brand_secondary, background_color, logo_url, image_url, business_name')
+        .eq('id', questionnaire.owner_id)
+        .single();
+
+      // Convert questions to preview format
+      const previewQuestions = (questions || []).map((q: any, index: number) => {
+        // Find options for this question
+        const questionOptions = allOptions.filter((opt: any) => opt.question_id === q.id);
+
+        return {
+          id: q.id,
+          question_text: q.question_text,
+          question_type: q.question_type,
+          is_required: q.is_required,
+          question_order: index + 1,
+          order_index: index,
+          min_rating: q.min_rating || null,
+          max_rating: q.max_rating || null,
+          options: questionOptions.map((opt: any) => opt.label || opt.value)
+        };
+      });
+
+      // Store preview data in session storage
+      const previewData = {
+        questionnaire: {
+          id: id,
+          title: questionnaire.title,
+          description: questionnaire.description || '',
+          language: questionnaire.language || 'he',
+          owner_id: questionnaire.owner_id,
+          show_logo: questionnaire.show_logo ?? true,
+          show_profile_image: questionnaire.show_profile_image ?? true,
+          link_url: questionnaire.link_url || null,
+          attachment_url: questionnaire.attachment_url || null
+        },
+        questions: previewQuestions,
+        options: allOptions,
+        profile: {
+          brand_primary: profile?.brand_primary || '#199f3a',
+          brand_secondary: profile?.brand_secondary || '#9cbb54',
+          background_color: profile?.background_color || '#b0a0a4',
+          logo_url: profile?.logo_url || '',
+          image_url: profile?.image_url || '',
+          business_name: profile?.business_name || ''
+        }
+      };
+
+      sessionStorage.setItem('preview_questionnaire', JSON.stringify(previewData));
+
+      // Open preview in new tab with absolute URL (form view by default)
+      const url = `${window.location.origin}/questionnaires/live/preview`;
+      window.open(url, '_blank');
+    } catch (error: any) {
+      console.error('Error loading questionnaire for preview:', error);
+      this.toast.show(
+        this.lang.currentLanguage === 'he' ? 'שגיאה בטעינת שאלון' : 'Error loading questionnaire',
+        'error'
+      );
+    }
   }
 
   handleDistribute(id: string) {

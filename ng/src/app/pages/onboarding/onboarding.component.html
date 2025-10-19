@@ -20,6 +20,7 @@
         <div
           class="step-card"
           [class.completed]="isCompleted(step.number)"
+          [ngClass]="getStepBgClass(step.number)"
           (click)="handleStepClick(step.number, step.action)">
           <div class="step-content">
             <!-- Number Badge -->

@@ -24,6 +24,10 @@ export class UpdatePasswordComponent implements OnInit, OnDestroy {
   isResending = false;
   isVerifyingCode = false;
   isCodeVerified = false;
+  showPassword = false;
+  showPasswordConfirm = false;
+  passwordTouched = false;
+  confirmPasswordTouched = false;
   timeLeft = 300; // 5 minutes countdown
   private timerInterval: any;
 
@@ -174,6 +178,12 @@ export class UpdatePasswordComponent implements OnInit, OnDestroy {
 
     this.isResending = true;
     try {
+      // First, stop the current timer
+      if (this.timerInterval) {
+        clearInterval(this.timerInterval);
+        this.timerInterval = undefined;
+      }
+
       await this.authService.sendResetCode(this.email, this.lang.currentLanguage);
 
       // Increment attempts
@@ -191,17 +201,20 @@ export class UpdatePasswordComponent implements OnInit, OnDestroy {
         this.toastService.show(this.lang.t('updatePassword.codeSent'), 'success');
       }
 
-      // Reset the timer
+      // Reset the timer to 5 minutes (300 seconds)
       this.timeLeft = 300;
-      if (this.timerInterval) {
-        clearInterval(this.timerInterval);
-      }
       this.saveCodeExpiryState(); // Save new expiry time
       this.startTimer();
 
       // Clear the digits and reset verification
       this.digits = ['', '', '', '', '', ''];
       this.isCodeVerified = false;
+
+      // Reset password fields and touched states
+      this.password = '';
+      this.confirmPassword = '';
+      this.passwordTouched = false;
+      this.confirmPasswordTouched = false;
 
       // Focus on first digit input
       setTimeout(() => {
@@ -223,6 +236,11 @@ export class UpdatePasswordComponent implements OnInit, OnDestroy {
   }
 
   startTimer() {
+    // Clear any existing timer first
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval);
+    }
+
     this.timerInterval = setInterval(() => {
       this.timeLeft--;
       if (this.timeLeft <= 0) {
@@ -367,7 +385,48 @@ export class UpdatePasswordComponent implements OnInit, OnDestroy {
     return this.isCodeVerified;
   }
 
+  validatePassword(password: string): { valid: boolean; error: string | null } {
+    if (!password) {
+      return { valid: false, error: this.lang.t('updatePassword.passwordRequired') };
+    }
+    if (password.length < 8) {
+      return { valid: false, error: this.lang.t('updatePassword.passwordTooShort') };
+    }
+
+    const hasLetters = /[a-zA-Z]/.test(password);
+    const hasNumbers = /[0-9]/.test(password);
+
+    if (!hasLetters || !hasNumbers) {
+      return { valid: false, error: this.lang.t('updatePassword.passwordLettersAndNumbers') };
+    }
+
+    return { valid: true, error: null };
+  }
+
+  get isPasswordValid(): boolean {
+    const validation = this.validatePassword(this.password);
+    return validation.valid && this.password === this.confirmPassword;
+  }
+
+  get passwordError(): string | null {
+    if (!this.password || !this.passwordTouched) return null;
+    const validation = this.validatePassword(this.password);
+    return validation.error;
+  }
+
+  get confirmPasswordError(): string | null {
+    if (!this.confirmPassword || !this.confirmPasswordTouched) return null;
+    if (this.password !== this.confirmPassword) {
+      return this.lang.t('updatePassword.passwordsMismatch');
+    }
+    return null;
+  }
+
   async handleSubmit() {
+    // Mark fields as touched to show validation errors
+    this.passwordTouched = true;
+    this.confirmPasswordTouched = true;
+
     if (this.timeLeft === 0) {
       this.toastService.show(this.lang.t('updatePassword.codeExpiredError'), 'error');
       return;
@@ -383,13 +442,21 @@ export class UpdatePasswordComponent implements OnInit, OnDestroy {
       return;
     }
 
-    if (this.password.length < 8) {
-      this.toastService.show(this.lang.t('updatePassword.passwordTooShort'), 'error');
+    const passwordValidation = this.validatePassword(this.password);
+    if (!passwordValidation.valid) {
+      this.toastService.show(passwordValidation.error!, 'error');
       return;
     }
 
     this.isLoading = true;
     try {
+      console.log('About to call verifyResetCode with:', {
+        email: this.email,
+        code: this.code,
+        codeLength: this.code.length,
+        password: this.password ? '***' : 'EMPTY',
+        passwordLength: this.password?.length || 0
+      });
       await this.authService.verifyResetCode(this.email, this.code, this.password);
 
       // Clear stored states on success
@@ -399,7 +466,51 @@ export class UpdatePasswordComponent implements OnInit, OnDestroy {
       this.toastService.show(this.lang.t('updatePassword.success'), 'success');
       this.router.navigate(['/auth']);
     } catch (error: any) {
-      this.toastService.show(error.message || this.lang.t('updatePassword.invalidCode'), 'error');
+      console.error('Password reset error:', error);
+
+      // Extract error message from various possible locations
+      let errorMessage = '';
+
+      // Try multiple possible error locations
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (error.error) {
+        errorMessage = error.error;
+      } else if (error.msg) {
+        errorMessage = error.msg;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+
+      console.log('Extracted error message:', errorMessage);
+
+      // Map English error messages to translation keys
+      let translationKey = '';
+
+      if (errorMessage) {
+        const lowerError = errorMessage.toLowerCase();
+
+        if (lowerError.includes('same password')) {
+          translationKey = 'updatePassword.cannotUseSamePassword';
+        } else if (lowerError.includes('invalid') && lowerError.includes('code')) {
+          translationKey = 'updatePassword.invalidCode';
+        } else if (lowerError.includes('expired') && lowerError.includes('code')) {
+          translationKey = 'updatePassword.codeExpired';
+        } else if (lowerError.includes('user not found')) {
+          translationKey = 'updatePassword.userNotFound';
+        } else if (lowerError.includes('edge function')) {
+          translationKey = 'updatePassword.resetFailed';
+        } else if (lowerError.includes('internal server error')) {
+          translationKey = 'updatePassword.serverError';
+        }
+      }
+
+      // Show translated message or fallback
+      if (translationKey) {
+        this.toastService.show(this.lang.t(translationKey), 'error');
+      } else {
+        this.toastService.show(this.lang.t('updatePassword.resetFailed'), 'error');
+      }
     } finally {
       this.isLoading = false;
     }
@@ -407,5 +518,21 @@ export class UpdatePasswordComponent implements OnInit, OnDestroy {
 
   goBack() {
     this.router.navigate(['/auth']);
+  }
+
+  togglePasswordVisibility() {
+    this.showPassword = !this.showPassword;
+  }
+
+  togglePasswordConfirmVisibility() {
+    this.showPasswordConfirm = !this.showPasswordConfirm;
+  }
+
+  onPasswordBlur() {
+    this.passwordTouched = true;
+  }
+
+  onConfirmPasswordBlur() {
+    this.confirmPasswordTouched = true;
   }
 }

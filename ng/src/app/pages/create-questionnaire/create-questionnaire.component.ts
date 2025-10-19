@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -10,23 +10,13 @@ import { ProfileValidatorService } from '../../core/services/profile-validator.s
 import { OCCUPATIONS, OTHER } from '../../core/constants/occupations.constant';
 import { take } from 'rxjs/operators';
 import { CreateQuestionnaireQuestionsComponent, Question, QuestionnaireProfile } from './create-questionnaire-questions/create-questionnaire-questions.component';
+import { ComponentCanDeactivate } from '../../core/guards/can-deactivate.guard';
+import { ConfirmationDialogComponent } from '../../shared/components/confirmation-dialog/confirmation-dialog.component';
+import { firstValueFrom } from 'rxjs';
 
 interface Link {
   title: string;
   url: string;
-}
-
-interface SavedTemplate {
-  id: string;
-  name: string;
-  templateType: 'standard' | 'ai' | 'personal' | 'combined';
-  responseType: 'new_customer' | 'reminder';
-  channels: string[];
-  emailSubject?: string;
-  messageBody?: string;
-  customAiMessage?: string;
-  createdAt?: string;
-  updatedAt?: string;
 }
 
 interface QuestionnaireState {
@@ -53,9 +43,9 @@ interface QuestionnaireState {
   occupationFree?: string;
   subOccupationFree?: string;
   linkUrl?: string;
+  linkLabel?: string;
   attachmentUrl?: string;
-  // Automation settings
-  automationTemplateId?: string | null;
+  aiSuggestionsUsed?: boolean;
 }
 
 @Component({
@@ -65,9 +55,11 @@ interface QuestionnaireState {
   templateUrl: './create-questionnaire.component.html',
   styleUrls: ['./create-questionnaire.component.sass']
 })
-export class CreateQuestionnaireComponent implements OnInit {
+export class CreateQuestionnaireComponent implements OnInit, ComponentCanDeactivate {
   currentStep = 1;
   questionnaireId: string | null = null;
+  hasFormInteraction = false;
+  private justSaved = false;
 
   formData: QuestionnaireState = {
     title: '',
@@ -89,7 +81,8 @@ export class CreateQuestionnaireComponent implements OnInit {
     subOccupation: '',
     occupationFree: '',
     subOccupationFree: '',
-    automationTemplateId: null
+    linkLabel: '',
+    aiSuggestionsUsed: false
   };
 
   loading = false;
@@ -98,8 +91,6 @@ export class CreateQuestionnaireComponent implements OnInit {
   attachmentFileName = '';
   uploadingAttachment = false;
   currentUserId: string | null = null;
-  savedTemplates: SavedTemplate[] = [];
-  showAutomationSettings = false;
   
   // Error tracking for required fields
   errors = {
@@ -107,7 +98,8 @@ export class CreateQuestionnaireComponent implements OnInit {
     email: false,
     mobile: false,
     occupation: false,
-    subOccupation: false
+    subOccupation: false,
+    linkUrl: false
   };
 
   get occupationKeys() {
@@ -116,17 +108,6 @@ export class CreateQuestionnaireComponent implements OnInit {
 
   get OTHER() {
     return OTHER;
-  }
-
-  get automationEnabled(): boolean {
-    return this.showAutomationSettings || !!this.formData.automationTemplateId;
-  }
-
-  set automationEnabled(value: boolean) {
-    this.showAutomationSettings = value;
-    if (!value) {
-      this.formData.automationTemplateId = null;
-    }
   }
 
   goBack() {
@@ -157,7 +138,6 @@ export class CreateQuestionnaireComponent implements OnInit {
         }
 
         await this.loadProfileData(user.id);
-        await this.loadSavedTemplates();
       }
     });
 
@@ -182,10 +162,23 @@ export class CreateQuestionnaireComponent implements OnInit {
     });
   }
 
-  showProfileIncompleteDialog() {
+  async showProfileIncompleteDialog() {
     const message = this.lang.t('createQuestionnaire.profileIncomplete');
 
-    if (confirm(message)) {
+    const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
+      data: {
+        message,
+        confirmText: this.lang.currentLanguage === 'he' ? 'עבור לפרופיל' : 'Go to Profile',
+        cancelText: this.lang.currentLanguage === 'he' ? 'לוח הבקרה' : 'Dashboard',
+        type: 'info'
+      },
+      disableClose: true,
+      panelClass: 'confirmation-dialog-panel'
+    });
+
+    const result = await firstValueFrom(dialogRef.afterClosed());
+
+    if (result === true) {
       this.router.navigate(['/profile']);
     } else {
       this.router.navigate(['/dashboard']);
@@ -307,16 +300,11 @@ export class CreateQuestionnaireComponent implements OnInit {
         this.formData.description = questionnaire.description || '';
         this.formData.language = questionnaire.language || 'he';
         this.formData.linkUrl = questionnaire.link_url || '';
+        this.formData.linkLabel = questionnaire.link_label || '';
         this.formData.attachmentUrl = questionnaire.attachment_url || '';
         this.formData.showLogo = questionnaire.show_logo ?? true;
         this.formData.showProfileImage = questionnaire.show_profile_image ?? true;
         this.formData.questions = convertedQuestions;
-        this.formData.automationTemplateId = questionnaire.automation_template_id || null;
-
-        // If there's an automation template, show the settings
-        if (this.formData.automationTemplateId) {
-          this.showAutomationSettings = true;
-        }
 
         // Set attachment file name if attachment exists
         if (this.formData.attachmentUrl) {
@@ -366,8 +354,10 @@ export class CreateQuestionnaireComponent implements OnInit {
         questionnaireId: this.questionnaireId,
         title: this.formData.title,
         linkUrl: this.formData.linkUrl,
+        linkLabel: this.formData.linkLabel,
         attachmentUrl: this.formData.attachmentUrl,
         description: this.formData.description,
+        aiSuggestionsUsed: this.formData.aiSuggestionsUsed,
         branding: {
           primaryColor: this.formData.primaryColor,
           secondaryColor: this.formData.secondaryColor,
@@ -386,6 +376,8 @@ export class CreateQuestionnaireComponent implements OnInit {
         // Check if result is an object with questions and shouldSave flag
         if (typeof result === 'object' && result.questions) {
           this.formData.questions = result.questions;
+          this.formData.aiSuggestionsUsed = result.aiSuggestionsUsed ?? false;
+          this.onFormInput(); // Track form interaction
 
           // If shouldSave flag is true, publish the questionnaire
           if (result.shouldSave) {
@@ -394,6 +386,7 @@ export class CreateQuestionnaireComponent implements OnInit {
         } else {
           // Legacy support: if result is just the questions array
           this.formData.questions = result;
+          this.onFormInput(); // Track form interaction
         }
       }
     });
@@ -425,6 +418,15 @@ export class CreateQuestionnaireComponent implements OnInit {
       if (!this.formData.title || !this.formData.title.trim()) {
         this.toast.show(this.lang.t('createQuestionnaire.titleRequired'), 'error');
         return false;
+      }
+
+      // Validate URL if provided
+      if (this.formData.linkUrl && this.formData.linkUrl.trim() !== '') {
+        if (!this.validateUrl(this.formData.linkUrl)) {
+          this.errors.linkUrl = true;
+          this.toast.show(this.lang.t('createQuestionnaire.invalidUrl'), 'error');
+          return false;
+        }
       }
 
       // Validate that questions have been added
@@ -467,10 +469,10 @@ export class CreateQuestionnaireComponent implements OnInit {
         owner_id: this.currentUserId,
         is_active: status === 'published',
         link_url: this.formData.linkUrl || null,
+        link_label: this.formData.linkLabel || null,
         attachment_url: this.formData.attachmentUrl || null,
         show_logo: this.formData.showLogo ?? true,
-        show_profile_image: this.formData.showProfileImage ?? true,
-        automation_template_id: this.formData.automationTemplateId || null
+        show_profile_image: this.formData.showProfileImage ?? true
       };
 
       if (this.questionnaireId) {
@@ -512,6 +514,9 @@ export class CreateQuestionnaireComponent implements OnInit {
           this.toast.show(status === 'draft' ? this.lang.t('createQuestionnaire.draftSaved') : this.lang.t('createQuestionnaire.publishedSuccessfully'), 'success');
         }
       }
+
+      // Mark as just saved to prevent navigation warning
+      this.justSaved = true;
 
       // Only navigate if not going to distribution hub (we'll handle that in saveAndPublish)
       if (navigationPath !== '/distribution-hub') {
@@ -617,6 +622,7 @@ export class CreateQuestionnaireComponent implements OnInit {
         .getPublicUrl(filePath);
 
       this.formData.attachmentUrl = data.publicUrl;
+      this.onFormInput(); // Track form interaction
       this.toast.show(this.lang.t('createQuestionnaire.fileUploadSuccess'), 'success');
     } catch (e: any) {
       this.toast.show(e.message || String(e), 'error');
@@ -670,34 +676,68 @@ export class CreateQuestionnaireComponent implements OnInit {
     return start + ellipsis + end + extension;
   }
 
-  async loadSavedTemplates() {
-    try {
-      if (!this.currentUserId) return;
-
-      const { data, error } = await this.supabaseService.client
-        .from('automation_templates')
-        .select('*')
-        .eq('user_id', this.currentUserId)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      // Convert database format to SavedTemplate interface
-      this.savedTemplates = (data || []).map(template => ({
-        id: template.id,
-        name: template.name,
-        templateType: template.template_type,
-        responseType: template.response_type,
-        channels: template.channels || [],
-        emailSubject: template.email_subject,
-        messageBody: template.message_body,
-        customAiMessage: template.custom_ai_message,
-        createdAt: template.created_at,
-        updatedAt: template.updated_at
-      }));
-    } catch (e: any) {
-      console.error('Error loading templates:', e);
-      // Silently fail - templates are optional
+  // Track form interaction
+  validateUrl(url: string): boolean {
+    if (!url || url.trim() === '') {
+      return true; // Empty URL is valid (not required)
     }
+
+    // URL validation regex - supports http, https, and URLs without protocol
+    const urlPattern = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/;
+    return urlPattern.test(url.trim());
+  }
+
+  onLinkUrlBlur() {
+    if (this.formData.linkUrl && this.formData.linkUrl.trim() !== '') {
+      this.errors.linkUrl = !this.validateUrl(this.formData.linkUrl);
+    } else {
+      this.errors.linkUrl = false;
+    }
+  }
+
+  getLinkUrlError(): string | null {
+    if (this.errors.linkUrl) {
+      return this.lang.t('createQuestionnaire.invalidUrl');
+    }
+    return null;
+  }
+
+  onFormInput() {
+    if (!this.hasFormInteraction) {
+      this.hasFormInteraction = true;
+    }
+  }
+
+  // Browser navigation guard (closing tab, refreshing, etc.)
+  @HostListener('window:beforeunload', ['$event'])
+  unloadNotification($event: any): void {
+    if (this.hasFormInteraction && !this.justSaved) {
+      $event.preventDefault();
+      $event.returnValue = true;
+    }
+  }
+
+  // Angular routing guard (sidebar links, etc.)
+  async canDeactivate(): Promise<boolean> {
+    if (this.hasFormInteraction && !this.justSaved) {
+      const message = this.lang.currentLanguage === 'he'
+        ? 'יש לך שינויים שלא נשמרו. האם אתה בטוח שברצונך לעזוב?'
+        : 'You have unsaved changes. Are you sure you want to leave?';
+
+      const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
+        data: {
+          message,
+          confirmText: this.lang.currentLanguage === 'he' ? 'עזוב' : 'Leave',
+          cancelText: this.lang.currentLanguage === 'he' ? 'הישאר' : 'Stay',
+          type: 'warning'
+        },
+        disableClose: true,
+        panelClass: 'confirmation-dialog-panel'
+      });
+
+      const result = await firstValueFrom(dialogRef.afterClosed());
+      return result === true;
+    }
+    return true;
   }
 }

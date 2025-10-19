@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { LanguageService } from '../../core/services/language.service';
@@ -20,7 +20,7 @@ interface OnboardingStep {
   templateUrl: './onboarding.component.html',
   styleUrl: './onboarding.component.sass'
 })
-export class OnboardingComponent {
+export class OnboardingComponent implements OnInit {
   completedSteps: number[] = [];
 
   steps: OnboardingStep[] = [
@@ -67,6 +67,10 @@ export class OnboardingComponent {
     public lang: LanguageService
   ) {}
 
+  ngOnInit() {
+    window.scrollTo(0, 0);
+  }
+
   handleStepClick(stepNumber: number, action: () => void) {
     if (!this.completedSteps.includes(stepNumber)) {
       this.completedSteps = [...this.completedSteps, stepNumber];
@@ -82,5 +86,10 @@ export class OnboardingComponent {
 
   isCompleted(stepNumber: number): boolean {
     return this.completedSteps.includes(stepNumber);
+  }
+
+  getStepBgClass(stepNumber: number): string {
+    const bgClasses = ['bg-blue', 'bg-purple', 'bg-orange', 'bg-green'];
+    return bgClasses[stepNumber - 1] || '';
   }
 }

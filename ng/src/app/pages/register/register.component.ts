@@ -47,6 +47,24 @@ export class RegisterComponent {
     return emailRegex.test(email);
   }
 
+  validatePassword(password: string): { valid: boolean; error: string | null } {
+    if (!password) {
+      return { valid: false, error: this.lang.t('register.errors.passwordRequired') };
+    }
+    if (password.length < 8) {
+      return { valid: false, error: this.lang.t('register.errors.passwordTooShort') };
+    }
+
+    const hasLetters = /[a-zA-Z]/.test(password);
+    const hasNumbers = /[0-9]/.test(password);
+
+    if (!hasLetters || !hasNumbers) {
+      return { valid: false, error: this.lang.t('register.errors.passwordLettersAndNumbers') };
+    }
+
+    return { valid: true, error: null };
+  }
+
   get emailError(): string | null {
     if (this.emailExistsError) return this.lang.t('register.errors.emailExists');
     if (!this.emailTouched) return null;
@@ -87,9 +105,8 @@ export class RegisterComponent {
 
   get passwordError(): string | null {
     if (!this.passwordTouched) return null;
-    if (!this.password) return this.lang.t('register.errors.passwordRequired');
-    if (this.password.length < 8) return this.lang.t('register.errors.passwordTooShort');
-    return null;
+    const validation = this.validatePassword(this.password);
+    return validation.error;
   }
 
   get passwordConfirmError(): string | null {
@@ -138,13 +155,9 @@ export class RegisterComponent {
       return;
     }
 
-    if (!this.password) {
-      this.toast.show(this.lang.t('register.errors.passwordRequired'), 'error');
-      return;
-    }
-
-    if (this.password.length < 8) {
-      this.toast.show(this.lang.t('register.errors.passwordTooShort'), 'error');
+    const passwordValidation = this.validatePassword(this.password);
+    if (!passwordValidation.valid) {
+      this.toast.show(passwordValidation.error!, 'error');
       return;
     }
 
@@ -155,6 +168,11 @@ export class RegisterComponent {
 
     if (!this.agreeToTerms) {
       this.toast.show(this.lang.t('register.errors.termsRequired'), 'error');
+      return;
+    }
+
+    if (!this.agreeToMarketing) {
+      this.toast.show(this.lang.t('register.errors.marketingRequired'), 'error');
       return;
     }
 

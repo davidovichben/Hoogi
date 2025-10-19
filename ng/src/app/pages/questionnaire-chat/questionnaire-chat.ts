@@ -24,7 +24,8 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
   options: QuestionOption[] = [];
   isLoading = false;
   isSubmitted = false;
-  isOwnerView = false; // Flag to determine if this is owner/preview mode
+  isOwnerView = false; // Flag to determine if this is owner view (shows header)
+  isPreviewMode = false; // Flag to determine if this is preview mode (guest UI, no saving)
 
   // Current question tracking
   currentQuestionIndex = 0;
@@ -95,12 +96,12 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
     }
 
     const id = this.route.snapshot.paramMap.get('id');
-    if (id) {
-      if (id === 'preview') {
-        this.loadPreviewData();
-      } else {
-        this.loadQuestionnaire(id);
-      }
+
+    // Check if this is a preview request (by path, not ID)
+    if (currentPath.includes('/preview')) {
+      this.loadPreviewData();
+    } else if (id) {
+      this.loadQuestionnaire(id);
     }
   }
 
@@ -207,6 +208,7 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
           updated_at: new Date().toISOString(),
           user_id: data.questionnaire.owner_id,
           link_url: data.questionnaire.link_url || null,
+          link_label: data.questionnaire.link_label || null,
           attachment_url: data.questionnaire.attachment_url || null
         } as Questionnaire;
 
@@ -227,8 +229,9 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
           this.businessName = data.profile.business_name || '';
         }
 
-        // This is preview mode (owner view)
-        this.isOwnerView = true;
+        // This is preview mode - show header but don't save
+        this.isPreviewMode = true;
+        this.isOwnerView = true; // Show preview header with back button and toggle
 
         // Don't clear preview data yet - keep it so form view can access it too
         // It will be cleared when user navigates away from preview
@@ -527,8 +530,8 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
   async submitAllResponses() {
     if (!this.questionnaire) return;
 
-    // Don't actually submit in owner view mode
-    if (this.isOwnerView) {
+    // Don't actually submit in preview mode
+    if (this.isPreviewMode) {
       this.isSubmitted = true;
       const thankYouMessage = this.lang.currentLanguage === 'he'
         ? 'תודה רבה! התשובות שלך נשלחו בהצלחה'
@@ -745,9 +748,14 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
   }
 
   switchToFormView() {
-    const id = this.route.snapshot.paramMap.get('id');
-    if (id) {
-      this.router.navigate(['/questionnaires/live', id]);
+    // For preview mode, switch to form preview
+    if (this.router.url.includes('/preview')) {
+      this.router.navigate(['/questionnaires/live/preview']);
+    } else {
+      const id = this.route.snapshot.paramMap.get('id');
+      if (id) {
+        this.router.navigate(['/questionnaires/live', id]);
+      }
     }
   }
 

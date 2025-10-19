@@ -42,6 +42,7 @@ export class QuestionnaireLive implements OnInit {
   // Store responses
   responses: Record<string, any> = {};
   multiResponses: Record<string, Record<string, boolean>> = {};
+  otherTextResponses: Record<string, string> = {}; // Store "other" text inputs
 
   // File upload
   uploadedFiles: Record<string, { file: File; name: string }> = {};
@@ -66,14 +67,19 @@ export class QuestionnaireLive implements OnInit {
   ) {}
 
   ngOnInit() {
+    console.log('=== QuestionnaireLive ngOnInit called ===');
+    console.log('Current URL:', this.router.url);
+
     // Detect referral source/channel
     this.detectedChannel = this.referralTracking.detectChannel();
     console.log('Detected channel:', this.detectedChannel);
 
     const id = this.route.snapshot.paramMap.get('id');
+    console.log('Route ID parameter:', id);
 
     // Determine view mode based on route path
     const currentPath = this.router.url;
+    console.log('Current path:', currentPath);
 
     // Always form view (chat has its own component now)
     this.viewMode = 'form';
@@ -87,13 +93,15 @@ export class QuestionnaireLive implements OnInit {
       this.isOwner = true;
     }
 
-    if (id) {
-      // Check if this is a preview request
-      if (id === 'preview') {
-        this.loadPreviewData();
-      } else {
-        this.loadQuestionnaire(id);
-      }
+    // Check if this is a preview request (by path, not ID)
+    if (currentPath.includes('/preview')) {
+      console.log('Loading preview mode...');
+      this.loadPreviewData();
+    } else if (id) {
+      console.log('Loading questionnaire by ID/token...');
+      this.loadQuestionnaire(id);
+    } else {
+      console.error('No ID parameter found in route!');
     }
   }
 
@@ -104,13 +112,17 @@ export class QuestionnaireLive implements OnInit {
     setTimeout(() => {
       try {
         const previewDataStr = sessionStorage.getItem('preview_questionnaire');
+        console.log('Preview data from storage:', previewDataStr);
+
         if (!previewDataStr) {
+          console.error('No preview data found in sessionStorage');
           this.toastService.show('No preview data found', 'error');
           this.isLoading = false;
           return;
         }
 
         const data = JSON.parse(previewDataStr);
+        console.log('Parsed preview data:', data);
 
         this.questionnaire = {
           id: 'preview',
@@ -124,6 +136,7 @@ export class QuestionnaireLive implements OnInit {
           updated_at: new Date().toISOString(),
           user_id: data.questionnaire.owner_id,
           link_url: data.questionnaire.link_url || null,
+          link_label: data.questionnaire.link_label || null,
           attachment_url: data.questionnaire.attachment_url || null
         } as Questionnaire;
 
@@ -132,6 +145,9 @@ export class QuestionnaireLive implements OnInit {
         this.isOwner = true; // Always show as owner view for preview
         this.isPreviewMode = true; // Enable preview mode
         this.questionnaireDate = new Date();
+
+        console.log('Loaded questions:', this.questions);
+        console.log('Loaded options:', this.options);
 
         // Load showLogo and showProfileImage from preview data
         this.showLogo = data.questionnaire.show_logo ?? true;
@@ -384,6 +400,52 @@ export class QuestionnaireLive implements OnInit {
     return uniqueOptions;
   }
 
+  // Check if question has "other" option
+  hasOtherOption(questionId: string): boolean {
+    const question = this.questions.find(q => q.id === questionId);
+
+    // First check if hasOther is explicitly set
+    if ((question as any)?.hasOther === true) {
+      console.log('hasOtherOption: true (explicit hasOther field)', { questionId });
+      return true;
+    }
+
+    // Fallback: check if any of the options contain "אחר" or "other"
+    const options = this.getQuestionOptions(questionId);
+    const hasOtherInOptions = options.some(opt => {
+      const lowerLabel = opt.label.toLowerCase().trim();
+      const lowerValue = opt.value.toLowerCase().trim();
+      return lowerLabel === 'אחר' || lowerLabel === 'other' ||
+             lowerValue === 'אחר' || lowerValue === 'other';
+    });
+
+    console.log('hasOtherOption check:', { questionId, hasOtherInOptions, options });
+    return hasOtherInOptions;
+  }
+
+  // Check if "other" option is selected for single choice
+  isOtherSelected(questionId: string): boolean {
+    const response = this.responses[questionId];
+    if (!response) return false;
+
+    const lowerResponse = response.toString().toLowerCase().trim();
+    const isOther = lowerResponse === 'אחר' || lowerResponse === 'other';
+    console.log('isOtherSelected check:', { questionId, response, lowerResponse, isOther });
+    return isOther;
+  }
+
+  // Check if "other" option is checked for multiple choice
+  isOtherChecked(questionId: string): boolean {
+    const multiResponse = this.multiResponses[questionId];
+    if (!multiResponse) return false;
+
+    // Check if any of the checked options is "אחר" or "other"
+    return Object.keys(multiResponse).some(key => {
+      const lowerKey = key.toLowerCase();
+      return multiResponse[key] && (lowerKey === 'אחר' || lowerKey === 'other');
+    });
+  }
+
   getRatingRange(question: Question): number[] {
     const min = (question as any).min_rating || question.minimum || question.meta?.minimum || 1;
     const max = (question as any).max_rating || question.maximum || question.meta?.maximum || 5;
@@ -581,8 +643,8 @@ export class QuestionnaireLive implements OnInit {
         }
       }
 
-      // For owner view, just mark as submitted without saving to database
-      if (this.isOwner) {
+      // For owner/preview view, just mark as submitted without saving to database
+      if (this.isOwner || this.isPreviewMode) {
         this.isSubmitted = true;
         this.toastService.show(
           this.lang.currentLanguage === 'he' ? 'בדיקה הושלמה - לא נשמר במסד הנתונים' : 'Test completed - not saved to database',
@@ -599,10 +661,22 @@ export class QuestionnaireLive implements OnInit {
           // Convert checkbox responses to array of selected values
           const selected = Object.entries(this.multiResponses[question.id] || {})
             .filter(([_, checked]) => checked)
-            .map(([value, _]) => value);
+            .map(([value, _]) => {
+              // If this is "other" and there's custom text, include it
+              const lowerValue = value.toLowerCase();
+              if ((lowerValue === 'אחר' || lowerValue === 'other') && this.otherTextResponses[question.id]) {
+                return `${value}: ${this.otherTextResponses[question.id]}`;
+              }
+              return value;
+            });
           responseData[question.id] = selected;
         } else {
-          responseData[question.id] = this.responses[question.id];
+          // For single choice, check if "other" is selected and append custom text
+          let response = this.responses[question.id];
+          if (response && this.isOtherSelected(question.id) && this.otherTextResponses[question.id]) {
+            response = `${response}: ${this.otherTextResponses[question.id]}`;
+          }
+          responseData[question.id] = response;
         }
       }
 
@@ -822,9 +896,14 @@ export class QuestionnaireLive implements OnInit {
   toggleViewMode(mode: 'form' | 'chat') {
     if (mode === 'chat') {
       // Navigate to chat view
-      const id = this.route.snapshot.paramMap.get('id');
-      if (id) {
-        this.router.navigate(['/questionnaires/chat', id]);
+      // For preview mode, switch to chat preview
+      if (this.router.url.includes('/preview')) {
+        this.router.navigate(['/questionnaires/chat/preview']);
+      } else {
+        const id = this.route.snapshot.paramMap.get('id');
+        if (id) {
+          this.router.navigate(['/questionnaires/chat', id]);
+        }
       }
     } else {
       this.viewMode = mode;

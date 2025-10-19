@@ -27,11 +27,20 @@ serve(async (req) => {
       });
     }
 
-    const { email, code, newPassword } = await req.json();
+    const requestBody = await req.json();
+    console.log('Raw request body:', JSON.stringify(requestBody));
+
+    const { email, code, newPassword } = requestBody;
+
+    console.log('Received request:', { email, code: code?.length || 0, hasNewPassword: !!newPassword });
 
     if (!email || !code || !newPassword) {
-      return new Response(JSON.stringify({ error: "Email, code, and new password are required" }), {
-        status: 400,
+      console.error('Missing required fields:', { hasEmail: !!email, hasCode: !!code, hasNewPassword: !!newPassword });
+      return new Response(JSON.stringify({
+        success: false,
+        error: "Email, code, and new password are required"
+      }), {
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -52,8 +61,11 @@ serve(async (req) => {
       .single();
 
     if (findError || !resetCode) {
-      return new Response(JSON.stringify({ error: "Invalid or expired code" }), {
-        status: 400,
+      return new Response(JSON.stringify({
+        success: false,
+        error: "Invalid or expired code"
+      }), {
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -68,8 +80,31 @@ serve(async (req) => {
     const user = users?.users?.find(u => u.email === email);
 
     if (!user) {
-      return new Response(JSON.stringify({ error: "User not found" }), {
-        status: 404,
+      return new Response(JSON.stringify({
+        success: false,
+        error: "User not found"
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Check if the new password is the same as the current password
+    // by trying to sign in with it
+    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password: newPassword
+    });
+
+    // If sign-in succeeds, it means the password is the same as the current one
+    if (signInData?.user && !signInError) {
+      // Return 200 status but with error in the response body
+      // This allows the client to properly read the error message
+      return new Response(JSON.stringify({
+        success: false,
+        error: "Cannot use the same password as your current password"
+      }), {
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -94,15 +129,21 @@ serve(async (req) => {
       console.error("Error marking code as used:", markUsedError);
     }
 
-    return new Response(JSON.stringify({ success: true }), {
+    return new Response(JSON.stringify({
+      success: true,
+      message: "Password reset successfully"
+    }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 
   } catch (err) {
     console.error("Error:", err);
-    return new Response(JSON.stringify({ error: "Internal server error" }), {
-      status: 500,
+    return new Response(JSON.stringify({
+      success: false,
+      error: "Internal server error"
+    }), {
+      status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }

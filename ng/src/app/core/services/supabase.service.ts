@@ -101,10 +101,27 @@ export class SupabaseService implements OnDestroy {
   }
 
   async verifyResetCode(email: string, code: string, newPassword: string) {
+    console.log('Calling verify-reset-code with:', { email, code: code.length + ' digits', hasPassword: !!newPassword });
+
     const { data, error } = await this.supabase.functions.invoke('verify-reset-code', {
       body: { email, code, newPassword }
     });
-    if (error) throw error;
+
+    console.log('Edge function response - data:', data);
+    console.log('Edge function response - error:', error);
+
+    // Handle function invocation errors (network issues, etc.)
+    if (error) {
+      console.error('Function invocation error:', error);
+      throw error;
+    }
+
+    // Check if the edge function returned an error in the response body
+    if (data && !data.success && data.error) {
+      console.log('Edge function returned error:', data.error);
+      throw new Error(data.error);
+    }
+
     return data;
   }
 

@@ -38,6 +38,7 @@ export interface Questionnaire {
   automation_template_id?: string;
   attachment_url?: string;
   link_url?: string;
+  link_label?: string;
 }
 
 export interface Question {

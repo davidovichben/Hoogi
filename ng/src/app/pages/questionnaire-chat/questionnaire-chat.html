@@ -2,79 +2,79 @@
   <!-- Preview Header (Owner View Only) -->
   @if (isOwnerView && questionnaire) {
     <div class="bg-white border-b shadow-sm">
-      <div class="max-w-4xl mx-auto px-4 py-4">
-        <div class="flex items-center justify-between" [dir]="lang.currentLanguage === 'he' ? 'rtl' : 'ltr'">
+      <div class="max-w-4xl mx-auto px-2 sm:px-4 py-2 sm:py-4">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0" [dir]="lang.currentLanguage === 'he' ? 'rtl' : 'ltr'">
           <!-- Left side: Back button and Title/Description -->
-          <div class="flex items-center gap-4">
+          <div class="flex items-center gap-2 sm:gap-4 w-full sm:w-auto">
             <button
               (click)="goBackToEdit()"
-              class="flex items-center gap-2 px-3 py-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md transition">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" [style.transform]="lang.currentLanguage === 'he' ? 'rotate(180deg)' : 'none'">
+              class="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md transition text-xs sm:text-sm">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" class="sm:w-4 sm:h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" [style.transform]="lang.currentLanguage === 'he' ? 'rotate(180deg)' : 'none'">
                 <path d="M19 12H5M12 19l-7-7 7-7"/>
               </svg>
-              <span class="text-sm">{{ lang.t('questionnaireLive.back') }}</span>
+              <span class="text-xs sm:text-sm">{{ lang.t('questionnaireLive.back') }}</span>
             </button>
-            <div [class.text-right]="lang.currentLanguage === 'he'" [class.text-left]="lang.currentLanguage !== 'he'">
-              <h1 class="text-2xl font-bold text-gray-900">
+            <div [class.text-right]="lang.currentLanguage === 'he'" [class.text-left]="lang.currentLanguage !== 'he'" class="flex-1 min-w-0">
+              <h1 class="text-base sm:text-2xl font-bold text-gray-900 truncate">
                 {{ questionnaire.title || lang.t('questionnaireLive.untitledQuestionnaire') }}
               </h1>
               @if (questionnaire.description) {
-                <p class="text-base" style="margin-bottom: 15px;" [style.color]="secondaryColor">{{ questionnaire.description }}</p>
+                <p class="text-xs sm:text-base hidden sm:block" style="margin-bottom: 15px;" [style.color]="secondaryColor">{{ questionnaire.description }}</p>
               }
             </div>
           </div>
 
           <!-- Right side: Mode Toggle -->
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-1 sm:gap-2 w-full sm:w-auto">
             <button
               (click)="switchToFormView()"
-              class="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition border border-gray-300 text-gray-700 hover:bg-gray-50">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              class="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-md transition border border-gray-300 text-gray-700 hover:bg-gray-50 flex-1 sm:flex-none justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" class="sm:w-4 sm:h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                 <polyline points="14 2 14 8 20 8"></polyline>
                 <line x1="16" y1="13" x2="8" y2="13"></line>
                 <line x1="16" y1="17" x2="8" y2="17"></line>
                 <polyline points="10 9 9 9 8 9"></polyline>
               </svg>
-              {{ lang.t('questionnaireLive.form') }}
+              <span class="hidden sm:inline">{{ lang.t('questionnaireLive.form') }}</span>
             </button>
             <button
-              class="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition bg-blue-600 text-white">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              class="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-md transition bg-blue-600 text-white flex-1 sm:flex-none justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" class="sm:w-4 sm:h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
               </svg>
-              {{ lang.t('questionnaireLive.chat') }}
+              <span class="hidden sm:inline">{{ lang.t('questionnaireLive.chat') }}</span>
             </button>
           </div>
         </div>
 
         <!-- Metadata Row -->
-        <div class="flex items-center gap-6 mt-4 text-sm text-gray-500" [dir]="lang.currentLanguage === 'he' ? 'rtl' : 'ltr'">
-          <div class="flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <div class="flex flex-wrap items-center gap-3 sm:gap-6 mt-3 sm:mt-4 text-xs sm:text-sm text-gray-500" [dir]="lang.currentLanguage === 'he' ? 'rtl' : 'ltr'">
+          <div class="flex items-center gap-1 sm:gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" class="sm:w-4 sm:h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
               <line x1="16" y1="2" x2="16" y2="6"></line>
               <line x1="8" y1="2" x2="8" y2="6"></line>
               <line x1="3" y1="10" x2="21" y2="10"></line>
             </svg>
-            <span>{{ lang.t('questionnaireLive.created') }} {{ questionnaire.created_at | date: 'dd.MM.yyyy' }}</span>
+            <span class="text-xs sm:text-sm">{{ lang.t('questionnaireLive.created') }} {{ questionnaire.created_at | date: 'dd.MM.yyyy' }}</span>
           </div>
-          <div class="flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <div class="flex items-center gap-1 sm:gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" class="sm:w-4 sm:h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
               <polyline points="14 2 14 8 20 8"></polyline>
               <line x1="16" y1="13" x2="8" y2="13"></line>
               <line x1="16" y1="17" x2="8" y2="17"></line>
               <polyline points="10 9 9 9 8 9"></polyline>
             </svg>
-            <span>{{ questions.length }} {{ lang.t('questionnaireLive.questions') }}</span>
+            <span class="text-xs sm:text-sm">{{ questions.length }} {{ lang.t('questionnaireLive.questions') }}</span>
           </div>
         </div>
       </div>
     </div>
   }
 
-  <div class="chat-container flex-1 relative mx-auto bg-gray-50 w-full md:max-w-[56rem]">
+  <div class="chat-container flex-1 relative mx-auto bg-gray-50 w-full md:max-w-[56rem] overflow-hidden flex flex-col">
   <!-- Loading State -->
   @if (isLoading) {
     <div class="flex items-center justify-center h-full">
@@ -84,60 +84,60 @@
 
   <!-- Chat Interface -->
   @if (!isLoading && questionnaire) {
-    <div class="flex flex-col h-full" [style.background-color]="backgroundColor">
+    <div class="flex flex-col flex-1 overflow-hidden" [style.background-color]="backgroundColor">
     <!-- Header -->
-    <div class="chat-header p-8 pb-2 z-20 w-full flex-shrink-0"  [style.background-color]="backgroundColor">
-      <div class="flex items-start justify-center gap-4 w-full" [style.direction]="lang.currentLanguage === 'he' ? 'rtl' : 'ltr'">
-        <div class="w-32 flex-shrink-0">
+    <div class="chat-header p-3 sm:p-6 md:p-8 pb-2 z-20 w-full flex-shrink-0"  [style.background-color]="backgroundColor">
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 w-full" [style.direction]="lang.currentLanguage === 'he' ? 'rtl' : 'ltr'">
+        <div class="w-16 h-16 sm:w-24 sm:h-24 md:w-32 md:h-32 flex-shrink-0 order-2 sm:order-1">
           @if (logoUrl && showLogo) {
-            <img [src]="logoUrl" alt="Logo" class="h-32 w-32 object-contain" />
+            <img [src]="logoUrl" alt="Logo" class="w-full h-full object-contain" />
           }
         </div>
-        <div class="flex-1 text-center">
-          <div class="h-1 mb-1 rounded-full" [style.background]="'linear-gradient(to right, ' + primaryColor + ', ' + secondaryColor + ')'"></div>
+        <div class="flex-1 text-center order-1 sm:order-2 w-full">
+          <div class="h-0.5 sm:h-1 mb-1 rounded-full" [style.background]="'linear-gradient(to right, ' + primaryColor + ', ' + secondaryColor + ')'"></div>
           @if (businessName) {
-            <h2 class="text-2xl font-bold mb-2" [style.color]="primaryColor">{{ businessName }}</h2>
+            <h2 class="text-lg sm:text-xl md:text-2xl font-bold mb-1 sm:mb-2" [style.color]="primaryColor">{{ businessName }}</h2>
           }
-          <h1 class="text-2xl font-bold" [style.color]="secondaryColor">{{ questionnaire.title }}</h1>
+          <h1 class="text-lg sm:text-xl md:text-2xl font-bold" [style.color]="secondaryColor">{{ questionnaire.title }}</h1>
           @if (questionnaire.description) {
-            <p class="text-center text-base" style="margin-bottom: 15px;" [style.color]="secondaryColor">{{ questionnaire.description }}</p>
+            <p class="text-center text-sm sm:text-base px-2 sm:px-0" style="margin-bottom: 15px;" [style.color]="secondaryColor">{{ questionnaire.description }}</p>
           }
           @if (questionnaire.attachment_url) {
-            <img [src]="questionnaire.attachment_url" alt="Questionnaire attachment" class="mt-1 mx-auto rounded-lg max-w-full" [class.mb-4]="!questionnaire.link_url" style="max-height: 14rem;" />
+            <img [src]="questionnaire.attachment_url" alt="Questionnaire attachment" class="mt-1 mx-auto rounded-lg max-w-full" [class.mb-4]="!questionnaire.link_url" style="max-height: 10rem; sm:max-height: 14rem;" />
           }
           @if (questionnaire.link_url) {
             <div class="text-center mt-2 mb-4">
-              <a [href]="getExternalUrl(questionnaire.link_url)" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-10 py-3.5 text-white text-base rounded-full" [style.background]="'linear-gradient(to right, ' + primaryColor + ', ' + secondaryColor + ')'">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <a [href]="getExternalUrl(questionnaire.link_url)" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-6 sm:px-10 py-2.5 sm:py-3.5 text-white text-sm sm:text-base rounded-full" [style.background]="'linear-gradient(to right, ' + primaryColor + ', ' + secondaryColor + ')'">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" class="sm:w-4 sm:h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
                 </svg>
-                {{ lang.t('questionnaireLive.moreInfo') }}
+                {{ questionnaire.link_label || lang.t('questionnaireLive.moreInfo') }}
               </a>
             </div>
           }
         </div>
-        <div class="w-32 flex-shrink-0">
+        <div class="w-16 h-16 sm:w-24 sm:h-24 md:w-32 md:h-32 flex-shrink-0 order-3">
           @if (imageUrl && showProfileImage) {
-            <img [src]="imageUrl" alt="Profile" class="h-32 w-32 object-cover" />
+            <img [src]="imageUrl" alt="Profile" class="w-full h-full object-cover rounded-full sm:rounded-none" />
           }
         </div>
       </div>
     </div>
 
     <!-- Messages Area -->
-    <div #messagesContainer class="p-4 overflow-y-auto flex-1">
-      <div class="space-y-4" [style.direction]="lang.currentLanguage === 'he' ? 'rtl' : 'ltr'">
+    <div #messagesContainer class="p-2 sm:p-4 overflow-y-auto flex-1 min-h-0">
+      <div class="space-y-3 sm:space-y-4" [style.direction]="lang.currentLanguage === 'he' ? 'rtl' : 'ltr'">
         @for (message of chatMessages; track $index) {
           @if (message.type === 'bot') {
             <!-- Bot Message -->
-            <div class="flex items-start gap-3 justify-start">
-              <div class="w-12 h-12 rounded-full flex-shrink-0 flex items-center justify-center text-2xl" [style.background-color]="secondaryColor">
+            <div class="flex items-start gap-2 sm:gap-3 justify-start">
+              <div class="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full flex-shrink-0 flex items-center justify-center text-lg sm:text-xl md:text-2xl" [style.background-color]="secondaryColor">
                 {{ (logoUrl && showLogo) ? '' : '🤖' }}
                 @if (logoUrl && showLogo) {
                   <img [src]="logoUrl" alt="Bot" class="w-full h-full rounded-full object-cover" />
                 }
               </div>
-              <div class="rounded-2xl px-5 py-3 shadow-md max-w-md"
+              <div class="rounded-2xl px-3 sm:px-4 md:px-5 py-2 sm:py-3 shadow-md max-w-[85%] sm:max-w-md"
                    [class.rounded-tl-sm]="lang.currentLanguage === 'he'"
                    [class.rounded-tr-sm]="lang.currentLanguage !== 'he'"
                    [class.bg-white]="message.questionIndex === undefined && !message.isSuccess"
@@ -145,22 +145,22 @@
                    [style.border-right]="message.questionIndex !== undefined && lang.currentLanguage === 'he' ? '4px solid ' + secondaryColor : 'none'"
                    [style.border-left]="message.questionIndex !== undefined && lang.currentLanguage !== 'he' ? '4px solid ' + secondaryColor : 'none'">
                 @if (message.isSuccess) {
-                  <div class="flex items-center gap-3">
-                    <div class="text-3xl">✓</div>
-                    <p class="text-white font-semibold">{{ message.text }}</p>
+                  <div class="flex items-center gap-2 sm:gap-3">
+                    <div class="text-2xl sm:text-3xl">✓</div>
+                    <p class="text-white font-semibold text-sm sm:text-base">{{ message.text }}</p>
                   </div>
                 } @else {
-                  <p [style.color]="message.questionIndex !== undefined ? 'white' : primaryColor">{{ message.text }}</p>
+                  <p class="text-sm sm:text-base" [style.color]="message.questionIndex !== undefined ? 'white' : primaryColor">{{ message.text }}</p>
                 }
 
                 <!-- Show options inside the bubble for choice questions -->
                 @if (message.questionIndex !== undefined && !isSubmitted) {
                   @if (isSingleChoiceQuestion(questions[message.questionIndex]) || isMultiChoiceQuestion(questions[message.questionIndex])) {
-                    <div class="mt-3 space-y-2">
+                    <div class="mt-2 sm:mt-3 space-y-1.5 sm:space-y-2">
                       @for (option of getQuestionOptions(questions[message.questionIndex].id); track option.value) {
                         <div
                           (click)="onOptionClick(questions[message.questionIndex], option.value)"
-                          class="cursor-pointer py-2 px-3 rounded-lg transition-all"
+                          class="cursor-pointer py-1.5 sm:py-2 px-2 sm:px-3 rounded-lg transition-all text-sm sm:text-base"
                           [class.font-semibold]="isOptionSelected(questions[message.questionIndex], option.value)"
                           [style.color]="secondaryColor">
                           {{ option.label }}
@@ -174,10 +174,10 @@
           } @else {
             <!-- User Message -->
             <div class="flex justify-end">
-              <div class="bg-white rounded-2xl px-5 py-3 shadow-md max-w-md"
+              <div class="bg-white rounded-2xl px-3 sm:px-4 md:px-5 py-2 sm:py-3 shadow-md max-w-[85%] sm:max-w-md"
                    [class.rounded-tr-sm]="lang.currentLanguage === 'he'"
                    [class.rounded-tl-sm]="lang.currentLanguage !== 'he'">
-                <p [style.color]="primaryColor">{{ message.text }}</p>
+                <p class="text-sm sm:text-base" [style.color]="primaryColor">{{ message.text }}</p>
               </div>
             </div>
           }
@@ -185,17 +185,17 @@
 
         <!-- Submit/Skip buttons for multi-choice questions -->
         @if (!isSubmitted && getCurrentQuestion() && showOptions && isMultiChoiceQuestion(getCurrentQuestion()!)) {
-          <div class="flex justify-start gap-2 mt-4">
+          <div class="flex justify-start gap-2 mt-3 sm:mt-4">
             <button
               (click)="submitCurrentAnswer()"
-              class="px-8 py-3 text-sm rounded-xl text-white shadow-md hover:shadow-lg transition-all"
+              class="px-4 sm:px-6 md:px-8 py-2 sm:py-2.5 md:py-3 text-xs sm:text-sm rounded-xl text-white shadow-md hover:shadow-lg transition-all"
               [style.background-color]="primaryColor">
               {{ lang.t('questionnaireLive.continue') }}
             </button>
             @if (!getCurrentQuestion()!.is_required) {
               <button
                 (click)="skipCurrentQuestion()"
-                class="px-8 py-3 text-sm rounded-xl shadow-md hover:shadow-lg transition-all bg-gray-100 text-gray-700 hover:bg-gray-200">
+                class="px-4 sm:px-6 md:px-8 py-2 sm:py-2.5 md:py-3 text-xs sm:text-sm rounded-xl shadow-md hover:shadow-lg transition-all bg-gray-100 text-gray-700 hover:bg-gray-200">
                 {{ lang.t('questionnaireLive.skip') }}
               </button>
             }
@@ -204,10 +204,10 @@
 
         <!-- Skip button for single choice non-required questions -->
         @if (!isSubmitted && getCurrentQuestion() && showOptions && isSingleChoiceQuestion(getCurrentQuestion()!) && !getCurrentQuestion()!.is_required) {
-          <div class="flex justify-start mt-4">
+          <div class="flex justify-start mt-3 sm:mt-4">
             <button
               (click)="skipCurrentQuestion()"
-              class="px-8 py-3 text-sm rounded-xl shadow-md hover:shadow-lg transition-all bg-gray-100 text-gray-700 hover:bg-gray-200">
+              class="px-4 sm:px-6 md:px-8 py-2 sm:py-2.5 md:py-3 text-xs sm:text-sm rounded-xl shadow-md hover:shadow-lg transition-all bg-gray-100 text-gray-700 hover:bg-gray-200">
               {{ lang.t('questionnaireLive.skip') }}
             </button>
           </div>
@@ -216,22 +216,22 @@
     </div>
 
     <!-- Input Area (always visible in preview mode, conditionally in guest mode) -->
-	  @if (isOwnerView) {
+    @if (isOwnerView) {
       <!-- Preview mode: Always show input box -->
-      <div class="bg-white border-t border-gray-200 p-4 shadow-lg flex-shrink-0">
-        <div class="flex items-center gap-3" [style.direction]="lang.currentLanguage === 'he' ? 'rtl' : 'ltr'">
+      <div class="bg-white border-t border-gray-200 p-2 sm:p-3 md:p-4 shadow-lg flex-shrink-0">
+        <div class="flex items-center gap-2 sm:gap-3" [style.direction]="lang.currentLanguage === 'he' ? 'rtl' : 'ltr'">
           <input
             type="text"
             [(ngModel)]="currentAnswer"
             (keydown.enter)="submitCurrentAnswer()"
-            class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2"
+            class="flex-1 px-3 sm:px-4 py-2 sm:py-2.5 md:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2"
             [style.--focus-color]="primaryColor"
             [placeholder]="lang.t('questionnaireLive.typeMessage')" />
           <button
             (click)="submitCurrentAnswer()"
-            class="w-12 h-12 rounded-lg flex items-center justify-center text-white shadow-md hover:shadow-lg transition flex-shrink-0"
+            class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-lg flex items-center justify-center text-white shadow-md hover:shadow-lg transition flex-shrink-0"
             [style.background-color]="primaryColor">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" class="sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <line x1="22" y1="2" x2="11" y2="13"></line>
               <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
             </svg>
@@ -240,8 +240,8 @@
       </div>
     } @else if (!isSubmitted && getCurrentQuestion() && !isSingleChoiceQuestion(getCurrentQuestion()!) && !isMultiChoiceQuestion(getCurrentQuestion()!)) {
       <!-- Guest mode: Show input for text-based questions -->
-      <div class="bg-white border-t border-gray-200 p-4 shadow-lg flex-shrink-0">
-        <div class="flex items-center gap-3" [style.direction]="lang.currentLanguage === 'he' ? 'rtl' : 'ltr'">
+      <div class="bg-white border-t border-gray-200 p-2 sm:p-3 md:p-4 shadow-lg flex-shrink-0">
+        <div class="flex items-center gap-2 sm:gap-3" [style.direction]="lang.currentLanguage === 'he' ? 'rtl' : 'ltr'">
           @if (getCurrentQuestion() && getCurrentQuestion()!.question_type === 'file') {
             <!-- File Upload -->
             <div class="flex-1">
@@ -253,24 +253,24 @@
                 id="chatFileInput" />
               <button
                 (click)="fileInput.click()"
-                class="w-full px-4 py-3 border-2 border-dashed rounded-lg transition-all hover:border-solid"
+                class="w-full px-3 sm:px-4 py-2 sm:py-2.5 md:py-3 border-2 border-dashed rounded-lg transition-all hover:border-solid text-sm sm:text-base"
                 [style.border-color]="primaryColor"
                 [style.color]="primaryColor">
-                <div class="flex items-center justify-center gap-3">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <div class="flex items-center justify-center gap-2 sm:gap-3">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" class="sm:w-5 sm:h-5 md:w-6 md:h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
                   </svg>
-                  <span class="font-medium">{{ uploadedFileName || lang.t('questionnaireLive.uploadFile') }}</span>
+                  <span class="font-medium truncate">{{ uploadedFileName || lang.t('questionnaireLive.uploadFile') }}</span>
                 </div>
               </button>
             </div>
             <button
               (click)="submitCurrentAnswer()"
               [disabled]="!uploadedFileName"
-              class="w-12 h-12 rounded-lg flex items-center justify-center text-white shadow-md hover:shadow-lg transition flex-shrink-0"
+              class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-lg flex items-center justify-center text-white shadow-md hover:shadow-lg transition flex-shrink-0"
               [class.opacity-50]="!uploadedFileName"
               [style.background-color]="primaryColor">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" class="sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="22" y1="2" x2="11" y2="13"></line>
                 <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
               </svg>
@@ -278,9 +278,9 @@
             @if (!getCurrentQuestion()!.is_required) {
               <button
                 (click)="skipCurrentQuestion()"
-                class="w-12 h-12 rounded-lg flex items-center justify-center bg-gray-100 text-gray-700 shadow-md hover:shadow-lg hover:bg-gray-200 transition flex-shrink-0"
+                class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-lg flex items-center justify-center bg-gray-100 text-gray-700 shadow-md hover:shadow-lg hover:bg-gray-200 transition flex-shrink-0"
                 [title]="lang.t('questionnaireLive.skip')">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" class="sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="m9 18 6-6-6-6"/>
                   <path d="M9 18V6"/>
                 </svg>
@@ -291,19 +291,19 @@
             <div class="flex-1">
               <button
                 (click)="toggleAudioRecording()"
-                class="w-full px-4 py-3 border-2 rounded-lg transition-all"
+                class="w-full px-3 sm:px-4 py-2 sm:py-2.5 md:py-3 border-2 rounded-lg transition-all text-sm sm:text-base"
                 [class.border-dashed]="!isRecording"
                 [class.border-solid]="isRecording"
                 [style.border-color]="primaryColor"
                 [style.background-color]="isRecording ? primaryColor + '22' : 'transparent'"
                 [style.color]="primaryColor">
-                <div class="flex items-center justify-center gap-3">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <div class="flex items-center justify-center gap-2 sm:gap-3">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" class="sm:w-5 sm:h-5 md:w-6 md:h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
                     <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
                     <line x1="12" y1="19" x2="12" y2="22"></line>
                   </svg>
-                  <span class="font-medium">
+                  <span class="font-medium truncate">
                     @if (isRecording) {
                       {{ lang.t('questionnaireLive.recordingStop') }}
                     } @else if (audioFileName) {
@@ -318,10 +318,10 @@
             <button
               (click)="submitCurrentAnswer()"
               [disabled]="!audioFileName"
-              class="w-12 h-12 rounded-lg flex items-center justify-center text-white shadow-md hover:shadow-lg transition flex-shrink-0"
+              class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-lg flex items-center justify-center text-white shadow-md hover:shadow-lg transition flex-shrink-0"
               [class.opacity-50]="!audioFileName"
               [style.background-color]="primaryColor">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" class="sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="22" y1="2" x2="11" y2="13"></line>
                 <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
               </svg>
@@ -329,9 +329,9 @@
             @if (!getCurrentQuestion()!.is_required) {
               <button
                 (click)="skipCurrentQuestion()"
-                class="w-12 h-12 rounded-lg flex items-center justify-center bg-gray-100 text-gray-700 shadow-md hover:shadow-lg hover:bg-gray-200 transition flex-shrink-0"
+                class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-lg flex items-center justify-center bg-gray-100 text-gray-700 shadow-md hover:shadow-lg hover:bg-gray-200 transition flex-shrink-0"
                 [title]="lang.t('questionnaireLive.skip')">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" class="sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="m9 18 6-6-6-6"/>
                   <path d="M9 18V6"/>
                 </svg>
@@ -342,7 +342,7 @@
               [(ngModel)]="currentAnswer"
               (keydown)="onKeyPress($event)"
               rows="3"
-              class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 resize-none"
+              class="flex-1 px-3 sm:px-4 py-2 sm:py-2.5 md:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 resize-none"
               [style.--focus-color]="primaryColor"
               [placeholder]="lang.t('questionnaireLive.enterAnswer')"></textarea>
           } @else if (getCurrentQuestion() && getCurrentQuestion()!.question_type === 'email') {
@@ -350,7 +350,7 @@
               type="email"
               [(ngModel)]="currentAnswer"
               (keydown)="onKeyPress($event)"
-              class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2"
+              class="flex-1 px-3 sm:px-4 py-2 sm:py-2.5 md:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2"
               [style.--focus-color]="primaryColor"
               [placeholder]="lang.t('questionnaireLive.enterAnswer')" />
           } @else if (getCurrentQuestion() && getCurrentQuestion()!.question_type === 'phone') {
@@ -358,7 +358,7 @@
               type="tel"
               [(ngModel)]="currentAnswer"
               (keydown)="onKeyPress($event)"
-              class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2"
+              class="flex-1 px-3 sm:px-4 py-2 sm:py-2.5 md:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2"
               [style.--focus-color]="primaryColor"
               [placeholder]="lang.t('questionnaireLive.enterPhone')" />
           } @else if (getCurrentQuestion() && getCurrentQuestion()!.question_type === 'number') {
@@ -366,21 +366,21 @@
               type="number"
               [(ngModel)]="currentAnswer"
               (keydown)="onKeyPress($event)"
-              class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2"
+              class="flex-1 px-3 sm:px-4 py-2 sm:py-2.5 md:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2"
               [style.--focus-color]="primaryColor"
               [placeholder]="lang.t('questionnaireLive.enterNumber')" />
           } @else if (getCurrentQuestion() && getCurrentQuestion()!.question_type === 'date') {
             <input
               type="date"
               [(ngModel)]="currentAnswer"
-              class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2"
+              class="flex-1 px-3 sm:px-4 py-2 sm:py-2.5 md:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2"
               [style.--focus-color]="primaryColor" />
           } @else {
             <input
               type="text"
               [(ngModel)]="currentAnswer"
               (keydown)="onKeyPress($event)"
-              class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2"
+              class="flex-1 px-3 sm:px-4 py-2 sm:py-2.5 md:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2"
               [style.--focus-color]="primaryColor"
               [placeholder]="lang.t('questionnaireLive.enterAnswer')" />
           }
@@ -388,9 +388,9 @@
           @if (getCurrentQuestion() && getCurrentQuestion()!.question_type !== 'file' && getCurrentQuestion()!.question_type !== 'audio') {
             <button
               (click)="submitCurrentAnswer()"
-              class="w-12 h-12 rounded-lg flex items-center justify-center text-white shadow-md hover:shadow-lg transition flex-shrink-0"
+              class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-lg flex items-center justify-center text-white shadow-md hover:shadow-lg transition flex-shrink-0"
               [style.background-color]="primaryColor">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" class="sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="22" y1="2" x2="11" y2="13"></line>
                 <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
               </svg>
@@ -398,9 +398,9 @@
             @if (!getCurrentQuestion()!.is_required) {
               <button
                 (click)="skipCurrentQuestion()"
-                class="w-12 h-12 rounded-lg flex items-center justify-center bg-gray-100 text-gray-700 shadow-md hover:shadow-lg hover:bg-gray-200 transition flex-shrink-0"
+                class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-lg flex items-center justify-center bg-gray-100 text-gray-700 shadow-md hover:shadow-lg hover:bg-gray-200 transition flex-shrink-0"
                 [title]="lang.t('questionnaireLive.skip')">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" class="sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="m9 18 6-6-6-6"/>
                   <path d="M9 18V6"/>
                 </svg>

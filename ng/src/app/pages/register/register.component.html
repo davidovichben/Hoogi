@@ -192,9 +192,11 @@
           name="agreeToMarketing"
           class="checkbox-input"
           [disabled]="isLoading"
+          required
         >
         <label for="agreeToMarketing" class="checkbox-label">
           {{ lang.t('register.agreeToMarketing') }}
+          <span class="required-mark">*</span>
         </label>
       </div>
 
@@ -202,7 +204,7 @@
       <button
         type="submit"
         class="submit-btn"
-        [disabled]="isLoading || !agreeToTerms"
+        [disabled]="isLoading || !agreeToTerms || !agreeToMarketing"
       >
         {{ isLoading ? lang.t('register.submitting') : lang.t('register.submit') }}
       </button>

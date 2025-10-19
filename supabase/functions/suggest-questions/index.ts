@@ -32,6 +32,7 @@ interface Question {
   type: 'text' | 'single_choice' | 'multiple_choice' | 'rating' | 'date' | 'email' | 'phone';
   options?: string[];
   isRequired: boolean;
+  hasOther?: boolean; // When true, the last option is "other" and should open a text field
 }
 
 // שאלות מוצעות לפי תחום עסקי
@@ -43,7 +44,8 @@ const QUESTION_TEMPLATES: Record<string, Question[]> = {
       text: "מה סוג הבעיה המשפטית שלך?",
       type: "single_choice",
       options: ["דיני עבודה", "מקרקעין", "דיני משפחה", "מסחרי/חוזים", "אחר"],
-      isRequired: true
+      isRequired: true,
+      hasOther: true
     },
     {
       id: "lawyer-2",
@@ -67,14 +69,16 @@ const QUESTION_TEMPLATES: Record<string, Question[]> = {
       text: "איזה סוג שירות אתה צריך?",
       type: "single_choice",
       options: ["דוחות שנתיים", "חשבות שכר", "פתיחת עוסק", "ייעוץ מס", "אחר"],
-      isRequired: true
+      isRequired: true,
+      hasOther: true
     },
     {
       id: "accountant-2",
       text: "מה סוג העסק שלך?",
       type: "single_choice",
       options: ["עוסק פטור", "עוסק מורשה", "חברה", "עמותה", "אחר"],
-      isRequired: true
+      isRequired: true,
+      hasOther: true
     },
     {
       id: "accountant-3",
@@ -92,7 +96,8 @@ const QUESTION_TEMPLATES: Record<string, Question[]> = {
       text: "איזה סוג ביטוח אתה מחפש?",
       type: "single_choice",
       options: ["בריאות וסיעוד", "חיים ופיננסים", "רכב ודירות", "עסקים", "אחר"],
-      isRequired: true
+      isRequired: true,
+      hasOther: true
     },
     {
       id: "insurance-2",
@@ -117,7 +122,8 @@ const QUESTION_TEMPLATES: Record<string, Question[]> = {
       text: "איזה סוג נכס אתה מחפש?",
       type: "single_choice",
       options: ["דירה", "בית פרטי", "משרד", "מחסן", "אחר"],
-      isRequired: true
+      isRequired: true,
+      hasOther: true
     },
     {
       id: "realestate-2",
@@ -141,7 +147,8 @@ const QUESTION_TEMPLATES: Record<string, Question[]> = {
       text: "איזה סוג עבודה אתה צריך?",
       type: "single_choice",
       options: ["שיפוץ מלא", "שיפוץ חלקי", "עבודות חשמל", "עבודות אינסטלציה", "אחר"],
-      isRequired: true
+      isRequired: true,
+      hasOther: true
     },
     {
       id: "construction-2",
@@ -166,7 +173,8 @@ const QUESTION_TEMPLATES: Record<string, Question[]> = {
       text: "איזה סוג טיפול אתה מחפש?",
       type: "single_choice",
       options: ["פיזיותרפיה", "דנטלי", "רפואה משלימה", "תזונה", "אחר"],
-      isRequired: true
+      isRequired: true,
+      hasOther: true
     },
     {
       id: "medical-2",
@@ -190,7 +198,8 @@ const QUESTION_TEMPLATES: Record<string, Question[]> = {
       text: "איזה סוג אימון אתה מעדיף?",
       type: "single_choice",
       options: ["יוגה", "פילאטיס", "אימון אישי", "קבוצות", "אחר"],
-      isRequired: true
+      isRequired: true,
+      hasOther: true
     },
     {
       id: "fitness-2",
@@ -204,7 +213,8 @@ const QUESTION_TEMPLATES: Record<string, Question[]> = {
       text: "מה המטרה שלך?",
       type: "single_choice",
       options: ["ירידה במשקל", "עלייה במשקל", "חיזוק שרירים", "גמישות", "אחר"],
-      isRequired: false
+      isRequired: false,
+      hasOther: true
     }
   ],
 
@@ -215,7 +225,8 @@ const QUESTION_TEMPLATES: Record<string, Question[]> = {
       text: "איזה סוג טיפול אתה מעוניין בו?",
       type: "single_choice",
       options: ["קוסמטיקה רפואית", "עיצוב שיער", "ציפורניים", "איפור", "אחר"],
-      isRequired: true
+      isRequired: true,
+      hasOther: true
     },
     {
       id: "beauty-2",
@@ -240,7 +251,8 @@ const QUESTION_TEMPLATES: Record<string, Question[]> = {
       text: "איזה סוג צילום אתה צריך?",
       type: "single_choice",
       options: ["עסקים/תדמית", "אירועים", "משפחות", "וידאו", "אחר"],
-      isRequired: true
+      isRequired: true,
+      hasOther: true
     },
     {
       id: "photography-2",
@@ -264,7 +276,8 @@ const QUESTION_TEMPLATES: Record<string, Question[]> = {
       text: "איזה סוג שירות אתה צריך?",
       type: "single_choice",
       options: ["מסעדה", "קייטרינג אירועים", "מאפים", "שף פרטי", "אחר"],
-      isRequired: true
+      isRequired: true,
+      hasOther: true
     },
     {
       id: "catering-2",
@@ -288,7 +301,8 @@ const QUESTION_TEMPLATES: Record<string, Question[]> = {
       text: "איזה סוג חנות אתה רוצה?",
       type: "single_choice",
       options: ["Shopify", "WooCommerce", "אמזון", "אי-ביי", "אחר"],
-      isRequired: true
+      isRequired: true,
+      hasOther: true
     },
     {
       id: "ecommerce-2",
@@ -312,7 +326,8 @@ const QUESTION_TEMPLATES: Record<string, Question[]> = {
       text: "איזה סוג שירות אתה צריך?",
       type: "single_choice",
       options: ["אסטרטגיית שיווק", "קמפיינים ממומנים", "ניהול סושיאל", "אוטומציות", "אחר"],
-      isRequired: true
+      isRequired: true,
+      hasOther: true
     },
     {
       id: "marketing-2",
@@ -326,7 +341,8 @@ const QUESTION_TEMPLATES: Record<string, Question[]> = {
       text: "מה המטרה שלך?",
       type: "single_choice",
       options: ["יותר לידים", "יותר מכירות", "יותר מודעות", "שיפור תדמית", "אחר"],
-      isRequired: false
+      isRequired: false,
+      hasOther: true
     }
   ],
 
@@ -337,7 +353,8 @@ const QUESTION_TEMPLATES: Record<string, Question[]> = {
       text: "איזה סוג פיתוח אתה צריך?",
       type: "single_choice",
       options: ["אתר", "אפליקציה", "DevOps", "תמיכת IT", "אחר"],
-      isRequired: true
+      isRequired: true,
+      hasOther: true
     },
     {
       id: "software-2",
@@ -362,7 +379,8 @@ const QUESTION_TEMPLATES: Record<string, Question[]> = {
       text: "איזה סוג הכשרה אתה מחפש?",
       type: "single_choice",
       options: ["קורסים עסקיים", "שיעורים פרטיים", "הדרכות דיגיטל", "למידה ארגונית", "אחר"],
-      isRequired: true
+      isRequired: true,
+      hasOther: true
     },
     {
       id: "education-2",
@@ -387,7 +405,8 @@ const QUESTION_TEMPLATES: Record<string, Question[]> = {
       text: "איזה סוג שירות אתה צריך?",
       type: "single_choice",
       options: ["מוסך", "דיטיילינג", "טרייד-אין", "השכרת רכבים", "אחר"],
-      isRequired: true
+      isRequired: true,
+      hasOther: true
     },
     {
       id: "automotive-2",
@@ -410,7 +429,8 @@ const QUESTION_TEMPLATES: Record<string, Question[]> = {
       text: "איזה סוג שירות אתה מחפש?",
       type: "single_choice",
       options: ["צימרים", "סיורים", "סוכנות נסיעות", "ארגון אירועים", "אחר"],
-      isRequired: true
+      isRequired: true,
+      hasOther: true
     },
     {
       id: "tourism-2",
@@ -434,7 +454,8 @@ const QUESTION_TEMPLATES: Record<string, Question[]> = {
       text: "איזה סוג שירות אתה צריך?",
       type: "single_choice",
       options: ["גיוס תרומות", "ניהול מתנדבים", "פרויקטים קהילתיים", "קמפיינים ציבוריים", "אחר"],
-      isRequired: true
+      isRequired: true,
+      hasOther: true
     },
     {
       id: "nonprofit-2",
@@ -456,7 +477,7 @@ const QUESTION_TEMPLATES: Record<string, Question[]> = {
 // פונקציה לבניית פרומט ברירת מחדל
 function buildPrompt(payload: SuggestQuestionsRequest): string {
   const { businessName, occupation, suboccupation, other_text, links, language = 'he' } = payload;
-  
+
   return `אתה יועץ UX וכתיבת שאלונים.
 קלט:
 - שם עסק: ${businessName}
@@ -472,6 +493,7 @@ function buildPrompt(payload: SuggestQuestionsRequest): string {
 1. לכל שאלה ציין סוג ["בחירה יחידה","בחירה מרובה","שדה טקסט חופשי","כן/לא"] ואם זו בחירה – לפחות 3 אופציות קצרות.
 2. ניסוח ידידותי וברור, מותאם לנייד.
 3. אם חסר מידע – שאלות כלליות אך שימושיות.
+4. עבור שאלות בחירה (יחידה או מרובה), אם רלוונטי, כלול "אחר" כאופציה אחרונה והוסף "hasOther": true לשאלה. זה יאפשר למשתמש להזין טקסט חופשי.
 
 פלט נדרש:
 רשימת שאלות (מחרוזות) בלבד.`;
@@ -536,7 +558,8 @@ serve(async (req) => {
               }],
               generationConfig: {
                 temperature: 0.2,
-                maxOutputTokens: 1000,
+                maxOutputTokens: 2000,
+                responseMimeType: "application/json"
               }
             })
           });
@@ -571,10 +594,14 @@ serve(async (req) => {
         // נסה לחלץ JSON מהתגובה
         let questions: any[] = [];
         try {
+          console.log("[AI] Raw response:", aiResponse.substring(0, 500));
+
           // נסה למצוא JSON בתגובה (אובייקט או מערך)
           const jsonMatch = aiResponse.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
           if (jsonMatch) {
             const parsed = JSON.parse(jsonMatch[0]);
+            console.log("[AI] Parsed JSON:", JSON.stringify(parsed).substring(0, 300));
+
             // אם זה אובייקט עם מאפיין questions, קח אותו
             if (parsed.questions && Array.isArray(parsed.questions)) {
               questions = parsed.questions;
@@ -584,6 +611,7 @@ serve(async (req) => {
               questions = parsed;
             }
           } else {
+            console.log("[AI] No JSON found in response, trying line split");
             // אם לא נמצא JSON, נסה לחלק לפי שורות
             questions = aiResponse.split('\n')
               .map(line => line.trim())
@@ -593,6 +621,7 @@ serve(async (req) => {
           }
         } catch (parseError) {
           console.error('JSON parse error:', parseError);
+          console.error('AI Response that failed to parse:', aiResponse);
           // fallback: חלוקה לפי שורות
           questions = aiResponse.split('\n')
             .map(line => line.trim())
@@ -601,11 +630,19 @@ serve(async (req) => {
             .map(text => ({ text, type: 'text', isRequired: false }));
         }
 
-        if (payload.__debug) return ok({ questions, prompt_used });
-        return ok({ questions });
+        console.log("[AI] Final questions count:", questions.length);
+
+        // If AI returned questions, use them
+        if (questions.length > 0) {
+          if (payload.__debug) return ok({ questions, prompt_used });
+          return ok({ questions });
+        }
+
+        // If AI failed to generate questions, fall through to template logic below
+        console.log("[AI] No questions generated, falling back to templates");
       } catch (aiError) {
         console.error('AI Error:', aiError);
-        // fallback לשאלות מוכנות
+        // fallback לשאלות מוכנות - fall through to template logic below
       }
     }
 
@@ -642,7 +679,8 @@ serve(async (req) => {
           options: language === 'he'
             ? ["חיפוש בגוגל", "רשתות חברתיות", "המלצה", "פרסום", "אחר"]
             : ["Google Search", "Social Media", "Recommendation", "Advertisement", "Other"],
-          isRequired: false
+          isRequired: false,
+          hasOther: true
         }
       ];
     }

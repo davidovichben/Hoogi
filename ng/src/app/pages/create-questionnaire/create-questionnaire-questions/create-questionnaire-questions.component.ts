@@ -2,14 +2,16 @@ import { Component, Inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
+import { MatDialog, MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { LanguageService } from '../../../core/services/language.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { QuestionSuggestionService, type ProfileForAI, type AiQuestion } from '../../../core/services/question-suggestion.service';
 import { OCCUPATIONS, OTHER } from '../../../core/constants/occupations.constant';
-import { LucideAngularModule, FileText, Circle, SquareCheck, Star, Calendar, Mic, Image, Mail, Phone, Paperclip, X } from 'lucide-angular';
+import { LucideAngularModule, FileText, Circle, SquareCheck, Star, Calendar, Mic, Image, Mail, Phone, Paperclip, X, Loader2 } from 'lucide-angular';
+import { ConfirmationDialogComponent } from '../../../shared/components/confirmation-dialog/confirmation-dialog.component';
+import { firstValueFrom } from 'rxjs';
 
 type QuestionType = 'text' | 'textarea' | 'number' | 'email' | 'phone' | 'date' | 'select' | 'radio' | 'checkbox' | 'single_choice' | 'multiple_choice' | 'rating' | 'audio' | 'file' | 'conditional';
 
@@ -44,8 +46,10 @@ export interface QuestionDialogData {
   questionnaireId?: string | null;
   title?: string;
   linkUrl?: string;
+  linkLabel?: string;
   attachmentUrl?: string;
   description?: string;
+  aiSuggestionsUsed?: boolean;
   branding?: {
     primaryColor?: string;
     secondaryColor?: string;
@@ -70,6 +74,7 @@ export class CreateQuestionnaireQuestionsComponent implements OnInit {
   questionnaireId?: string | null;
   title?: string;
   linkUrl?: string;
+  linkLabel?: string;
   attachmentUrl?: string;
   description?: string;
   branding?: {
@@ -107,6 +112,7 @@ export class CreateQuestionnaireQuestionsComponent implements OnInit {
   readonly PhoneIcon = Phone;
   readonly PaperclipIcon = Paperclip;
   readonly XIcon = X;
+  readonly Loader2Icon = Loader2;
 
   get questionTypes() {
     const currentLang = this.lang.currentLanguage;
@@ -154,6 +160,7 @@ export class CreateQuestionnaireQuestionsComponent implements OnInit {
     private toast: ToastService,
     private questionSuggestionService: QuestionSuggestionService,
     private router: Router,
+    private dialog: MatDialog,
     public dialogRef: MatDialogRef<CreateQuestionnaireQuestionsComponent>,
     @Inject(MAT_DIALOG_DATA) public data: QuestionDialogData
   ) {
@@ -162,9 +169,11 @@ export class CreateQuestionnaireQuestionsComponent implements OnInit {
     this.questionnaireId = data.questionnaireId;
     this.title = data.title;
     this.linkUrl = data.linkUrl;
+    this.linkLabel = data.linkLabel;
     this.attachmentUrl = data.attachmentUrl;
     this.description = data.description;
     this.branding = data.branding;
+    this.aiSuggestionsUsed = data.aiSuggestionsUsed ?? false;
 
     // Add fixed questions at the start if they don't exist
     this.ensureFixedQuestions();
@@ -238,7 +247,7 @@ export class CreateQuestionnaireQuestionsComponent implements OnInit {
     if (invalidQuestions.length > 0) {
       this.toast.show(
         this.lang.currentLanguage === 'he'
-          ? 'אנא מלא את כל השאלות לפני השמירה'
+          ? '🙂 נראה שהשאלה החדשה עדיין ריקה.\nהזן/י את הטקסט שלה כדי שאוכל לשמור אותה'
           : 'Please fill in all questions before saving',
         'error'
       );
@@ -269,11 +278,107 @@ export class CreateQuestionnaireQuestionsComponent implements OnInit {
     }
 
     // Return questions with a flag to indicate the questionnaire should be saved
-    this.dialogRef.close({ questions: this.questions, shouldSave: true });
+    this.dialogRef.close({ questions: this.questions, shouldSave: true, aiSuggestionsUsed: this.aiSuggestionsUsed });
   }
 
-  cancel() {
-    this.dialogRef.close();
+  closeWithX() {
+    // Prevent closing while AI is generating questions
+    if (this.loadingSuggestions || this.loadingSingleSuggestion) {
+      this.toast.show(
+        this.lang.currentLanguage === 'he'
+          ? 'אנא המתן עד שה-AI יסיים ליצור שאלות'
+          : 'Please wait for AI to finish generating questions',
+        'error'
+      );
+      return;
+    }
+
+    // Validate that all non-fixed questions have text
+    const invalidQuestions = this.questions.filter(q =>
+      !q.isFixed &&
+      !q.text?.trim()
+    );
+
+    if (invalidQuestions.length > 0) {
+      this.toast.show(
+        this.lang.currentLanguage === 'he'
+          ? '🙂 נראה שהשאלה החדשה עדיין ריקה.\nהזן/י את הטקסט שלה כדי שאוכל לשמור אותה'
+          : 'Please fill in all questions before saving',
+        'error'
+      );
+      return;
+    }
+
+    // Validate that choice questions have at least one non-empty option
+    const choiceTypes = ['radio', 'checkbox', 'single_choice', 'multiple_choice', 'select', 'conditional'];
+    const questionsWithEmptyOptions = this.questions.filter(q => {
+      if (choiceTypes.includes(q.type)) {
+        // Check if options array exists and has at least one non-empty option
+        return !q.options || q.options.length === 0 || !q.options.some(opt => {
+          const optionText = typeof opt === 'string' ? opt : (opt as any).label || (opt as any).value || '';
+          return optionText.trim().length > 0;
+        });
+      }
+      return false;
+    });
+
+    if (questionsWithEmptyOptions.length > 0) {
+      this.toast.show(
+        this.lang.currentLanguage === 'he'
+          ? 'שאלות בחירה חייבות להכיל לפחות אפשרות אחת עם טקסט'
+          : 'Choice questions must have at least one option with text',
+        'error'
+      );
+      return;
+    }
+
+    // Show success message
+    this.toast.show(
+      this.lang.currentLanguage === 'he'
+        ? 'השאלות נשמרו בהצלחה'
+        : 'Questions saved successfully',
+      'success'
+    );
+
+    // Return questions without shouldSave flag to save them in the component
+    // but don't trigger automatic save/publish
+    this.dialogRef.close({ questions: this.questions, shouldSave: false, aiSuggestionsUsed: this.aiSuggestionsUsed });
+  }
+
+  async cancel() {
+    // Prevent closing while AI is generating questions
+    if (this.loadingSuggestions || this.loadingSingleSuggestion) {
+      this.toast.show(
+        this.lang.currentLanguage === 'he'
+          ? 'אנא המתן עד שה-AI יסיים ליצור שאלות'
+          : 'Please wait for AI to finish generating questions',
+        'error'
+      );
+      return;
+    }
+
+    // Show confirmation dialog
+    const message = this.lang.currentLanguage === 'he'
+      ? 'האם אתה בטוח שברצונך לבטל? כל השאלות שהוספת יימחקו.'
+      : 'Are you sure you want to cancel? All questions you added will be discarded.';
+
+    const confirmDialogRef = this.dialog.open(ConfirmationDialogComponent, {
+      data: {
+        message,
+        confirmText: this.lang.currentLanguage === 'he' ? 'כן, בטל' : 'Yes, Cancel',
+        cancelText: this.lang.currentLanguage === 'he' ? 'המשך עריכה' : 'Continue Editing',
+        type: 'danger'
+      },
+      disableClose: true,
+      panelClass: 'confirmation-dialog-panel'
+    });
+
+    const result = await firstValueFrom(confirmDialogRef.afterClosed());
+
+    if (result === true) {
+      // Close dialog without saving questions (discard changes)
+      this.dialogRef.close(null);
+    }
   }
 
   showPreview() {
@@ -297,7 +402,7 @@ export class CreateQuestionnaireQuestionsComponent implements OnInit {
     if (invalidQuestions.length > 0) {
       this.toast.show(
         this.lang.currentLanguage === 'he'
-          ? 'אנא מלא את כל השאלות לפני התצוגה המקדימה'
+          ? '🙂 נראה שהשאלה החדשה עדיין ריקה.\nהזן/י את הטקסט שלה כדי שאוכל לשמור אותה'
           : 'Please fill in all questions before preview',
         'error'
       );
@@ -353,6 +458,7 @@ export class CreateQuestionnaireQuestionsComponent implements OnInit {
         show_logo: this.branding?.showLogo ?? true,
         show_profile_image: this.branding?.showProfileImage ?? true,
         link_url: this.linkUrl || null,
+        link_label: this.linkLabel || null,
         attachment_url: this.attachmentUrl || null
       },
       questions: previewQuestions,
@@ -377,6 +483,22 @@ export class CreateQuestionnaireQuestionsComponent implements OnInit {
   }
 
   addQuestion() {
+    // Validate that all non-fixed questions have text before adding a new one
+    const invalidQuestions = this.questions.filter(q =>
+      !q.isFixed &&
+      !q.text?.trim()
+    );
+
+    if (invalidQuestions.length > 0) {
+      this.toast.show(
+        this.lang.currentLanguage === 'he'
+          ? '🙂 נראה שהשאלה החדשה עדיין ריקה.\nהזן/י את הטקסט שלה כדי שאוכל לשמור אותה'
+          : 'Please fill in all questions before adding a new one',
+        'error'
+      );
+      return;
+    }
+
     const newQuestion: Question = {
       id: `q_${Date.now()}`,
       text: '',

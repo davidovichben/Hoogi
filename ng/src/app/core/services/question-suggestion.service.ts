@@ -25,7 +25,7 @@ export type ProfileForAI = {
 export class QuestionSuggestionService {
   constructor(private supabaseService: SupabaseService) {}
 
-  private buildPromptOverride(profile: ProfileForAI, locale: "he" | "en" | "fr" = "he"): string {
+  private buildPromptOverride(profile: ProfileForAI, locale: "he" | "en" | "fr" = "he", maxTotal: number = 7): string {
     const businessName = (profile.businessName || "").trim();
     const occupation = (profile.occupation || "").trim();
     const suboccupation = (profile.suboccupation || "").trim();
@@ -41,20 +41,38 @@ ${otherText ? `מידע נוסף: ${otherText}` : ''}
 ${linksText ? `קישורים/מסמכים: ${linksText}` : ''}`.trim();
 
     const systemPrompt = locale === "he"
-      ? `אתה מומחה ביצירת שאלונים שיווקיים.
-שים דגש על התאמה אישית לעיסוק ולתת־תחום של המשתמש.
-אם קיימים קישורים, מסמכים או מידע נוסף – השתמש בהם כדי לדייק את השאלות.
-המטרה: לייצר שאלון שמוביל לשיחת מכירה.
-בשאלות הראשונות תמיד כלול לפי הסדר: שם מלא, כתובת אימייל, מספר טלפון.
-החזר אך ורק JSON בפורמט הבא:
-{ "questions": [ { "text": string, "type": "text|single|multi|yes_no|date|email|phone", "options"?: string[], "isRequired"?: boolean } ] }`
-      : `You are an expert in generating smart business questionnaires.
-Focus on tailoring questions to the business type and sub-type.
-If links or extra info are provided – use them to personalize the questions.
-The goal: create a lead-generating form that prepares users for a sales call.
-Always include these 3 questions at the beginning, in order: full name, email, phone number.
-Respond ONLY in the following JSON format:
-{ "questions": [ { "text": string, "type": "text|single|multi|yes_no|date|email|phone", "options"?: string[], "isRequired"?: boolean } ] }`;
+      ? `צור ${maxTotal} שאלות בעברית לשאלון לידים.
+עבור השאלות הראשונות, כלול תמיד: שם מלא (type: text), אימייל (type: email), טלפון (type: phone).
+לאחר מכן, הוסף שאלות מותאמות לעיסוק ותת-תחום.
+עבור שאלות בחירה, כלול 3-4 אופציות.
+
+החזר JSON בלבד בפורמט זה:
+{
+  "questions": [
+    { "text": "מה השם המלא שלך?", "type": "text", "isRequired": true },
+    { "text": "מה האימייל שלך?", "type": "email", "isRequired": true },
+    { "text": "מה מספר הטלפון שלך?", "type": "phone", "isRequired": true },
+    { "text": "שאלה נוספת", "type": "single_choice", "options": ["אופציה 1", "אופציה 2", "אחר"], "isRequired": false }
+  ]
+}
+
+סוגי שאלות אפשריים: text, email, phone, single_choice, multiple_choice, yes_no, date`
+      : `Generate ${maxTotal} questions for a lead form.
+For the first questions, always include: full name (type: text), email (type: email), phone (type: phone).
+Then add questions tailored to the business type and sub-type.
+For choice questions, include 3-4 options.
+
+Return ONLY JSON in this format:
+{
+  "questions": [
+    { "text": "What is your full name?", "type": "text", "isRequired": true },
+    { "text": "What is your email?", "type": "email", "isRequired": true },
+    { "text": "What is your phone number?", "type": "phone", "isRequired": true },
+    { "text": "Additional question", "type": "single_choice", "options": ["Option 1", "Option 2", "Other"], "isRequired": false }
+  ]
+}
+
+Valid types: text, email, phone, single_choice, multiple_choice, yes_no, date`;
 
     return `${systemPrompt}
 
@@ -84,7 +102,7 @@ ${businessInfo}`;
         links: (profile.links ?? []).join(", "),
         language: opts?.locale ?? "he",
         max: opts?.maxTotal ?? 7,
-        prompt_override: this.buildPromptOverride(profile, opts?.locale ?? "he")
+        prompt_override: this.buildPromptOverride(profile, opts?.locale ?? "he", opts?.maxTotal ?? 7)
       })
     });
 
