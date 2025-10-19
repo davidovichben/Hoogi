@@ -131,8 +131,8 @@
         <!-- Messages -->
       <div class="space-y-3 sm:space-y-4" [style.direction]="lang.currentLanguage === 'he' ? 'rtl' : 'ltr'">
         @for (message of chatMessages; track $index) {
-          <!-- Only show messages for questions up to currentQuestionIndex, or messages without questionIndex (greetings/success) -->
-          @if (message.questionIndex === undefined || message.questionIndex <= currentQuestionIndex) {
+          <!-- Show all messages for questions user has visited (up to highestQuestionReached), or messages without questionIndex (greetings/success) -->
+          @if (message.questionIndex === undefined || message.questionIndex <= highestQuestionReached) {
           @if (message.type === 'bot') {
             <!-- Bot Message -->
             <div class="flex items-start gap-2 sm:gap-3 justify-start">

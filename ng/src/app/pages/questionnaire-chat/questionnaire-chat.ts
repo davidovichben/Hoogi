@@ -29,6 +29,7 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
 
   // Current question tracking
   currentQuestionIndex = 0;
+  highestQuestionReached = 0; // Track the highest question user has reached
   chatMessages: Array<{type: 'bot' | 'user', text: string, questionIndex?: number, isSuccess?: boolean}> = [];
 
   // Owner's theme colors
@@ -47,6 +48,7 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
   otherTextResponses: Record<string, string> = {}; // Store "other" text inputs
   currentAnswer: string = '';
   currentAnswerError: string = ''; // Validation error for current answer
+  currentAnswerModified: boolean = false; // Track if user has modified the current answer
 
   // Auto-scroll control
   private shouldScrollToBottom = false;
@@ -110,13 +112,19 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
     }
   }
 
-  // Clear current answer validation error
+  // Clear current answer validation error and mark as modified
   clearCurrentAnswerError() {
     this.currentAnswerError = '';
+    this.currentAnswerModified = true; // User is typing, mark as modified
   }
 
-  // Validate current answer based on question type
+  // Validate current answer based on question type (only if user has modified it)
   validateCurrentAnswer() {
+    // Don't validate on blur if user hasn't modified the field yet
+    if (!this.currentAnswerModified) {
+      return;
+    }
+
     const question = this.getCurrentQuestion();
     if (!question) return;
 
@@ -541,6 +549,7 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
     this.audioBlob = null;
     this.isRecording = false;
     this.currentAnswer = '';
+    this.currentAnswerModified = false; // Reset modified flag for new question
 
     // Questions are pre-rendered, just trigger scroll to current question
     this.cdr.detectChanges();
@@ -783,8 +792,9 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
     // Store the response
     this.responses[question.id] = response;
 
-    // Clear validation error since submission was successful
+    // Clear validation error and reset modified flag since submission was successful
     this.currentAnswerError = '';
+    this.currentAnswerModified = false;
 
     // Update the existing user message for this question
     const userMessageIndex = this.chatMessages.findIndex(
@@ -796,6 +806,10 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
 
     // Move to next question or finish
     this.currentQuestionIndex++;
+    // Track the highest question reached so we can show all visited questions
+    if (this.currentQuestionIndex > this.highestQuestionReached) {
+      this.highestQuestionReached = this.currentQuestionIndex;
+    }
     this.cdr.detectChanges();
 
     if (this.currentQuestionIndex < this.questions.length) {
@@ -1000,48 +1014,42 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
 
     if (!previousQuestion) return;
 
-    // Clear the response for the previous question
-    delete this.responses[previousQuestion.id];
-
-    // Clear multi-responses if it's a multi-choice question
-    if (this.multiResponses[previousQuestion.id]) {
-      delete this.multiResponses[previousQuestion.id];
+    // Pre-populate input fields with existing responses so user can see and edit them
+    if (this.responses[previousQuestion.id]) {
+      const existingResponse = this.responses[previousQuestion.id];
+      // For text-based questions, populate the input field with existing answer
+      if (!this.isSingleChoiceQuestion(previousQuestion) &&
+          !this.isMultiChoiceQuestion(previousQuestion) &&
+          !this.isRatingQuestion(previousQuestion)) {
+        if (Array.isArray(existingResponse)) {
+          this.currentAnswer = existingResponse.join(', ');
+        } else {
+          this.currentAnswer = String(existingResponse);
+        }
+      } else {
+        this.currentAnswer = '';
+      }
+    } else {
+      this.currentAnswer = '';
     }
 
-    // Clear "other" text input if it exists
-    if (this.otherTextResponses[previousQuestion.id]) {
-      delete this.otherTextResponses[previousQuestion.id];
-    }
-
-    // Clear current answer and error
-    this.currentAnswer = '';
+    // Clear validation error and reset modified flag
     this.currentAnswerError = '';
+    this.currentAnswerModified = false; // Reset so validation doesn't trigger on blur
 
-    // Clear file upload state if applicable
+    // Clear UI-only state (files/audio) - actual stored responses remain intact
     this.uploadedFileName = '';
     this.uploadedFile = null;
-
-    // Clear audio recording state if applicable
     this.audioFileName = '';
     this.audioBlob = null;
     this.isRecording = false;
 
-    // Clear the user's answer text (but keep the placeholder message)
-    const userMessageIndex = this.chatMessages.findIndex(
-      msg => msg.type === 'user' && msg.questionIndex === this.currentQuestionIndex
-    );
-    if (userMessageIndex !== -1) {
-      this.chatMessages[userMessageIndex].text = '';
-    }
-
-    // Re-initialize multi-responses object for this question if needed
-    if (this.isMultiChoiceQuestion(previousQuestion)) {
-      this.multiResponses[previousQuestion.id] = {};
-      const options = this.getQuestionOptions(previousQuestion.id);
-      options.forEach(opt => {
-        this.multiResponses[previousQuestion.id][opt.value] = false;
-      });
-    }
+    // IMPORTANT: Do NOT delete or modify the following:
+    // - this.responses[previousQuestion.id] - keeps the stored answer data
+    // - this.multiResponses[previousQuestion.id] - keeps checkbox/radio selections
+    // - this.otherTextResponses[previousQuestion.id] - keeps "Other" text input
+    // - chatMessages[].text - keeps the visible answer in the chat bubble
+    // This allows users to review their previous answers and modify them if needed
 
     // Trigger change detection and scroll to show the question again
     this.cdr.detectChanges();
@@ -1080,6 +1088,10 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
 
     // Move to next question or finish
     this.currentQuestionIndex++;
+    // Track the highest question reached so we can show all visited questions
+    if (this.currentQuestionIndex > this.highestQuestionReached) {
+      this.highestQuestionReached = this.currentQuestionIndex;
+    }
     this.cdr.detectChanges();
 
     if (this.currentQuestionIndex < this.questions.length) {
