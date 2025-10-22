@@ -1,10 +1,12 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
+import { MatDialog } from '@angular/material/dialog';
 import { SupabaseService } from '../../core/services/supabase.service';
 import { LanguageService } from '../../core/services/language.service';
 import { ToastService } from '../../core/services/toast.service';
 import { ProfileValidatorService } from '../../core/services/profile-validator.service';
+import { ConfirmationDialogComponent } from '../../shared/components/confirmation-dialog/confirmation-dialog.component';
 import * as QRCode from 'qrcode';
 
 interface Questionnaire {
@@ -38,7 +40,8 @@ export class QuestionnairesComponent implements OnInit {
     public lang: LanguageService,
     private router: Router,
     private toast: ToastService,
-    private profileValidator: ProfileValidatorService
+    private profileValidator: ProfileValidatorService,
+    private dialog: MatDialog
   ) {}
 
   async ngOnInit() {
@@ -411,36 +414,43 @@ export class QuestionnairesComponent implements OnInit {
   }
 
   async handleDelete(q: Questionnaire) {
-    const confirmMessage = this.lang.currentLanguage === 'he'
-      ? `האם אתה בטוח שברצונך למחוק את השאלון "${q.title || 'ללא שם'}"?`
-      : `Are you sure you want to delete the questionnaire "${q.title || 'Untitled'}"?`;
+    const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
+      data: {
+        message: this.lang.currentLanguage === 'he'
+          ? `האם אתה בטוח שברצונך למחוק את השאלון "${q.title || 'ללא שם'}"?`
+          : `Are you sure you want to delete the questionnaire "${q.title || 'Untitled'}"?`,
+        confirmText: this.lang.t('common.delete'),
+        cancelText: this.lang.t('common.cancel'),
+        type: 'danger'
+      }
+    });
 
-    if (!confirm(confirmMessage)) {
-      return;
-    }
+    dialogRef.afterClosed().subscribe(async (confirmed) => {
+      if (!confirmed) return;
 
-    try {
-      const { error } = await this.supabaseService.client
-        .from('questionnaires')
-        .delete()
-        .eq('id', q.id);
+      try {
+        const { error } = await this.supabaseService.client
+          .from('questionnaires')
+          .delete()
+          .eq('id', q.id);
 
-      if (error) throw error;
+        if (error) throw error;
 
-      this.toast.show(
-        this.lang.currentLanguage === 'he' ? 'השאלון נמחק בהצלחה' : 'Questionnaire deleted successfully',
-        'success'
-      );
+        this.toast.show(
+          this.lang.currentLanguage === 'he' ? 'השאלון נמחק בהצלחה' : 'Questionnaire deleted successfully',
+          'success'
+        );
 
-      // Reload questionnaires
-      await this.loadQuestionnaires();
-    } catch (e: any) {
-      this.toast.show(
-        this.lang.currentLanguage === 'he' ? 'שגיאה במחיקת השאלון' : 'Error deleting questionnaire',
-        'error'
-      );
-      console.error('Error deleting questionnaire:', e);
-    }
+        // Reload questionnaires
+        await this.loadQuestionnaires();
+      } catch (e: any) {
+        this.toast.show(
+          this.lang.currentLanguage === 'he' ? 'שגיאה במחיקת השאלון' : 'Error deleting questionnaire',
+          'error'
+        );
+        console.error('Error deleting questionnaire:', e);
+      }
+    });
   }
 
   toggleDistribution(qid: string) {

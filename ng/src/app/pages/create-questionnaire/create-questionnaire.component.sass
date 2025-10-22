@@ -76,8 +76,6 @@
 
 .media-container
 	display: flex
-	align-items: center
-	justify-content: center
 	gap: 2rem
 	flex-wrap: wrap
 
@@ -417,63 +415,3 @@ textarea[style*="--focus-ring-color"]:focus
 	font-size: 0.875rem
 	margin-top: 0.25rem
 	text-align: right
-
-// Automation Templates
-.automation-templates-card
-	&.card
-		margin-bottom: 1.5rem
-
-.card-description
-	font-size: 0.875rem
-	color: #6b7280
-	margin-bottom: 1rem
-	line-height: 1.5
-
-.no-templates-text
-	font-size: 0.875rem
-	color: #9ca3af
-	text-align: center
-	padding: 1.5rem
-	background: #f9fafb
-	border-radius: 0.5rem
-
-.templates-grid
-	display: grid
-	grid-template-columns: 1fr
-	gap: 0.75rem
-
-	@media (min-width: 640px)
-		grid-template-columns: repeat(2, 1fr)
-
-.template-checkbox-item
-	display: flex
-	align-items: center
-	gap: 0.75rem
-	padding: 1rem
-	background: #f9fafb
-	border: 1px solid #e5e7eb
-	border-radius: 0.5rem
-	cursor: pointer
-	transition: all 0.2s
-
-	&:hover
-		background: #f3f4f6
-		border-color: #d1d5db
-
-	&.selected
-		background: #eff6ff
-		border-color: #3b82f6
-		box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1)
-
-.template-checkbox
-	width: 1.125rem
-	height: 1.125rem
-	flex-shrink: 0
-	cursor: pointer
-	accent-color: #3b82f6
-
-.template-name
-	font-size: 0.875rem
-	font-weight: 600
-	color: #111827
-	flex: 1

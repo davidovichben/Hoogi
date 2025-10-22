@@ -17,7 +17,6 @@ interface AutomationTemplate {
 interface QuestionnaireData {
   id: string;
   owner_id: string;
-  automation_template_id?: string;
   title: string;
 }
 
@@ -43,105 +42,16 @@ export class AutomationService {
   /**
    * Main entry point for automation execution
    * Called when a questionnaire response is submitted
+   * Note: Automation templates are now only configured via distributions, not questionnaires
    */
   async executeAutomation(
     questionnaire: QuestionnaireData,
     responseData: ResponseData,
     questions: any[]
   ): Promise<void> {
-    try {
-      console.log('🤖 [AUTOMATION] Starting automation execution...');
-
-      // Check if automation is enabled for this questionnaire
-      if (!questionnaire.automation_template_id) {
-        console.log('⚠️ [AUTOMATION] No automation template configured for this questionnaire');
-        return;
-      }
-
-      console.log('📋 [AUTOMATION] Loading template:', questionnaire.automation_template_id);
-
-      // Load the automation template
-      const template = await this.loadAutomationTemplate(questionnaire.automation_template_id);
-      if (!template) {
-        console.error('❌ [AUTOMATION] Automation template not found:', questionnaire.automation_template_id);
-        return;
-      }
-
-      console.log('✅ [AUTOMATION] Template loaded:', template.name, 'Type:', template.template_type);
-      console.log('📧 [AUTOMATION] Channels:', template.channels);
-
-      // Extract contact information from responses (first 3 questions)
-      const contact = this.extractContactInfo(responseData, questions);
-      console.log('👤 [AUTOMATION] Contact extracted:', { name: contact.name, email: contact.email, phone: contact.phone });
-
-      if (!contact.email) {
-        console.error('❌ [AUTOMATION] No email found in responses - cannot send automation');
-        console.log('📝 [AUTOMATION] Response data:', responseData);
-        console.log('❓ [AUTOMATION] Questions:', questions.map(q => ({ id: q.id, text: q.question_text })));
-        return;
-      }
-
-      // Load owner profile for template variables
-      console.log('👔 [AUTOMATION] Loading owner profile:', questionnaire.owner_id);
-      const ownerProfile = await this.loadOwnerProfile(questionnaire.owner_id);
-      console.log('✅ [AUTOMATION] Owner profile loaded:', { company: ownerProfile.company, email: ownerProfile.email });
-
-      // Generate message based on template type
-      let messageContent = '';
-      let emailSubject = template.email_subject || 'Response Received';
-
-      switch (template.template_type) {
-        case 'standard':
-          messageContent = await this.generateStandardMessage(contact, ownerProfile, questionnaire);
-          break;
-
-        case 'personal':
-          messageContent = this.generatePersonalMessage(template, contact, ownerProfile);
-          emailSubject = this.replaceVariables(template.email_subject || '', contact, ownerProfile);
-          break;
-
-        case 'ai':
-          messageContent = await this.generateAIMessage(
-            template,
-            responseData,
-            questions,
-            contact,
-            ownerProfile
-          );
-          emailSubject = this.replaceVariables(template.email_subject || '', contact, ownerProfile);
-          break;
-
-        case 'combined':
-          messageContent = await this.generateCombinedMessage(
-            template,
-            responseData,
-            questions,
-            contact,
-            ownerProfile
-          );
-          emailSubject = this.replaceVariables(template.email_subject || '', contact, ownerProfile);
-          break;
-      }
-
-      console.log('💬 [AUTOMATION] Generated message:');
-      console.log('  Subject:', emailSubject);
-      console.log('  Message:', messageContent);
-
-      // Send through configured channels
-      console.log('📤 [AUTOMATION] Sending through channels:', template.channels);
-      await this.sendThroughChannels(
-        template.channels,
-        contact,
-        emailSubject,
-        messageContent,
-        ownerProfile
-      );
-
-      console.log('✅ [AUTOMATION] Automation executed successfully for template:', template.name);
-    } catch (error) {
-      console.error('❌ [AUTOMATION] Error executing automation:', error);
-      // Don't throw - automation failure shouldn't break the submission
-    }
+    // Automation templates are now only configured via distributions, not questionnaires
+    console.log('🤖 [AUTOMATION] Automation execution disabled - templates are managed via distribution hub');
+    return;
   }
 
   /**

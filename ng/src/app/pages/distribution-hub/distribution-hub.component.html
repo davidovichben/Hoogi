@@ -193,38 +193,8 @@
       }
     </div>
 
-    <!-- Save Distribution Button -->
-    @if (selectedQuestionnaire && !currentDistribution) {
-      <div class="save-distribution-section">
-        <button
-          class="btn-save-distribution"
-          (click)="handleSaveDistribution()"
-          [disabled]="loading">
-          <span class="save-icon">💾</span>
-          {{ loading ? 'שומר...' : 'שמור הפצה' }}
-        </button>
-        <p class="help-text text-center mt-2">
-          יש לשמור את ההפצה לפני יצירת קישורים
-        </p>
-        @if (selectedTemplates.length > 0) {
-          <p class="help-text text-center mt-1">
-            {{ selectedTemplates.length }} תבניות נבחרו למענה אוטומטי
-          </p>
-        }
-      </div>
-    }
-
-    <!-- Success Message After Save -->
-    @if (currentDistribution && !currentMode) {
-      <div class="distribution-saved-message">
-        <p class="success-text">
-          ✓ ההפצה נשמרה בהצלחה! כעת ניתן ליצור קישורים
-        </p>
-      </div>
-    }
-
-    <!-- Quick Links Section - Only show after distribution is saved -->
-    @if (currentDistribution) {
+    <!-- Quick Links Section -->
+    @if (selectedQuestionnaire) {
       <div class="quick-links-section">
         <h3 class="section-subtitle">{{ lang.t('distribution.createLinks') }}</h3>
 

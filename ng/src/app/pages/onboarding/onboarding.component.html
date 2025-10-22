@@ -5,13 +5,11 @@
       <div class="logo-animation">
         <img src="/img/logo.png" alt="iHoogi Avatar" class="avatar" />
       </div>
-      <h1 class="title">ברוכים הבאים ל־iHoogi</h1>
+      <h1 class="title">{{ lang.t('onboarding.welcome') }}</h1>
       <p class="subtitle">
-        המערכת שמדברת עם הלקוחות שלכם, מתזכרת אותם,
-        ומוודאת שאף ליד לא מתפספס בדרך.
-        בואו נתחיל – זה קל, מהיר, וחכם. ⚡
+        {{ lang.t('onboarding.subtitle') }}
       </p>
-      <h2 class="steps-title">✨ הצעדים הראשונים שלכם עם iHoogi</h2>
+      <h2 class="steps-title">{{ lang.t('onboarding.firstSteps') }}</h2>
     </div>
 
     <!-- Steps -->
@@ -91,13 +89,13 @@
         <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
         </svg>
-        <h2 class="info-title">🔁 ככה זה עובד בפשטות</h2>
+        <h2 class="info-title">{{ lang.t('onboarding.howItWorks') }}</h2>
       </div>
       <div class="info-flow">
-        מילוי פרופיל → יצירת שאלון → בניית תבנית מענה ללקוח → קבלת הלינק
+        {{ lang.t('onboarding.flow') }}
       </div>
       <div class="info-note">
-        אתם מצרפים את הלקוחות –
+        {{ lang.t('onboarding.youBringClients') }}
       </div>
     </div>
 
@@ -107,19 +105,17 @@
         <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
         </svg>
-        <h2 class="info-title">🤖 מכאן זה כבר עלינו</h2>
+        <h2 class="info-title">{{ lang.t('onboarding.fromHereOnUs') }}</h2>
       </div>
       <p class="info-text">
-        אנחנו נאסוף את הלידים, נרכז את כל המידע במקום אחד,
-        נענה בשמכם, נתזכר את הלקוחות שלכם בדיוק ברגע הנכון –
-        כדי שכל ליד יהפוך להזדמנות אמיתית. 🎯
+        {{ lang.t('onboarding.fromHereDescription') }}
       </p>
     </div>
 
     <!-- Action Button -->
     <div class="action-container">
       <button (click)="handleStart()" class="start-btn">
-        בואו נתחיל! 🚀
+        {{ lang.t('onboarding.letsStart') }}
       </button>
     </div>
   </div>

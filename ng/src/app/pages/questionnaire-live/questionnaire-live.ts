@@ -56,6 +56,7 @@ export class QuestionnaireLive implements OnInit {
 
   // Referral tracking
   private detectedChannel: string = 'direct';
+  private distributionToken: string | null = null;
 
   constructor(
     private questionnaireService: QuestionnaireService,
@@ -79,6 +80,12 @@ export class QuestionnaireLive implements OnInit {
     const id = this.route.snapshot.paramMap.get('id');
     const tokenOrId = token || id;
     console.log('Route parameters:', { token, id, tokenOrId });
+
+    // Store distribution token if it's a distribution link
+    if (token && token.startsWith('d_')) {
+      this.distributionToken = token;
+      console.log('Distribution token detected:', this.distributionToken);
+    }
 
     // Determine view mode based on route path
     const currentPath = this.router.url;
@@ -325,6 +332,7 @@ export class QuestionnaireLive implements OnInit {
         automations: [], // Empty array, will be configured by admin
         comments: null,
         answer_json: responseData,
+        distribution_token: this.distributionToken, // Store distribution token if came from distribution link
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
@@ -354,8 +362,11 @@ export class QuestionnaireLive implements OnInit {
 
   private async triggerAutomation(lead: any) {
     try {
+      console.log('🚀 [CLIENT] Triggering automation for lead:', lead.id);
+      console.log('📦 [CLIENT] Lead data:', lead);
+
       // Call the on-new-lead Edge Function to trigger automation
-      const { error } = await this.supabaseService.client.functions.invoke('on-new-lead', {
+      const { data, error } = await this.supabaseService.client.functions.invoke('on-new-lead', {
         body: {
           type: 'INSERT',
           table: 'leads',
@@ -364,11 +375,13 @@ export class QuestionnaireLive implements OnInit {
       });
 
       if (error) {
-        console.error('Error triggering automation:', error);
+        console.error('❌ [CLIENT] Error triggering automation:', error);
         // Don't throw - automation failure shouldn't affect the submission
+      } else {
+        console.log('✅ [CLIENT] Automation triggered successfully:', data);
       }
     } catch (error) {
-      console.error('Error in triggerAutomation:', error);
+      console.error('❌ [CLIENT] Error in triggerAutomation:', error);
       // Don't throw - automation failure shouldn't affect the submission
     }
   }

@@ -250,7 +250,7 @@ export class RegisterComponent {
   }
 
   openTerms() {
-    window.open('/terms-of-service', '_blank');
+    this.router.navigate(['/terms']);
   }
 
   togglePasswordVisibility() {

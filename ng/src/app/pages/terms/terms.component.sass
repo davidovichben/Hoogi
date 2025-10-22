@@ -1,0 +1,152 @@
+.terms-page
+  min-height: 100vh
+  background: linear-gradient(to bottom, #f9fafb, #f3f4f6)
+  padding: 2.5rem 1rem
+
+.terms-container
+  max-width: 1200px
+  margin: 0 auto
+
+// Header
+.header-section
+  margin-bottom: 2rem
+
+.header-actions
+  display: flex
+  justify-content: space-between
+  align-items: center
+  margin-bottom: 1rem
+
+  &.rtl
+    flex-direction: row-reverse
+
+.back-button, .language-toggle
+  display: flex
+  align-items: center
+  gap: 0.5rem
+  padding: 0.5rem 1rem
+  border: 1px solid #e5e7eb
+  border-radius: 0.5rem
+  background: white
+  cursor: pointer
+  font-size: 0.875rem
+  transition: all 0.2s
+
+  &:hover
+    background: #f9fafb
+    border-color: #199f3a
+
+  svg
+    width: 16px
+    height: 16px
+
+.header-title
+  text-align: center
+  margin-bottom: 1.5rem
+
+.logo-container
+  display: flex
+  justify-content: center
+  margin-bottom: 1rem
+
+.logo
+  height: 5rem
+  width: 5rem
+  object-fit: contain
+
+.title
+  font-size: 1.875rem
+  font-weight: 800
+  margin-bottom: 0.5rem
+  color: #111827
+
+  @media (min-width: 768px)
+    font-size: 2.25rem
+
+.subtitle
+  color: #6b7280
+  margin-bottom: 0.5rem
+
+.last-updated
+  font-size: 0.875rem
+  color: #9ca3af
+  margin-top: 0.5rem
+
+// Content
+.terms-content
+  margin-bottom: 2rem
+
+.quick-summary
+  margin-bottom: 1.5rem
+  border: 1px solid rgba(25, 159, 58, 0.2)
+  background: rgba(25, 159, 58, 0.05)
+
+.sections-container
+  display: flex
+  flex-direction: column
+  gap: 1.5rem
+
+.card
+  background: white
+  border-radius: 0.75rem
+  border: 1px solid #e5e7eb
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05)
+  overflow: hidden
+
+.card-header
+  padding: 1.5rem
+  border-bottom: 1px solid #e5e7eb
+
+.card-title
+  display: flex
+  align-items: center
+  gap: 0.5rem
+  font-size: 1.125rem
+  font-weight: 600
+  color: #111827
+
+  svg
+    color: #199f3a
+    flex-shrink: 0
+
+  [dir="rtl"] &
+    flex-direction: row-reverse
+
+.card-content
+  padding: 1.5rem
+
+  p
+    margin-bottom: 0.75rem
+    line-height: 1.7
+    color: #374151
+
+    &:last-child
+      margin-bottom: 0
+
+  ul
+    margin: 0.75rem 0
+    padding-right: 1rem
+
+    li
+      margin-bottom: 0.5rem
+
+  [dir="ltr"] &
+    ul
+      padding-left: 1rem
+      padding-right: 0
+
+// Footer
+.footer-section
+  text-align: center
+  margin-top: 2rem
+  padding-top: 2rem
+  border-top: 1px solid #e5e7eb
+
+.copyright
+  font-size: 0.875rem
+  color: #6b7280
+  margin-bottom: 0.5rem
+
+.made-with-love
+  font-size: 0.75rem
+  color: #9ca3af

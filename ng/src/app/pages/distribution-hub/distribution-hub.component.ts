@@ -15,7 +15,10 @@ interface Questionnaire {
 interface Distribution {
   id: string;
   questionnaire_id: string;
-  response_template_ids: string[];
+  automation_template_ids: Array<{
+    template_id: string;
+    channels: Array<'email' | 'whatsapp' | 'sms'>;
+  }>;
   token: string | null;
   is_active: boolean;
 }
@@ -29,9 +32,8 @@ interface SelectedTemplate {
 interface AutomationTemplate {
   id: string;
   name: string;
-  template_type: string;
-  response_type: string;
-  channels: string[];
+  message_type: string;
+  created_at: string;
 }
 
 type LinkMode = 'form' | 'chat' | 'qr' | null;
@@ -113,7 +115,7 @@ export class DistributionHubComponent implements OnInit {
 
       const { data, error } = await this.supabaseService.client
         .from('automation_templates')
-        .select('id, name, template_type, response_type, channels')
+        .select('id, name, message_type, created_at')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
@@ -122,6 +124,7 @@ export class DistributionHubComponent implements OnInit {
       this.availableTemplates = data || [];
     } catch (e: any) {
       console.error('Error loading automation templates:', e);
+      this.toast.show(this.lang.t('errors.loadTemplates'), 'error');
     }
   }
 
@@ -138,6 +141,14 @@ export class DistributionHubComponent implements OnInit {
 
     // Load existing distribution if available
     this.loadExistingDistribution();
+  }
+
+  onTemplatesChange() {
+    // Hide the generated link when templates change
+    this.currentMode = null;
+    this.currentUrl = '';
+    // Force new distribution on next link click
+    this.currentDistribution = null;
   }
 
   async loadExistingDistribution() {
@@ -174,6 +185,20 @@ export class DistributionHubComponent implements OnInit {
       return;
     }
 
+    // Check if the last template has at least one channel selected
+    if (this.selectedTemplates.length > 0) {
+      const lastTemplate = this.selectedTemplates[this.selectedTemplates.length - 1];
+      if (lastTemplate.channels.length === 0) {
+        this.toast.show(
+          this.lang.currentLanguage === 'he'
+            ? 'יש לבחור לפחות ערוץ אחד לתבנית הקודמת לפני הוספת תבנית נוספת'
+            : 'Please select at least one channel for the previous template before adding another',
+          'error'
+        );
+        return;
+      }
+    }
+
     const template = this.availableTemplates.find(t => t.id === this.newTemplateId);
     if (template) {
       this.selectedTemplates.push({
@@ -182,11 +207,13 @@ export class DistributionHubComponent implements OnInit {
         channels: []
       });
       this.newTemplateId = '';
+      this.onTemplatesChange();
     }
   }
 
   removeTemplate(index: number) {
     this.selectedTemplates.splice(index, 1);
+    this.onTemplatesChange();
   }
 
   toggleChannelForTemplate(templateIndex: number, channel: 'email' | 'whatsapp' | 'sms') {
@@ -200,6 +227,7 @@ export class DistributionHubComponent implements OnInit {
       // Add channel
       template.channels.push(channel);
     }
+    this.onTemplatesChange();
   }
 
   isChannelUsedByOtherTemplates(currentTemplateIndex: number, channel: 'email' | 'whatsapp' | 'sms'): boolean {
@@ -224,12 +252,13 @@ export class DistributionHubComponent implements OnInit {
   }
 
   async handleSaveDistribution() {
-    // Validate questionnaire is selected
-    if (!this.selectedQuestionnaire) {
+    // Validate all templates have at least one channel
+    const hasInvalidTemplate = this.selectedTemplates.some(t => t.channels.length === 0);
+    if (hasInvalidTemplate) {
       this.toast.show(
         this.lang.currentLanguage === 'he'
-          ? 'יש לבחור שאלון תחילה'
-          : 'Please select a questionnaire first',
+          ? 'כל תבנית חייבת להכיל לפחות ערוץ אחד'
+          : 'Each template must have at least one channel',
         'error'
       );
       return;
@@ -238,46 +267,34 @@ export class DistributionHubComponent implements OnInit {
     try {
       this.loading = true;
 
-      // Get template IDs from selected templates
-      const templateIds = this.selectedTemplates.map(t => t.id);
+      // Build automation_template_ids array with channel mapping
+      const automationTemplateIds = this.selectedTemplates.map(t => ({
+        template_id: t.id,
+        channels: t.channels
+      }));
 
-      // Check if distribution already exists
+      // Always update existing distribution (created on first link click)
       if (this.currentDistribution) {
-        // Update existing distribution
         const { data, error } = await this.supabaseService.client
           .from('distributions')
           .update({
-            response_template_ids: templateIds,
+            automation_template_ids: automationTemplateIds,
             is_active: true
           })
           .eq('id', this.currentDistribution.id)
-          .select()
+          .select('*')
           .single();
 
         if (error) throw error;
         this.currentDistribution = data as Distribution;
-      } else {
-        // Create new distribution
-        const { data, error } = await this.supabaseService.client
-          .from('distributions')
-          .insert([{
-            questionnaire_id: this.selectedQuestionnaire,
-            response_template_ids: templateIds,
-            is_active: true
-          }])
-          .select()
-          .single();
 
-        if (error) throw error;
-        this.currentDistribution = data as Distribution;
+        this.toast.show(
+          this.lang.currentLanguage === 'he'
+            ? 'ההפצה נשמרה בהצלחה'
+            : 'Distribution saved successfully',
+          'success'
+        );
       }
-
-      this.toast.show(
-        this.lang.currentLanguage === 'he'
-          ? 'ההפצה נשמרה בהצלחה'
-          : 'Distribution saved successfully',
-        'success'
-      );
     } catch (error) {
       console.error('Error saving distribution:', error);
       this.toast.show(
@@ -291,15 +308,55 @@ export class DistributionHubComponent implements OnInit {
     }
   }
 
-  handleBuildLink(type: 'form' | 'chat' | 'qr') {
-    if (!this.currentDistribution || !this.currentDistribution.token) {
+  async handleBuildLink(type: 'form' | 'chat' | 'qr') {
+    if (!this.selectedQuestionnaire) {
       this.toast.show(
         this.lang.currentLanguage === 'he'
-          ? 'יש לשמור את ההפצה תחילה'
-          : 'Please save the distribution first',
+          ? 'יש לבחור שאלון תחילה'
+          : 'Please select a questionnaire first',
         'error'
       );
       return;
+    }
+
+    // If no distribution exists, create one
+    if (!this.currentDistribution || !this.currentDistribution.token) {
+      try {
+        // Build automation_template_ids array with channel mapping
+        const automationTemplateIds = this.selectedTemplates.map(t => ({
+          template_id: t.id,
+          channels: t.channels
+        }));
+
+        // Generate a unique token manually
+        const tokenBytes = new Uint8Array(16);
+        crypto.getRandomValues(tokenBytes);
+        const token = 'd_' + Array.from(tokenBytes).map(b => b.toString(16).padStart(2, '0')).join('');
+
+        // Create new distribution
+        const { data, error } = await this.supabaseService.client
+          .from('distributions')
+          .insert([{
+            questionnaire_id: this.selectedQuestionnaire,
+            automation_template_ids: automationTemplateIds,
+            token: token,
+            is_active: true
+          }])
+          .select('*')
+          .single();
+
+        if (error) throw error;
+        this.currentDistribution = data as Distribution;
+      } catch (error) {
+        console.error('Error creating distribution:', error);
+        this.toast.show(
+          this.lang.currentLanguage === 'he'
+            ? 'שגיאה ביצירת ההפצה'
+            : 'Error creating distribution',
+          'error'
+        );
+        return;
+      }
     }
 
     const base = window.location.origin;

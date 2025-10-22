@@ -80,31 +80,16 @@ export class ContactComponent implements OnInit, OnDestroy {
   }
 
   getSubjectOptions(): SubjectOption[] {
-    // English subjects for USA, UK
-    if (this.userCountry === 'USA' || this.userCountry === 'UK') {
-      return [
-        { value: 'תמיכה טכנית', label: 'תמיכה טכנית' },
-        { value: 'שירות לקוחות', label: 'שירות לקוחות' },
-        { value: 'בעיה בתשלום', label: 'בעיה בתשלום' },
-        { value: 'דיווח על באג', label: 'דיווח על באג' },
-        { value: 'בקשת פיצ\'ר', label: 'בקשת פיצ\'ר' },
-        { value: 'משוב על המוצר', label: 'משוב על המוצר' },
-        { value: 'שאלה על השימוש', label: 'שאלה על השימוש' },
-        { value: 'שאלה כללית', label: 'שאלה כללית' }
-      ];
-    } else {
-      // Hebrew subjects for all other countries
-      return [
-        { value: 'תמיכה טכנית', label: 'תמיכה טכנית' },
-        { value: 'שירות לקוחות', label: 'שירות לקוחות' },
-        { value: 'בעיה בתשלום', label: 'בעיה בתשלום' },
-        { value: 'דיווח על באג', label: 'דיווח על באג' },
-        { value: 'בקשת פיצ\'ר', label: 'בקשת פיצ\'ר' },
-        { value: 'משוב על המוצר', label: 'משוב על המוצר' },
-        { value: 'שאלה על השימוש', label: 'שאלה על השימוש' },
-        { value: 'שאלה כללית', label: 'שאלה כללית' }
-      ];
-    }
+    return [
+      { value: 'technical', label: this.lang.t('contact.subjects.technical') },
+      { value: 'customer', label: this.lang.t('contact.subjects.customer') },
+      { value: 'payment', label: this.lang.t('contact.subjects.payment') },
+      { value: 'bug', label: this.lang.t('contact.subjects.bug') },
+      { value: 'feature', label: this.lang.t('contact.subjects.feature') },
+      { value: 'feedback', label: this.lang.t('contact.subjects.feedback') },
+      { value: 'usage', label: this.lang.t('contact.subjects.usage') },
+      { value: 'general', label: this.lang.t('contact.subjects.general') }
+    ];
   }
 
   onCountryChange() {
@@ -162,25 +147,47 @@ export class ContactComponent implements OnInit, OnDestroy {
     return (this.formData.file.size / 1024 / 1024).toFixed(2);
   }
 
+  validateEmail(email: string): boolean {
+    // Check for consecutive dots anywhere in the email
+    if (/\.\./.test(email)) {
+      return false;
+    }
+    // Check basic email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return false;
+    }
+    // Additional check: ensure domain part doesn't have multiple consecutive dots
+    const parts = email.split('@');
+    if (parts.length !== 2) {
+      return false;
+    }
+    const domain = parts[1];
+    // Check if domain has consecutive dots or starts/ends with a dot
+    if (/\.\./.test(domain) || domain.startsWith('.') || domain.endsWith('.')) {
+      return false;
+    }
+    return true;
+  }
+
   validateForm(): boolean {
     if (!this.formData.subject) {
-      this.toast.show('שגיאה: יש לבחור נושא לפנייה', 'error');
+      this.toast.show(this.lang.t('contact.errors.subject'), 'error');
       return false;
     }
 
     if (!this.formData.name.trim()) {
-      this.toast.show('שגיאה: יש להזין שם מלא', 'error');
+      this.toast.show(this.lang.t('contact.errors.name'), 'error');
       return false;
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(this.formData.email)) {
-      this.toast.show('שגיאה: יש להזין כתובת אימייל תקינה', 'error');
+    if (!this.validateEmail(this.formData.email)) {
+      this.toast.show(this.lang.t('contact.errors.email'), 'error');
       return false;
     }
 
     if (!this.formData.message.trim()) {
-      this.toast.show('שגיאה: יש להזין תיאור לפנייה', 'error');
+      this.toast.show(this.lang.t('contact.errors.message'), 'error');
       return false;
     }
 
@@ -188,7 +195,7 @@ export class ContactComponent implements OnInit, OnDestroy {
     if (this.formData.url && this.formData.url.trim()) {
       const urlPattern = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/i;
       if (!urlPattern.test(this.formData.url.trim())) {
-        this.toast.show('שגיאה: יש להזין כתובת URL תקינה', 'error');
+        this.toast.show(this.lang.t('contact.errors.url'), 'error');
         return false;
       }
     }
@@ -223,7 +230,7 @@ export class ContactComponent implements OnInit, OnDestroy {
 
         if (uploadError) {
           console.error('Error uploading file:', uploadError);
-          this.toast.show('שגיאה בהעלאת הקובץ. אנא נסה שוב.', 'error');
+          this.toast.show(this.lang.t('contact.errors.fileUpload'), 'error');
           this.isSubmitting = false;
           return;
         }
@@ -253,14 +260,14 @@ export class ContactComponent implements OnInit, OnDestroy {
 
       if (functionError) {
         console.error('Error calling submit-contact-form function:', functionError);
-        this.toast.show('שגיאה בשליחת הפנייה. אנא נסה שוב.', 'error');
+        this.toast.show(this.lang.t('contact.errors.submit'), 'error');
         this.isSubmitting = false;
         return;
       }
 
       console.log('Contact form submitted successfully:', functionData);
 
-      this.toast.show('🎉 הפנייה נשלחה בהצלחה! הפנייה שלך נשלחה לצוות המתאים. נחזור אליך בהקדם האפשרי.', 'success');
+      this.toast.show(this.lang.t('contact.success'), 'success');
 
       // Clean up
       if (this.filePreview) {
@@ -285,7 +292,7 @@ export class ContactComponent implements OnInit, OnDestroy {
       }
     } catch (error) {
       console.error('Error submitting contact form:', error);
-      this.toast.show('שגיאה בשליחת הפנייה. אנא נסה שוב.', 'error');
+      this.toast.show(this.lang.t('contact.errors.submit'), 'error');
     } finally {
       this.isSubmitting = false;
     }

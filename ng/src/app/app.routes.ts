@@ -9,6 +9,7 @@ export const routes: Routes = [
   { path: 'login', loadComponent: () => import('./pages/login/login.component').then(m => m.LoginComponent) },
   { path: 'auth', redirectTo: '/login', pathMatch: 'full' },
   { path: 'register', loadComponent: () => import('./pages/register/register.component').then(m => m.RegisterComponent) },
+  { path: 'terms', loadComponent: () => import('./pages/terms/terms.component').then(m => m.TermsComponent) },
   { path: 'onboarding', loadComponent: () => import('./pages/onboarding/onboarding.component').then(m => m.OnboardingComponent) },
   { path: 'auth/update-password', loadComponent: () => import('./pages/update-password/update-password.component').then(m => m.UpdatePasswordComponent) },
   { path: 'q/:token', loadComponent: () => import('./pages/questionnaire-live/questionnaire-live').then(m => m.QuestionnaireLive) },
@@ -29,7 +30,15 @@ export const routes: Routes = [
       { path: 'questionnaires/chat/:id', loadComponent: () => import('./pages/questionnaire-chat/questionnaire-chat').then(m => m.QuestionnaireChat) },
       { path: 'responses', redirectTo: '/leads', pathMatch: 'full' },
       { path: 'leads', loadComponent: () => import('./pages/leads/leads.component').then(m => m.LeadsComponent) },
-      { path: 'automations', loadComponent: () => import('./pages/automations/automations.component').then(m => m.AutomationsComponent) },
+      {
+        path: 'automations',
+        loadComponent: () => import('./pages/automations/automations.component').then(m => m.AutomationsComponent),
+        children: [
+          { path: '', loadComponent: () => import('./pages/automations/create-automation-template/create-automation-template.component').then(m => m.CreateAutomationTemplateComponent) },
+          { path: 'edit/:id', loadComponent: () => import('./pages/automations/create-automation-template/create-automation-template.component').then(m => m.CreateAutomationTemplateComponent) }
+        ]
+      },
+      { path: 'templates', loadComponent: () => import('./pages/automations/templates-list/templates-list.component').then(m => m.TemplatesListComponent) },
       { path: 'settings', loadComponent: () => import('./pages/settings/settings.component').then(m => m.SettingsComponent) },
       { path: 'profile', loadComponent: () => import('./pages/profile/profile.component').then(m => m.ProfileComponent), canDeactivate: [ProfileCompletionGuard] },
       { path: 'partners', loadComponent: () => import('./pages/partners/partners.component').then(m => m.PartnersComponent) },
