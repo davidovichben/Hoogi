@@ -193,8 +193,110 @@
       }
     </div>
 
-    <!-- Quick Links Section -->
+    <!-- Social Network Selection -->
     @if (selectedQuestionnaire) {
+      <div class="social-network-section">
+        <h3 class="section-subtitle">בחר מקור הפצה</h3>
+        <p class="help-text text-right">
+          אנא בחר היכן תשתף את הקישור לשאלון
+        </p>
+
+        <div class="social-network-grid">
+          <!-- Facebook -->
+          <button
+            class="social-network-card facebook-card"
+            [class.selected]="selectedSocialNetwork === 'facebook'"
+            (click)="handleSocialNetworkSelect('facebook')">
+            <span class="social-icon">📘</span>
+            <span class="social-label">Facebook</span>
+            @if (selectedSocialNetwork === 'facebook') {
+              <span class="selected-badge">✓</span>
+            }
+          </button>
+
+          <!-- Instagram -->
+          <button
+            class="social-network-card instagram-card"
+            [class.selected]="selectedSocialNetwork === 'instagram'"
+            (click)="handleSocialNetworkSelect('instagram')">
+            <span class="social-icon">📷</span>
+            <span class="social-label">Instagram</span>
+            @if (selectedSocialNetwork === 'instagram') {
+              <span class="selected-badge">✓</span>
+            }
+          </button>
+
+          <!-- LinkedIn -->
+          <button
+            class="social-network-card linkedin-card"
+            [class.selected]="selectedSocialNetwork === 'linkedin'"
+            (click)="handleSocialNetworkSelect('linkedin')">
+            <span class="social-icon">💼</span>
+            <span class="social-label">LinkedIn</span>
+            @if (selectedSocialNetwork === 'linkedin') {
+              <span class="selected-badge">✓</span>
+            }
+          </button>
+
+          <!-- General -->
+          <button
+            class="social-network-card general-card"
+            [class.selected]="selectedSocialNetwork === 'general'"
+            (click)="handleSocialNetworkSelect('general')">
+            <span class="social-icon">🌐</span>
+            <span class="social-label">כללי</span>
+            @if (selectedSocialNetwork === 'general') {
+              <span class="selected-badge">✓</span>
+            }
+          </button>
+        </div>
+      </div>
+    }
+
+    <!-- Link Label Input (for social networks only) -->
+    @if (selectedSocialNetwork && selectedSocialNetwork !== 'general' && !distributionSaved) {
+      <div class="link-text-section">
+        <h3 class="section-subtitle">פרטי הקישור</h3>
+        <p class="help-text text-right">
+          הזן את פרטי הקישור שיופיעו בתבנית המענה האוטומטי
+        </p>
+
+        <!-- Link Label Input -->
+        <div class="link-input-group">
+          <label class="link-input-label">תווית הקישור</label>
+          <p class="link-input-help">הטקסט שיוצג לפני הקישור (לדוגמה: "למילוי השאלון", "לפרטים נוספים")</p>
+          <input
+            type="text"
+            [(ngModel)]="linkLabel"
+            placeholder="למילוי השאלון"
+            class="link-text-input"
+            name="linkLabel">
+        </div>
+
+        <!-- Link Text Input -->
+        <div class="link-input-group">
+          <label class="link-input-label">טקסט הכפתור</label>
+          <p class="link-input-help">הטקסט שיוצג על כפתור הקישור במייל (לדוגמה: "לחץ כאן", "למידע נוסף")</p>
+          <input
+            type="text"
+            [(ngModel)]="linkText"
+            placeholder="לחץ כאן"
+            class="link-text-input"
+            name="linkText">
+        </div>
+
+        <div class="action-buttons">
+          <button
+            class="btn-save-link-details"
+            (click)="saveLinkDetails()">
+            שמור והמשך
+          </button>
+        </div>
+      </div>
+    }
+
+    <!-- Quick Links Section - shown after social network is selected (and saved for social networks) -->
+    @if (selectedSocialNetwork && (selectedSocialNetwork === 'general' || distributionSaved)) {
       <div class="quick-links-section">
         <h3 class="section-subtitle">{{ lang.t('distribution.createLinks') }}</h3>
 
@@ -228,16 +330,35 @@
 
     <!-- Preview Section -->
     @if (currentMode && currentUrl) {
-      <div #previewSection class="preview-section">
+      <div class="preview-section">
         <div class="preview-header">
           <h3 class="section-subtitle">{{ lang.t('distribution.preview') }}</h3>
+        </div>
+
+        <!-- URL Option -->
+        <div class="preview-option">
+          <h4 class="preview-option-title">קישור URL</h4>
+          <div class="preview-url">
+            <code>{{ currentUrl }}</code>
+          </div>
           <button class="btn-copy" (click)="handleCopyUrl()">
             {{ lang.t('distribution.copyLink') }}
           </button>
         </div>
-        <div class="preview-url">
-          <code>{{ currentUrl }}</code>
-        </div>
+
+        <!-- Embed Button Option (for social networks only) -->
+        @if (selectedSocialNetwork && selectedSocialNetwork !== 'general') {
+          <div class="preview-option">
+            <h4 class="preview-option-title">כפתור להטמעה</h4>
+            <p class="preview-option-help">העתק את הקוד הזה והטמע אותו באתר או בפוסט</p>
+            <div class="embed-code-container">
+              <code class="embed-code">{{ getEmbedCode() }}</code>
+            </div>
+            <button class="btn-copy" (click)="handleCopyEmbed()">
+              העתק קוד הטמעה
+            </button>
+          </div>
+        }
       </div>
     }
   </div>

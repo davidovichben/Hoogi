@@ -21,6 +21,9 @@ interface Distribution {
   }>;
   token: string | null;
   is_active: boolean;
+  social_network?: string | null;
+  link_text?: string | null;
+  link_label?: string | null;
 }
 
 interface SelectedTemplate {
@@ -37,6 +40,7 @@ interface AutomationTemplate {
 }
 
 type LinkMode = 'form' | 'chat' | 'qr' | null;
+type SocialNetwork = 'facebook' | 'instagram' | 'linkedin' | 'general' | null;
 
 @Component({
   selector: 'app-distribution-hub',
@@ -54,6 +58,12 @@ export class DistributionHubComponent implements OnInit {
   currentMode: LinkMode = null;
   currentUrl = '';
   currentDistribution: Distribution | null = null;
+
+  // Social network and link text
+  selectedSocialNetwork: SocialNetwork = null;
+  linkText = '';
+  linkLabel = '';
+  distributionSaved = false;
 
   // Template management
   selectedTemplates: SelectedTemplate[] = [];
@@ -138,6 +148,10 @@ export class DistributionHubComponent implements OnInit {
     this.currentUrl = '';
     this.currentDistribution = null;
     this.selectedTemplates = [];
+    this.selectedSocialNetwork = null;
+    this.linkText = '';
+    this.linkLabel = '';
+    this.distributionSaved = false;
 
     // Load existing distribution if available
     this.loadExistingDistribution();
@@ -279,7 +293,10 @@ export class DistributionHubComponent implements OnInit {
           .from('distributions')
           .update({
             automation_template_ids: automationTemplateIds,
-            is_active: true
+            is_active: true,
+            social_network: this.selectedSocialNetwork,
+            link_text: this.linkText || null,
+            link_label: this.linkLabel || null
           })
           .eq('id', this.currentDistribution.id)
           .select('*')
@@ -308,18 +325,84 @@ export class DistributionHubComponent implements OnInit {
     }
   }
 
-  async handleBuildLink(type: 'form' | 'chat' | 'qr') {
-    if (!this.selectedQuestionnaire) {
+  handleSocialNetworkSelect(network: SocialNetwork) {
+    this.selectedSocialNetwork = network;
+    this.currentMode = null;
+    this.currentUrl = '';
+
+    // If general, mark as saved immediately so link buttons appear
+    if (network === 'general') {
+      this.distributionSaved = true;
+    }
+  }
+
+  async saveLinkDetails() {
+    if (!this.selectedQuestionnaire || !this.selectedSocialNetwork) return;
+
+    try {
+      this.loading = true;
+
+      // Build automation_template_ids array with channel mapping
+      const automationTemplateIds = this.selectedTemplates.map(t => ({
+        template_id: t.id,
+        channels: t.channels
+      }));
+
+      // Generate a unique token manually
+      const tokenBytes = new Uint8Array(16);
+      crypto.getRandomValues(tokenBytes);
+      const token = 'd_' + Array.from(tokenBytes).map(b => b.toString(16).padStart(2, '0')).join('');
+
+      // Create new distribution
+      const { data, error } = await this.supabaseService.client
+        .from('distributions')
+        .insert([{
+          questionnaire_id: this.selectedQuestionnaire,
+          automation_template_ids: automationTemplateIds,
+          token: token,
+          is_active: true,
+          social_network: this.selectedSocialNetwork,
+          link_text: this.linkText || null,
+          link_label: this.linkLabel || null
+        }])
+        .select('*')
+        .single();
+
+      if (error) throw error;
+      this.currentDistribution = data as Distribution;
+      this.distributionSaved = true;
+
       this.toast.show(
         this.lang.currentLanguage === 'he'
-          ? 'יש לבחור שאלון תחילה'
-          : 'Please select a questionnaire first',
+          ? 'פרטי הקישור נשמרו בהצלחה'
+          : 'Link details saved successfully',
+        'success'
+      );
+    } catch (error) {
+      console.error('Error saving link details:', error);
+      this.toast.show(
+        this.lang.currentLanguage === 'he'
+          ? 'שגיאה בשמירת פרטי הקישור'
+          : 'Error saving link details',
+        'error'
+      );
+    } finally {
+      this.loading = false;
+    }
+  }
+
+  async handleBuildLink(type: 'form' | 'chat' | 'qr') {
+    if (!this.selectedQuestionnaire || !this.selectedSocialNetwork) {
+      this.toast.show(
+        this.lang.currentLanguage === 'he'
+          ? 'יש לבחור שאלון ומקור הפצה תחילה'
+          : 'Please select a questionnaire and distribution source first',
         'error'
       );
       return;
     }
 
-    // If no distribution exists, create one
+    // If distribution doesn't exist (for general), create it now
     if (!this.currentDistribution || !this.currentDistribution.token) {
       try {
         // Build automation_template_ids array with channel mapping
@@ -340,7 +423,10 @@ export class DistributionHubComponent implements OnInit {
             questionnaire_id: this.selectedQuestionnaire,
             automation_template_ids: automationTemplateIds,
             token: token,
-            is_active: true
+            is_active: true,
+            social_network: this.selectedSocialNetwork,
+            link_text: this.linkText || null,
+            link_label: this.linkLabel || null
           }])
           .select('*')
           .single();
@@ -362,12 +448,15 @@ export class DistributionHubComponent implements OnInit {
     const base = window.location.origin;
     let url = '';
 
+    // Determine src parameter based on social network
+    const srcParam = this.selectedSocialNetwork;
+
     if (type === 'form') {
-      url = `${base}/q/${this.currentDistribution.token}`;
+      url = `${base}/q/${this.currentDistribution.token}?src=${srcParam}`;
     } else if (type === 'chat') {
-      url = `${base}/q/${this.currentDistribution.token}/chat`;
+      url = `${base}/q/${this.currentDistribution.token}/chat?src=${srcParam}`;
     } else if (type === 'qr') {
-      url = `${base}/q/${this.currentDistribution.token}/qr`;
+      url = `${base}/q/${this.currentDistribution.token}/qr?src=${srcParam}`;
     }
 
     this.currentMode = type;
@@ -377,6 +466,52 @@ export class DistributionHubComponent implements OnInit {
     setTimeout(() => {
       this.scrollToPreview();
     }, 300);
+  }
+
+  getEmbedCode(): string {
+    if (!this.currentUrl) return '';
+
+    const buttonText = this.linkText || 'לחץ כאן';
+    return `<a href="${this.currentUrl}" target="_blank" style="display: inline-block; padding: 12px 24px; background-color: #17a2b8; color: white; text-decoration: none; border-radius: 6px; font-weight: 600;">${buttonText}</a>`;
+  }
+
+  async handleCopyEmbed() {
+    const embedCode = this.getEmbedCode();
+    if (!embedCode) return;
+
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(embedCode);
+        this.toast.show(
+          this.lang.currentLanguage === 'he' ? 'קוד ההטמעה הועתק ללוח' : 'Embed code copied to clipboard',
+          'success'
+        );
+      } else {
+        const textArea = document.createElement('textarea');
+        textArea.value = embedCode;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.select();
+        const success = document.execCommand('copy');
+        document.body.removeChild(textArea);
+
+        if (success) {
+          this.toast.show(
+            this.lang.currentLanguage === 'he' ? 'קוד ההטמעה הועתק ללוח' : 'Embed code copied to clipboard',
+            'success'
+          );
+        } else {
+          throw new Error('Copy command failed');
+        }
+      }
+    } catch (error) {
+      console.error('Failed to copy:', error);
+      this.toast.show(
+        this.lang.currentLanguage === 'he' ? 'שגיאה בהעתקת קוד ההטמעה' : 'Failed to copy embed code',
+        'error'
+      );
+    }
   }
 
   private scrollToPreview() {

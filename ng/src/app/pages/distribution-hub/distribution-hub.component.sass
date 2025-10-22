@@ -585,6 +585,246 @@
   &:hover:not(:disabled)
     background: #0d9488
 
+// Social Network Section
+.social-network-section
+  margin: 1rem 0 0 0
+  padding: 1rem
+  background: white
+  border: 1px solid #e5e7eb
+  border-radius: 0
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1)
+  border-left: none
+  border-right: none
+
+  @media (min-width: 768px)
+    margin-top: 1.5rem
+    padding: 1.5rem
+    background: rgba(243, 244, 246, 0.5)
+    box-shadow: none
+    border-radius: 0.75rem
+    border: 1px solid #e5e7eb
+
+.social-network-grid
+  display: grid
+  grid-template-columns: 1fr
+  gap: 0.75rem
+  margin-top: 1rem
+
+  @media (min-width: 640px)
+    grid-template-columns: repeat(2, 1fr)
+    gap: 1rem
+
+  @media (min-width: 768px)
+    grid-template-columns: repeat(4, 1fr)
+
+.social-network-card
+  display: flex
+  flex-direction: column
+  align-items: center
+  justify-content: center
+  padding: 1.25rem 1rem
+  border-radius: 0.5rem
+  text-align: center
+  cursor: pointer
+  transition: all 0.2s
+  border: 2px solid transparent
+  background: white
+  gap: 0.5rem
+  min-height: 100px
+  position: relative
+
+  @media (min-width: 640px)
+    padding: 1.5rem 1rem
+    min-height: 120px
+
+  &:hover
+    transform: translateY(-2px)
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1)
+
+  &.facebook-card
+    border-color: #1877f2
+    background: rgba(24, 119, 242, 0.05)
+
+    &:hover
+      background: rgba(24, 119, 242, 0.1)
+      box-shadow: 0 4px 12px rgba(24, 119, 242, 0.2)
+
+    &.selected
+      background: rgba(24, 119, 242, 0.2)
+      border-color: #1877f2
+      box-shadow: 0 4px 12px rgba(24, 119, 242, 0.3)
+
+  &.instagram-card
+    border-color: #e1306c
+    background: rgba(225, 48, 108, 0.05)
+
+    &:hover
+      background: rgba(225, 48, 108, 0.1)
+      box-shadow: 0 4px 12px rgba(225, 48, 108, 0.2)
+
+    &.selected
+      background: rgba(225, 48, 108, 0.2)
+      border-color: #e1306c
+      box-shadow: 0 4px 12px rgba(225, 48, 108, 0.3)
+
+  &.linkedin-card
+    border-color: #0077b5
+    background: rgba(0, 119, 181, 0.05)
+
+    &:hover
+      background: rgba(0, 119, 181, 0.1)
+      box-shadow: 0 4px 12px rgba(0, 119, 181, 0.2)
+
+    &.selected
+      background: rgba(0, 119, 181, 0.2)
+      border-color: #0077b5
+      box-shadow: 0 4px 12px rgba(0, 119, 181, 0.3)
+
+  &.general-card
+    border-color: #6b7280
+    background: rgba(107, 114, 128, 0.05)
+
+    &:hover
+      background: rgba(107, 114, 128, 0.1)
+      box-shadow: 0 4px 12px rgba(107, 114, 128, 0.2)
+
+    &.selected
+      background: rgba(107, 114, 128, 0.2)
+      border-color: #6b7280
+      box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3)
+
+.selected-badge
+  position: absolute
+  top: 0.5rem
+  right: 0.5rem
+  background: #22c55e
+  color: white
+  border-radius: 50%
+  width: 1.5rem
+  height: 1.5rem
+  display: flex
+  align-items: center
+  justify-content: center
+  font-size: 0.875rem
+  font-weight: bold
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1)
+
+.social-icon
+  font-size: 2rem
+  line-height: 1
+
+  @media (min-width: 640px)
+    font-size: 2.5rem
+
+.social-label
+  font-size: 0.875rem
+  font-weight: 600
+  color: #1f2937
+
+  @media (min-width: 640px)
+    font-size: 1rem
+
+// Link Text Section
+.link-text-section
+  margin: 1rem 0 0 0
+  padding: 1rem
+  background: white
+  border: 1px solid #e5e7eb
+  border-radius: 0
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1)
+  border-left: none
+  border-right: none
+
+  @media (min-width: 768px)
+    margin-top: 1.5rem
+    padding: 1.5rem
+    background: rgba(243, 244, 246, 0.5)
+    box-shadow: none
+    border-radius: 0.75rem
+    border: 1px solid #e5e7eb
+
+.link-input-group
+  margin-top: 1.5rem
+
+  &:first-child
+    margin-top: 1rem
+
+.link-input-label
+  display: block
+  font-size: 0.875rem
+  font-weight: 600
+  color: #1f2937
+  margin-bottom: 0.25rem
+
+  @media (min-width: 640px)
+    font-size: 1rem
+
+.link-input-help
+  font-size: 0.75rem
+  color: #6b7280
+  margin-bottom: 0.5rem
+  line-height: 1.4
+
+  @media (min-width: 640px)
+    font-size: 0.8125rem
+
+.link-text-input
+  width: 100%
+  padding: 0.875rem 1rem
+  border: 1px solid #e5e7eb
+  border-radius: 0.5rem
+  font-size: 0.875rem
+  background: white
+  color: #1f2937
+  min-height: 44px
+
+  @media (min-width: 640px)
+    font-size: 1rem
+    padding: 1rem
+
+  &:focus
+    outline: none
+    border-color: #17a2b8
+    box-shadow: 0 0 0 3px rgba(23, 162, 184, 0.1)
+
+  &::placeholder
+    color: #9ca3af
+
+.action-buttons
+  display: flex
+  justify-content: center
+  margin-top: 1.5rem
+
+.btn-save-link-details
+  display: flex
+  align-items: center
+  justify-content: center
+  gap: 0.5rem
+  padding: 0.875rem 2rem
+  background: #17a2b8
+  border: none
+  border-radius: 0.5rem
+  color: white
+  font-size: 1rem
+  font-weight: 600
+  cursor: pointer
+  transition: all 0.2s
+  min-height: 48px
+  width: 100%
+  max-width: 300px
+
+  @media (min-width: 640px)
+    width: auto
+
+  &:hover
+    background: #138496
+    transform: translateY(-1px)
+    box-shadow: 0 4px 12px rgba(23, 162, 184, 0.3)
+
+  &:disabled
+    opacity: 0.6
+    cursor: not-allowed
+
 // Preview Section
 .preview-section
   margin: 1rem 0 0 0
@@ -608,13 +848,44 @@
   display: flex
   flex-direction: column
   gap: 0.75rem
-  margin-bottom: 1rem
+  margin-bottom: 1.5rem
 
   @media (min-width: 640px)
     flex-direction: row
     justify-content: space-between
     align-items: center
     gap: 0.5rem
+
+.preview-option
+  background: white
+  border: 1px solid #e5e7eb
+  border-radius: 0.5rem
+  padding: 1rem
+  margin-bottom: 1.5rem
+
+  @media (min-width: 768px)
+    padding: 1.5rem
+
+  &:last-child
+    margin-bottom: 0
+
+.preview-option-title
+  font-size: 1rem
+  font-weight: 600
+  color: #1f2937
+  margin-bottom: 0.75rem
+
+  @media (min-width: 640px)
+    font-size: 1.125rem
+
+.preview-option-help
+  font-size: 0.75rem
+  color: #6b7280
+  margin-bottom: 0.75rem
+  line-height: 1.4
+
+  @media (min-width: 640px)
+    font-size: 0.8125rem
 
 .btn-copy
   padding: 0.625rem 1rem
@@ -627,6 +898,7 @@
   transition: background 0.2s
   min-height: 44px
   width: 100%
+  margin-top: 0.75rem
 
   @media (min-width: 640px)
     width: auto
@@ -639,10 +911,10 @@
   background: #f9fafb
   border: 1px solid #e5e7eb
   border-radius: 0.375rem
+  margin-bottom: 0.75rem
 
   @media (min-width: 768px)
     padding: 1rem
-    background: white
 
   code
     font-family: monospace
@@ -650,6 +922,31 @@
     color: #1f2937
     word-break: break-all
     line-height: 1.5
+    display: block
 
     @media (min-width: 640px)
       font-size: 0.875rem
+
+.embed-code-container
+  background: #f9fafb
+  border: 1px solid #e5e7eb
+  border-radius: 0.375rem
+  padding: 0.875rem
+  margin-bottom: 0.75rem
+  max-height: 200px
+  overflow-y: auto
+
+  @media (min-width: 768px)
+    padding: 1rem
+
+.embed-code
+  font-family: monospace
+  font-size: 0.6875rem
+  color: #1f2937
+  word-break: break-all
+  line-height: 1.6
+  display: block
+  white-space: pre-wrap
+
+  @media (min-width: 640px)
+    font-size: 0.75rem

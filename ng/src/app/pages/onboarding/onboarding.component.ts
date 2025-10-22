@@ -28,8 +28,8 @@ export class OnboardingComponent implements OnInit {
       {
         number: 1,
         icon: 'user',
-        title: this.lang.t('onboarding.step1.title'),
-        description: this.lang.t('onboarding.step1.description'),
+        title: this.lang.t('onboardingPage.step1.title'),
+        description: this.lang.t('onboardingPage.step1.description'),
         bgColor: 'from-blue-50 to-cyan-50',
         borderColor: 'border-blue-200',
         action: () => this.router.navigate(['/profile'])
@@ -37,8 +37,8 @@ export class OnboardingComponent implements OnInit {
       {
         number: 2,
         icon: 'file-text',
-        title: this.lang.t('onboarding.step2.title'),
-        description: this.lang.t('onboarding.step2.description'),
+        title: this.lang.t('onboardingPage.step2.title'),
+        description: this.lang.t('onboardingPage.step2.description'),
         bgColor: 'from-purple-50 to-pink-50',
         borderColor: 'border-purple-200',
         action: () => this.router.navigate(['/dashboard'])
@@ -46,8 +46,8 @@ export class OnboardingComponent implements OnInit {
       {
         number: 3,
         icon: 'message-square',
-        title: this.lang.t('onboarding.step3.title'),
-        description: this.lang.t('onboarding.step3.description'),
+        title: this.lang.t('onboardingPage.step3.title'),
+        description: this.lang.t('onboardingPage.step3.description'),
         bgColor: 'from-orange-50 to-red-50',
         borderColor: 'border-orange-200',
         action: () => this.router.navigate(['/questionnaires/new'])
@@ -55,8 +55,8 @@ export class OnboardingComponent implements OnInit {
       {
         number: 4,
         icon: 'share',
-        title: this.lang.t('onboarding.step4.title'),
-        description: this.lang.t('onboarding.step4.description'),
+        title: this.lang.t('onboardingPage.step4.title'),
+        description: this.lang.t('onboardingPage.step4.description'),
         bgColor: 'from-green-50 to-teal-50',
         borderColor: 'border-green-200',
         action: () => this.router.navigate(['/distribution-hub'])

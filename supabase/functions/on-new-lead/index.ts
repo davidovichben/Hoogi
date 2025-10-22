@@ -92,7 +92,7 @@ async function handleAutomation(lead: LeadRecord) {
       console.log("🔍 [AUTOMATION] Looking up distribution by token:", lead.distribution_token);
       const { data, error } = await supabase
         .from('distributions')
-        .select('id, automation_template_ids')
+        .select('id, automation_template_ids, link_text')
         .eq('token', lead.distribution_token)
         .eq('is_active', true)
         .single();
@@ -104,7 +104,7 @@ async function handleAutomation(lead: LeadRecord) {
       console.log("🔍 [AUTOMATION] Looking up distribution by questionnaire_id:", lead.questionnaire_id);
       const { data, error } = await supabase
         .from('distributions')
-        .select('id, automation_template_ids')
+        .select('id, automation_template_ids, link_text')
         .eq('questionnaire_id', lead.questionnaire_id)
         .eq('is_active', true)
         .single();
@@ -122,6 +122,7 @@ async function handleAutomation(lead: LeadRecord) {
 
     console.log("🤖 [AUTOMATION] Starting automation for lead:", lead.id);
     console.log("📋 [AUTOMATION] Distribution found with templates:", distribution.automation_template_ids);
+    console.log("🔗 [AUTOMATION] Link text from distribution:", distribution.link_text || 'לחץ כאן (default)');
 
     // 3. Load questions for this questionnaire
     const { data: questions, error: questionsError } = await supabase
@@ -184,7 +185,13 @@ async function handleAutomation(lead: LeadRecord) {
       });
       console.log("👤 [AUTOMATION] Owner profile data:", {
         logo_url: ownerProfile.logo_url,
-        image_url: ownerProfile.image_url
+        image_url: ownerProfile.image_url,
+        use_profile_logo: template.use_profile_logo,
+        use_profile_image: template.use_profile_image
+      });
+      console.log("🖼️ [AUTOMATION] Template media data:", {
+        link_url: template.link_url,
+        image_url: template.image_url
       });
 
       // Only handle personal type templates for now
@@ -201,6 +208,18 @@ async function handleAutomation(lead: LeadRecord) {
           linkUrl = 'https://' + linkUrl;
         }
 
+        // Log what we're passing to buildEmailHTML
+        console.log("📧 [EMAIL BUILD] Building email with parameters:", {
+          use_profile_logo: template.use_profile_logo,
+          logo_url_raw: ownerProfile.logo_url,
+          logo_url_to_use: template.use_profile_logo ? ownerProfile.logo_url : null,
+          use_profile_image: template.use_profile_image,
+          image_url_raw: ownerProfile.image_url,
+          image_url_to_use: template.use_profile_image ? ownerProfile.image_url : null,
+          link_url: linkUrl,
+          attachment_image_url: template.image_url
+        });
+
         // Build HTML email with template elements
         const htmlEmail = buildEmailHTML(
           messageBody,
@@ -208,7 +227,8 @@ async function handleAutomation(lead: LeadRecord) {
           template.use_profile_image ? ownerProfile.image_url : null,
           linkUrl,
           template.image_url,
-          ownerProfile.company || 'Our Team'
+          ownerProfile.company || 'Our Team',
+          distribution.link_text || 'לחץ כאן'
         );
 
         // Send on each configured channel
@@ -310,7 +330,8 @@ async function handleAutomation(lead: LeadRecord) {
               template.use_profile_image ? ownerProfile.image_url : null,
               linkUrl,
               template.image_url,
-              ownerProfile.company || 'Our Team'
+              ownerProfile.company || 'Our Team',
+              distribution.link_text || 'לחץ כאן'
             );
 
             console.log("📤 [AUTOMATION] Sending AI message (fallback) on", channels.length, "channel(s)");
@@ -346,7 +367,8 @@ async function handleAutomation(lead: LeadRecord) {
               template.use_profile_image ? ownerProfile.image_url : null,
               linkUrl,
               template.image_url,
-              ownerProfile.company || 'Our Team'
+              ownerProfile.company || 'Our Team',
+              distribution.link_text || 'לחץ כאן'
             );
 
             console.log("📤 [AUTOMATION] Sending AI message on", channels.length, "channel(s)");
@@ -418,23 +440,38 @@ function replaceVariables(
     .replace(/\{\{phone\}\}/g, contact.phone || '');
 }
 
-function getPublicUrl(url: string | null): string | null {
-  if (!url) return null;
+function getPublicUrl(url: string | null, urlType: string = 'unknown'): string | null {
+  console.log(`🔗 [URL CONVERSION] Processing ${urlType}:`, { input: url });
+
+  if (!url) {
+    console.log(`🔗 [URL CONVERSION] ${urlType}: No URL provided, returning null`);
+    return null;
+  }
 
   // If already a full URL, return as is
   if (url.startsWith('http://') || url.startsWith('https://')) {
+    console.log(`🔗 [URL CONVERSION] ${urlType}: Already a full URL, returning as-is`);
     return url;
   }
 
   // If it's a Supabase storage path, convert to public URL
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
-  if (SUPABASE_URL && url) {
-    // Remove leading slash if present
-    const cleanPath = url.startsWith('/') ? url.substring(1) : url;
-    return `${SUPABASE_URL}/storage/v1/object/public/${cleanPath}`;
+  if (!SUPABASE_URL) {
+    console.error(`❌ [URL CONVERSION] ${urlType}: SUPABASE_URL env var not set!`);
+    return url;
   }
 
-  return url;
+  // Remove leading slash if present
+  const cleanPath = url.startsWith('/') ? url.substring(1) : url;
+  const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/${cleanPath}`;
+
+  console.log(`🔗 [URL CONVERSION] ${urlType}: Converted to public URL:`, {
+    original: url,
+    cleaned: cleanPath,
+    result: publicUrl
+  });
+
+  return publicUrl;
 }
 
 function buildEmailHTML(
@@ -443,17 +480,18 @@ function buildEmailHTML(
   profileImageUrl: string | null,
   linkUrl: string | null,
   attachmentImageUrl: string | null,
-  businessName: string
+  businessName: string,
+  linkText: string = 'לחץ כאן'
 ): string {
   // Convert line breaks to <br> tags
   const formattedBody = messageBody.replace(/\n/g, '<br>');
 
   // Convert all image URLs to public URLs
-  const publicLogoUrl = getPublicUrl(logoUrl);
-  const publicProfileImageUrl = getPublicUrl(profileImageUrl);
-  const publicAttachmentImageUrl = getPublicUrl(attachmentImageUrl);
+  const publicLogoUrl = getPublicUrl(logoUrl, 'logo');
+  const publicProfileImageUrl = getPublicUrl(profileImageUrl, 'profile_image');
+  const publicAttachmentImageUrl = getPublicUrl(attachmentImageUrl, 'attachment_image');
 
-  console.log("🎨 [EMAIL] Building HTML with:", {
+  console.log("🎨 [EMAIL] Building HTML with final URLs:", {
     logoUrl: publicLogoUrl,
     profileImageUrl: publicProfileImageUrl,
     linkUrl,
@@ -515,7 +553,7 @@ function buildEmailHTML(
               <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                 <tr>
                   <td align="center" style="background-color: #199f3a; border-radius: 8px;">
-                    <a href="${linkUrl}" target="_blank" rel="noopener noreferrer" style="display: inline-block; color: #ffffff; padding: 15px 40px; text-decoration: none; font-weight: 600; font-size: 16px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">לחץ כאן</a>
+                    <a href="${linkUrl}" target="_blank" rel="noopener noreferrer" style="display: inline-block; color: #ffffff; padding: 15px 40px; text-decoration: none; font-weight: 600; font-size: 16px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">${linkText}</a>
                   </td>
                 </tr>
               </table>
