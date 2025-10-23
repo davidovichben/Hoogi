@@ -97,6 +97,12 @@
   padding: 1.5rem
   border-bottom: 1px solid #e5e7eb
 
+  [dir="rtl"] &
+    text-align: right
+
+  [dir="ltr"] &
+    text-align: left
+
 .card-title
   display: flex
   align-items: center
@@ -104,12 +110,18 @@
   font-size: 1.125rem
   font-weight: 600
   color: #111827
+  width: 100%
+  margin: 0
 
   svg
     color: #199f3a
     flex-shrink: 0
 
+  [dir="ltr"] &
+    justify-content: flex-start
+
   [dir="rtl"] &
+    justify-content: flex-end
     flex-direction: row-reverse
 
 .card-content

@@ -31,6 +31,7 @@ export class QuestionnairesComponent implements OnInit {
   error: string | null = null;
   respCount: Record<string, number> = {};
   leadCount: Record<string, number> = {};
+  newLeadCount: Record<string, number> = {}; // Leads from last 3 days
   openDistributionId: string | null = null;
   showQRCodeId: string | null = null;
   qrCodeDataUrl: string = '';
@@ -95,6 +96,11 @@ export class QuestionnairesComponent implements OnInit {
 
     const questionnaireIds = this.questionnaires.map(q => q.id);
 
+    // Calculate date for "new" leads (last 3 days)
+    const threeDaysAgo = new Date();
+    threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+    const threeDaysAgoISO = threeDaysAgo.toISOString();
+
     // Fetch all responses and leads in parallel for all questionnaires at once
     const [responsesResult, leadsResult] = await Promise.all([
       this.supabaseService.client
@@ -103,7 +109,7 @@ export class QuestionnairesComponent implements OnInit {
         .in('questionnaire_id', questionnaireIds),
       this.supabaseService.client
         .from('leads')
-        .select('questionnaire_id')
+        .select('questionnaire_id, created_at')
         .in('questionnaire_id', questionnaireIds)
     ]);
 
@@ -113,10 +119,16 @@ export class QuestionnairesComponent implements OnInit {
       this.respCount[q.id] = responseData.filter(r => r.questionnaire_id === q.id).length;
     });
 
-    // Count leads per questionnaire
+    // Count leads per questionnaire (total and new)
     const leadData = leadsResult.data || [];
     this.questionnaires.forEach(q => {
-      this.leadCount[q.id] = leadData.filter(l => l.questionnaire_id === q.id).length;
+      const questionnaireLeads = leadData.filter(l => l.questionnaire_id === q.id);
+      this.leadCount[q.id] = questionnaireLeads.length;
+
+      // Count new leads (last 3 days)
+      this.newLeadCount[q.id] = questionnaireLeads.filter(l =>
+        new Date(l.created_at) >= threeDaysAgo
+      ).length;
     });
   }
 
@@ -745,11 +757,11 @@ export class QuestionnairesComponent implements OnInit {
   }
 
   handleViewStatistics(questionnaireId: string) {
-    // Navigate to leads page with response analysis tab active
+    // Navigate to leads page with leads tab active and filtered by questionnaire
     this.router.navigate(['/leads'], {
       queryParams: {
         questionnaireId: questionnaireId,
-        tab: 'answers-analytics'
+        tab: 'leads'
       }
     });
   }

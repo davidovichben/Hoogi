@@ -109,7 +109,7 @@
               <!-- Questionnaire filter -->
               <select
                 [(ngModel)]="filterQuestionnaire"
-                (ngModelChange)="applyFilters()"
+                (ngModelChange)="onQuestionnaireFilterChange()"
                 class="filter-select">
                 <option value="">{{ lang.t('leads.allQuestionnaires') }}</option>
                 @for (q of getUniqueQuestionnaires(); track q) {

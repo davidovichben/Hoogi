@@ -18,6 +18,14 @@ export class TermsComponent {
     private router: Router
   ) {}
 
+  get dir(): string {
+    return this.lang.currentLanguage === 'he' ? 'rtl' : 'ltr';
+  }
+
+  get isRtl(): boolean {
+    return this.lang.currentLanguage === 'he';
+  }
+
   goBack() {
     this.router.navigate(['/register']);
   }

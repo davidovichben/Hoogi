@@ -51,6 +51,7 @@ export class LeadsComponent implements OnInit {
   filterChannel = '';
   filterStatus = '';
   filterQuestionnaire = '';
+  filterQuestionnaireId = ''; // Filter by questionnaire ID from query params
   filterPartner = '';
 
   constructor(
@@ -71,6 +72,9 @@ export class LeadsComponent implements OnInit {
       }
       if (params['status']) {
         this.filterStatus = params['status'];
+      }
+      if (params['questionnaireId']) {
+        this.filterQuestionnaireId = params['questionnaireId'];
       }
       if (params['tab']) {
         // Set active tab from query parameter
@@ -109,6 +113,12 @@ export class LeadsComponent implements OnInit {
            this.filteredLeads.every(lead => this.selectedLeadIds.has(lead.id));
   }
 
+  onQuestionnaireFilterChange() {
+    // When user manually changes the questionnaire dropdown, clear the ID filter
+    this.filterQuestionnaireId = '';
+    this.applyFilters();
+  }
+
   applyFilters() {
     this.filteredLeads = this.leads.filter(lead => {
       // Text search across client name, partner name, and questionnaire name
@@ -129,13 +139,14 @@ export class LeadsComponent implements OnInit {
       const matchesStatus = !this.filterStatus ||
         this.filterStatus.split(',').map(s => s.trim()).includes(lead.status);
 
-      // Questionnaire filtering
+      // Questionnaire filtering (by title from dropdown or by ID from query params)
       const matchesQuestionnaire = !this.filterQuestionnaire || lead.questionnaire_title === this.filterQuestionnaire;
+      const matchesQuestionnaireId = !this.filterQuestionnaireId || lead.questionnaire_id === this.filterQuestionnaireId;
 
       // Partner filtering
       const matchesPartner = !this.filterPartner || lead.partner_id === this.filterPartner;
 
-      return matchesText && matchesDateFrom && matchesDateTo && matchesChannel && matchesStatus && matchesQuestionnaire && matchesPartner;
+      return matchesText && matchesDateFrom && matchesDateTo && matchesChannel && matchesStatus && matchesQuestionnaire && matchesQuestionnaireId && matchesPartner;
     });
   }
 
@@ -146,6 +157,7 @@ export class LeadsComponent implements OnInit {
     this.filterChannel = '';
     this.filterStatus = '';
     this.filterQuestionnaire = '';
+    this.filterQuestionnaireId = '';
     this.filterPartner = '';
     this.applyFilters();
   }
@@ -276,6 +288,16 @@ export class LeadsComponent implements OnInit {
 
       // Initialize filtered leads
       this.applyFilters();
+
+      // If filterQuestionnaireId is set from query params, populate the dropdown
+      if (this.filterQuestionnaireId) {
+        const questionnaire = this.leads.find(l => l.questionnaire_id === this.filterQuestionnaireId);
+        if (questionnaire && questionnaire.questionnaire_title) {
+          this.filterQuestionnaire = questionnaire.questionnaire_title;
+          // Re-apply filters to ensure the dropdown filter is also applied
+          this.applyFilters();
+        }
+      }
     } catch (error) {
       console.error('Error loading leads:', error);
     } finally {
