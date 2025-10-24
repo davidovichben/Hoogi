@@ -6,14 +6,20 @@ import { Injectable } from '@angular/core';
 export class ReferralTrackingService {
   /**
    * Detects the channel/source from which the user arrived at the questionnaire
-   * Checks URL parameters (utm_source) and document.referrer
+   * Checks URL parameters (src, utm_source) and document.referrer
    * Returns a channel name like 'facebook', 'instagram', 'linkedin', 'google', 'direct', etc.
    */
   detectChannel(): string {
-    // First, check for utm_source parameter
     const urlParams = new URLSearchParams(window.location.search);
-    const utmSource = urlParams.get('utm_source');
 
+    // First, check for 'src' parameter (e.g., ?src=facebook)
+    const srcParam = urlParams.get('src');
+    if (srcParam) {
+      return this.normalizeSource(srcParam);
+    }
+
+    // Then check for utm_source parameter
+    const utmSource = urlParams.get('utm_source');
     if (utmSource) {
       return this.normalizeSource(utmSource);
     }

@@ -274,6 +274,91 @@ export class LanguageService {
     'distribution.saveDistribution': { en: 'Save Distribution', he: 'שמור הפצה' },
     'distribution.saving': { en: 'Saving...', he: 'שומר...' },
 
+    // Distribution Hub - Part 1
+    'distribution.part1Title': { en: 'Part 1: Choose Questionnaire', he: 'חלק 1: בחרי שאלון' },
+
+    // Distribution Hub - Part 2: Auto Response
+    'distribution.part2Title': { en: 'Part 2: Auto Response', he: 'חלק 2: מענה אוטומטי' },
+    'distribution.autoResponse': { en: 'Auto Response', he: 'מענה אוטומטי' },
+    'distribution.createNewTemplate': { en: 'Create New Template', he: 'צור תבנית חדשה' },
+    'distribution.templatesInfo': { en: 'You can select up to 3 templates. Each template can be assigned to one or more channels (Email, WhatsApp, SMS). A channel selected in one template will not appear in other templates.', he: 'ניתן לבחור עד 3 תבניות. כל תבנית ניתן לשייך לערוץ אחד או יותר (מייל, וואטסאפ, SMS). ערוץ שסומן בתבנית אחת לא יופיע בתבניות אחרות.' },
+    'distribution.templatesSelected': { en: 'Templates Selected', he: 'תבניות שנבחרו' },
+    'distribution.addTemplateLabel': { en: 'Add Template', he: 'הוסף תבנית' },
+    'distribution.remove': { en: 'Remove', he: 'הסר' },
+    'distribution.sendingChannels': { en: 'Sending Channels', he: 'ערוצי שליחה' },
+    'distribution.selectTemplateFirst': { en: 'You must choose a questionnaire first', he: 'יש לבחור שאלון תחילה' },
+    'distribution.chooseResponseTemplate': { en: 'Choose response template', he: 'בחר תבנית מענה' },
+    'distribution.alreadySelected': { en: 'already selected', he: 'כבר נבחרה' },
+    'distribution.selectQuestionnaireToActivate': { en: 'You must choose a questionnaire to activate auto response.', he: 'יש לבחור שאלון כדי להפעיל מענה אוטומטי.' },
+    'distribution.allChannelsInUse': { en: '⚠️ All channels in use. Delete a channel or template to add another template.', he: '⚠️ כל הערוצים בשימוש. מחק ערוץ או תבנית כדי להוסיף תבנית נוספת.' },
+    'distribution.autoResponseActive': { en: '✓ Auto response activated for', he: '✓ מענה אוטומטי מופעל עבור' },
+    'distribution.templates': { en: 'templates', he: 'תבניות' },
+    'distribution.maxTemplatesReached': { en: 'You can select up to 3 templates only', he: 'ניתן לבחור עד 3 תבניות בלבד' },
+    'distribution.selectChannelForPrevious': { en: 'Please select at least one channel for the previous template before adding another', he: 'יש לבחור לפחות ערוץ אחד לתבנית הקודמת לפני הוספת תבנית נוספת' },
+
+    // Distribution Hub - Part 3: Create Links
+    'distribution.part3Title': { en: 'Part 3: Create Links', he: 'חלק 3: יצירת קישורים' },
+    'distribution.createLink': { en: 'Create Link', he: 'צור קישור' },
+    'distribution.form': { en: 'Form', he: 'טופס' },
+    'distribution.chat': { en: 'Chat', he: 'צ\'אט' },
+    'distribution.qr': { en: 'QR Code', he: 'קוד' },
+
+    // Distribution Hub - Part 4: Social Networks
+    'distribution.part4Title': { en: 'Part 4: Social Networks', he: 'חלק 4: רשתות חברתיות' },
+    'distribution.socialNetworksTitle': { en: 'Smart Social Network Buttons', he: 'כפתורי רשתות חברתיות חכמים' },
+    'distribution.socialNetworksSubtitle': { en: 'Click the relevant button - each link includes tracking by network', he: 'לחץ על הכפתור הרלוונטי לך - כל קישור כולל מעקב לפי רשת' },
+    'distribution.mainNetworks': { en: 'Main Networks (Best Converting)', he: 'רשתות עיקריות (הכי ממירות)' },
+    'distribution.additionalNetworks': { en: 'Additional Networks', he: 'רשתות נוספות' },
+    'distribution.howItWorks': { en: '💡 How does it work?', he: '💡 איך זה עובד?' },
+    'distribution.instruction1': { en: '• Each button creates a unique link with tracking parameter', he: '• כל כפתור יוצר קישור ייחודי עם פרמטר מעקב' },
+    'distribution.instruction2': { en: '• The link is automatically copied to clipboard', he: '• הקישור מועתק אוטומטית ללוח' },
+    'distribution.instruction3': { en: '• The system tracks how many people came from each network', he: '• המערכת עוקבת אחרי כמה אנשים הגיעו מכל רשת' },
+    'distribution.instruction4': { en: '• The data is saved in Supabase with clear source', he: '• הנתונים נשמרים ב-Supabase עם מקור ברור' },
+
+    // Social Networks
+    'distribution.network.whatsapp': { en: 'WhatsApp', he: 'WhatsApp' },
+    'distribution.network.facebook': { en: 'Facebook', he: 'Facebook' },
+    'distribution.network.instagram': { en: 'Instagram', he: 'Instagram' },
+    'distribution.network.linkedin': { en: 'LinkedIn', he: 'LinkedIn' },
+    'distribution.network.youtube': { en: 'YouTube', he: 'YouTube' },
+    'distribution.network.telegram': { en: 'Telegram', he: 'Telegram' },
+    'distribution.network.email': { en: 'Email', he: 'Email' },
+    'distribution.network.sms': { en: 'SMS', he: 'SMS' },
+    'distribution.network.website': { en: 'Website', he: 'Website' },
+
+    // Network Descriptions
+    'distribution.desc.whatsapp': { en: 'Best converting in Israel', he: 'הכי ממיר בישראל' },
+    'distribution.desc.facebook': { en: 'Always works well', he: 'תמיד עובד טוב' },
+    'distribution.desc.instagram': { en: 'Popular among businesses', he: 'פופולרי אצל עסקים' },
+    'distribution.desc.linkedin': { en: 'Important for businesses', he: 'חשוב לעסקים' },
+    'distribution.desc.youtube': { en: 'If you have tutorial video', he: 'אם יש סרטון הדרכה' },
+    'distribution.desc.telegram': { en: 'Great for communities', he: 'מצוין לקהילות' },
+    'distribution.desc.email': { en: 'Always works', he: 'תמיד עובד' },
+    'distribution.desc.sms': { en: 'Direct and fast', he: 'ישיר ומהיר' },
+    'distribution.desc.website': { en: 'For main website', he: 'לאתר הראשי' },
+
+    // Social Network Messages
+    'distribution.linkCopiedToClipboard': { en: 'link copied to clipboard!', he: 'הועתק ללוח!' },
+    'distribution.linkCopiedAddToVideo': { en: 'link copied to clipboard - add to video description', he: 'הועתק ללוח - הוסף לתיאור הסרטון' },
+    'distribution.linkCreatedSuccessfully': { en: 'link created successfully!', he: 'נוצר בהצלחה!' },
+    'distribution.chooseQuestionnaireFirst': { en: 'Please select a questionnaire first', he: 'בחר שאלון תחילה' },
+    'distribution.questionnaireNotActive': { en: 'Questionnaire is not active or missing token', he: 'השאלון אינו פעיל או חסר token' },
+
+    // Preview
+    'distribution.previewTitle': { en: 'Preview', he: 'תצוגה מקדימה' },
+
+    // Channels
+    'distribution.channelEmail': { en: 'Email', he: 'מייל' },
+    'distribution.channelWhatsapp': { en: 'WhatsApp', he: 'וואטסאפ' },
+    'distribution.channelSms': { en: 'SMS', he: 'SMS' },
+
+    // Back button
+    'distribution.back': { en: 'Back', he: 'חזור' },
+
+    // Links
+    'links.linkDeleted': { en: 'Link deleted successfully', he: 'קישור נמחק בהצלחה' },
+    'links.linkLoaded': { en: 'Link loaded successfully', he: 'קישור נטען בהצלחה' },
+
     // Update Password
     'updatePassword.title': { en: 'Reset Password', he: 'איפוס סיסמה' },
     'updatePassword.codeSentTo': { en: 'Code sent to:', he: 'קוד נשלח ל:' },

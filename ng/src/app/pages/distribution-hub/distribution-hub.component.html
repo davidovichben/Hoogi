@@ -3,7 +3,7 @@
   <div class="flex items-center mb-2">
     <button class="btn-back" (click)="goBack()">
       <span class="arrow-icon">→</span>
-      חזור
+      {{ lang.t('distribution.back') }}
     </button>
   </div>
 
@@ -11,10 +11,10 @@
   <div class="page-header">
     <div class="text-right">
       <h1 class="page-title">
-        <span>📤</span> הפצת שאלונים
+        <span>📤</span> {{ lang.t('distribution.title') }}
       </h1>
       <p class="page-subtitle">
-        צור קישורי הפצה לשאלונים שלך ושתף אותם עם הלקוחות
+        {{ lang.t('distribution.subtitle') }}
       </p>
     </div>
   </div>
@@ -23,7 +23,6 @@
   <div class="main-card">
     <!-- Survey Selection -->
     <div class="survey-selection-card">
-      <h2 class="section-title">{{ lang.t('distribution.chooseQuestionnaire') }}</h2>
       <select
         [(ngModel)]="selectedQuestionnaire"
         (ngModelChange)="onQuestionnaireChange()"
@@ -40,25 +39,24 @@
     <div class="customer-response-card">
       <div class="mb-6">
         <div class="card-header-row">
-          <h3 class="section-subtitle">מענה אוטומטי</h3>
+          <h3 class="section-subtitle">{{ lang.t('distribution.autoResponse') }}</h3>
           <button
             class="btn-create-template"
-            [disabled]="!selectedQuestionnaire"
             (click)="navigateToAutomations()">
             <span class="plus-icon">+</span>
-            צור תבנית חדשה
+            {{ lang.t('distribution.createNewTemplate') }}
             <span class="external-icon">↗</span>
           </button>
         </div>
         <p class="help-text text-right">
-          ניתן לבחור עד 3 תבניות. כל תבנית ניתן לשייך לערוץ אחד או יותר (מייל, וואטסאפ, SMS). ערוץ שסומן בתבנית אחת לא יופיע בתבניות אחרות.
+          {{ lang.t('distribution.templatesInfo') }}
         </p>
       </div>
 
       <!-- Selected Templates Display -->
       @if (selectedTemplates.length > 0) {
         <div class="mb-6 space-y-3">
-          <label class="template-label">תבניות שנבחרו ({{ selectedTemplates.length }}/3)</label>
+          <label class="template-label">{{ lang.t('distribution.templatesSelected') }} ({{ selectedTemplates.length }}/3)</label>
           <div class="space-y-3">
             @for (template of selectedTemplates; track $index; let idx = $index) {
               <div class="template-item">
@@ -70,13 +68,13 @@
                   <button
                     class="btn-remove"
                     (click)="removeTemplate(idx)">
-                    הסר
+                    {{ lang.t('distribution.remove') }}
                   </button>
                 </div>
 
                 <!-- Channel Selection -->
                 <div class="channels-section">
-                  <label class="channels-label">ערוצי שליחה</label>
+                  <label class="channels-label">{{ lang.t('distribution.sendingChannels') }}</label>
                   <div class="channels-grid">
                     <!-- Email -->
                     <div
@@ -136,24 +134,24 @@
       <!-- Add Template - only if less than 3 and has available channels -->
       @if (selectedTemplates.length < 3 && getUsedChannels().length < 3) {
         <div class="space-y-4">
-          <label class="template-label">הוסף תבנית ({{ selectedTemplates.length }}/3)</label>
+          <label class="template-label">{{ lang.t('distribution.addTemplateLabel') }} ({{ selectedTemplates.length }}/3)</label>
 
           <!-- Template Selection -->
           <div class="space-y-3">
             <div>
-              <label class="template-select-label">בחר תבנית מענה</label>
+              <label class="template-select-label">{{ lang.t('distribution.chooseResponseTemplate') }}</label>
               <select
                 [(ngModel)]="newTemplateId"
                 (ngModelChange)="addTemplate()"
                 class="select-input"
                 [disabled]="!selectedQuestionnaire"
                 name="newTemplate">
-                <option value="">{{ selectedQuestionnaire ? 'בחר תבנית מענה' : 'יש לבחור שאלון תחילה' }}</option>
+                <option value="">{{ selectedQuestionnaire ? lang.t('distribution.chooseResponseTemplate') : lang.t('distribution.selectTemplateFirst') }}</option>
                 @for (template of availableTemplates; track template.id) {
                   <option
                     [value]="template.id"
                     [disabled]="isTemplateAlreadySelected(template.id)">
-                    {{ template.name }}{{ isTemplateAlreadySelected(template.id) ? ' (כבר נבחרה)' : '' }}
+                    {{ template.name }}{{ isTemplateAlreadySelected(template.id) ? ' (' + lang.t('distribution.alreadySelected') + ')' : '' }}
                   </option>
                 }
               </select>
@@ -163,14 +161,14 @@
       }
 
       @if (!selectedQuestionnaire) {
-        <p class="help-text">יש לבחור שאלון כדי להפעיל מענה אוטומטי.</p>
+        <p class="help-text">{{ lang.t('distribution.selectQuestionnaireToActivate') }}</p>
       }
 
       <!-- Message when all channels are used -->
       @if (selectedTemplates.length > 0 && getUsedChannels().length === 3 && selectedTemplates.length < 3) {
         <div class="warning-message">
           <p class="warning-text">
-            ⚠️ כל הערוצים בשימוש. מחק ערוץ או תבנית כדי להוסיף תבנית נוספת.
+            {{ lang.t('distribution.allChannelsInUse') }}
           </p>
         </div>
       }
@@ -178,7 +176,7 @@
       @if (selectedTemplates.length > 0 && selectedQuestionnaire) {
         <div class="success-message">
           <p class="success-text">
-            ✓ מענה אוטומטי מופעל עבור {{ selectedTemplates.length }} תבניות
+            {{ lang.t('distribution.autoResponseActive') }} {{ selectedTemplates.length }} {{ lang.t('distribution.templates') }}
           </p>
           <div class="success-details">
             @for (template of selectedTemplates; track $index) {
@@ -193,172 +191,110 @@
       }
     </div>
 
+    <!-- Quick Links Section -->
+    @if (selectedQuestionnaire) {
+      <div class="quick-links-section">
+        <h3 class="section-subtitle mb-4">{{ lang.t('distribution.createLink') }}</h3>
+        <div class="quick-links-grid">
+          <!-- Form Link -->
+          <button
+            class="quick-link-btn form-btn"
+            (click)="handleBuildLink('form')">
+            <span class="quick-link-icon">📋</span>
+            <span class="quick-link-label">{{ lang.t('distribution.form') }}</span>
+          </button>
+
+          <!-- Chat Link -->
+          <button
+            class="quick-link-btn chat-btn"
+            (click)="handleBuildLink('chat')">
+            <span class="quick-link-icon">💬</span>
+            <span class="quick-link-label">{{ lang.t('distribution.chat') }}</span>
+          </button>
+
+          <!-- QR Link -->
+          <button
+            class="quick-link-btn qr-btn"
+            (click)="handleBuildLink('qr')">
+            <span class="quick-link-icon">QR</span>
+            <span class="quick-link-label">{{ lang.t('distribution.qr') }}</span>
+          </button>
+        </div>
+      </div>
+    }
+
     <!-- Social Network Selection -->
     @if (selectedQuestionnaire) {
       <div class="social-network-section">
-        <h3 class="section-subtitle">בחר מקור הפצה</h3>
-        <p class="help-text text-right">
-          אנא בחר היכן תשתף את הקישור לשאלון
-        </p>
+        <div class="section-header">
+          <h3 class="section-subtitle mb-2">
+            <span class="header-icon">🔗</span>
+            {{ lang.t('distribution.socialNetworksTitle') }}
+          </h3>
+          <p class="help-text text-right mb-4">
+            {{ lang.t('distribution.socialNetworksSubtitle') }}
+          </p>
+        </div>
 
-        <div class="social-network-grid">
-          <!-- Facebook -->
-          <button
-            class="social-network-card facebook-card"
-            [class.selected]="selectedSocialNetwork === 'facebook'"
-            (click)="handleSocialNetworkSelect('facebook')">
-            <span class="social-icon">📘</span>
-            <span class="social-label">Facebook</span>
-            @if (selectedSocialNetwork === 'facebook') {
-              <span class="selected-badge">✓</span>
+        <!-- Main Networks (Top 5) -->
+        <div class="networks-subsection">
+          <h4 class="subsection-title">{{ lang.t('distribution.mainNetworks') }}</h4>
+          <div class="main-networks-grid">
+            @for (network of mainNetworks; track network.id) {
+              <div class="network-item">
+                <div
+                  class="social-network-card {{ network.colorClass }}"
+                  [class.selected]="selectedSocialNetwork === network.id"
+                  (click)="selectSocialNetwork(network.id)">
+                  @if (selectedSocialNetwork === network.id) {
+                    <div class="selected-badge">✓</div>
+                  }
+                  <div class="social-icon">{{ network.icon }}</div>
+                  <div class="social-label">{{ network.name }}</div>
+                </div>
+                <div class="network-info">
+                  <span class="click-rate-badge">{{ network.clickRate }}</span>
+                  <p class="network-description">{{ network.description }}</p>
+                </div>
+              </div>
             }
-          </button>
-
-          <!-- Instagram -->
-          <button
-            class="social-network-card instagram-card"
-            [class.selected]="selectedSocialNetwork === 'instagram'"
-            (click)="handleSocialNetworkSelect('instagram')">
-            <span class="social-icon">📷</span>
-            <span class="social-label">Instagram</span>
-            @if (selectedSocialNetwork === 'instagram') {
-              <span class="selected-badge">✓</span>
-            }
-          </button>
-
-          <!-- LinkedIn -->
-          <button
-            class="social-network-card linkedin-card"
-            [class.selected]="selectedSocialNetwork === 'linkedin'"
-            (click)="handleSocialNetworkSelect('linkedin')">
-            <span class="social-icon">💼</span>
-            <span class="social-label">LinkedIn</span>
-            @if (selectedSocialNetwork === 'linkedin') {
-              <span class="selected-badge">✓</span>
-            }
-          </button>
-
-          <!-- General -->
-          <button
-            class="social-network-card general-card"
-            [class.selected]="selectedSocialNetwork === 'general'"
-            (click)="handleSocialNetworkSelect('general')">
-            <span class="social-icon">🌐</span>
-            <span class="social-label">כללי</span>
-            @if (selectedSocialNetwork === 'general') {
-              <span class="selected-badge">✓</span>
-            }
-          </button>
-        </div>
-      </div>
-    }
-
-    <!-- Link Label Input (for social networks only) -->
-    @if (selectedSocialNetwork && selectedSocialNetwork !== 'general' && !distributionSaved) {
-      <div class="link-text-section">
-        <h3 class="section-subtitle">פרטי הקישור</h3>
-        <p class="help-text text-right">
-          הזן את פרטי הקישור שיופיעו בתבנית המענה האוטומטי
-        </p>
-
-        <!-- Link Label Input -->
-        <div class="link-input-group">
-          <label class="link-input-label">תווית הקישור</label>
-          <p class="link-input-help">הטקסט שיוצג לפני הקישור (לדוגמה: "למילוי השאלון", "לפרטים נוספים")</p>
-          <input
-            type="text"
-            [(ngModel)]="linkLabel"
-            placeholder="למילוי השאלון"
-            class="link-text-input"
-            name="linkLabel">
-        </div>
-
-        <!-- Link Text Input -->
-        <div class="link-input-group">
-          <label class="link-input-label">טקסט הכפתור</label>
-          <p class="link-input-help">הטקסט שיוצג על כפתור הקישור במייל (לדוגמה: "לחץ כאן", "למידע נוסף")</p>
-          <input
-            type="text"
-            [(ngModel)]="linkText"
-            placeholder="לחץ כאן"
-            class="link-text-input"
-            name="linkText">
-        </div>
-
-        <div class="action-buttons">
-          <button
-            class="btn-save-link-details"
-            (click)="saveLinkDetails()">
-            שמור והמשך
-          </button>
-        </div>
-      </div>
-    }
-
-    <!-- Quick Links Section - shown after social network is selected (and saved for social networks) -->
-    @if (selectedSocialNetwork && (selectedSocialNetwork === 'general' || distributionSaved)) {
-      <div class="quick-links-section">
-        <h3 class="section-subtitle">{{ lang.t('distribution.createLinks') }}</h3>
-
-        <div class="link-buttons-grid">
-          <!-- QR Code -->
-          <button
-            class="link-button qr-button"
-            (click)="handleBuildLink('qr')">
-            <span class="link-icon">📱</span>
-            <span class="link-text">{{ lang.t('distribution.qrCode') }}</span>
-          </button>
-
-          <!-- Interactive Chat -->
-          <button
-            class="link-button chat-button"
-            (click)="handleBuildLink('chat')">
-            <span class="link-icon">💬</span>
-            <span class="link-text">{{ lang.t('distribution.interactiveChat') }}</span>
-          </button>
-
-          <!-- Classic Form -->
-          <button
-            class="link-button form-button"
-            (click)="handleBuildLink('form')">
-            <span class="link-icon">📋</span>
-            <span class="link-text">{{ lang.t('distribution.classicForm') }}</span>
-          </button>
-        </div>
-      </div>
-    }
-
-    <!-- Preview Section -->
-    @if (currentMode && currentUrl) {
-      <div class="preview-section">
-        <div class="preview-header">
-          <h3 class="section-subtitle">{{ lang.t('distribution.preview') }}</h3>
-        </div>
-
-        <!-- URL Option -->
-        <div class="preview-option">
-          <h4 class="preview-option-title">קישור URL</h4>
-          <div class="preview-url">
-            <code>{{ currentUrl }}</code>
           </div>
-          <button class="btn-copy" (click)="handleCopyUrl()">
-            {{ lang.t('distribution.copyLink') }}
-          </button>
         </div>
 
-        <!-- Embed Button Option (for social networks only) -->
-        @if (selectedSocialNetwork && selectedSocialNetwork !== 'general') {
-          <div class="preview-option">
-            <h4 class="preview-option-title">כפתור להטמעה</h4>
-            <p class="preview-option-help">העתק את הקוד הזה והטמע אותו באתר או בפוסט</p>
-            <div class="embed-code-container">
-              <code class="embed-code">{{ getEmbedCode() }}</code>
-            </div>
-            <button class="btn-copy" (click)="handleCopyEmbed()">
-              העתק קוד הטמעה
-            </button>
+        <!-- Additional Networks -->
+        <div class="networks-subsection">
+          <h4 class="subsection-title">{{ lang.t('distribution.additionalNetworks') }}</h4>
+          <div class="additional-networks-grid">
+            @for (network of additionalNetworks; track network.id) {
+              <div class="network-item">
+                <div
+                  class="social-network-card {{ network.colorClass }}"
+                  [class.selected]="selectedSocialNetwork === network.id"
+                  (click)="selectSocialNetwork(network.id)">
+                  @if (selectedSocialNetwork === network.id) {
+                    <div class="selected-badge">✓</div>
+                  }
+                  <div class="social-icon">{{ network.icon }}</div>
+                  <div class="social-label">{{ network.name }}</div>
+                </div>
+                <div class="network-info">
+                  <span class="click-rate-badge secondary">{{ network.clickRate }}</span>
+                </div>
+              </div>
+            }
           </div>
-        }
+        </div>
+
+        <!-- Instructions -->
+        <div class="instructions-card">
+          <h4 class="instructions-title">{{ lang.t('distribution.howItWorks') }}</h4>
+          <div class="instructions-list">
+            <p>{{ lang.t('distribution.instruction1') }}</p>
+            <p>{{ lang.t('distribution.instruction2') }}</p>
+            <p>{{ lang.t('distribution.instruction3') }}</p>
+            <p>{{ lang.t('distribution.instruction4') }}</p>
+          </div>
+        </div>
       </div>
     }
   </div>
