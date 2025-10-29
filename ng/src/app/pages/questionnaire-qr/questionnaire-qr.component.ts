@@ -4,6 +4,7 @@ import { ActivatedRoute } from '@angular/router';
 import { SupabaseService } from '../../core/services/supabase.service';
 import { LanguageService } from '../../core/services/language.service';
 import * as QRCode from 'qrcode';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-questionnaire-qr',
@@ -35,20 +36,80 @@ export class QuestionnaireQrComponent implements OnInit {
       return;
     }
 
-    await this.loadQuestionnaireAndGenerateQR(token);
+    // Get src parameter from query params
+    const srcParam = this.route.snapshot.queryParamMap.get('src');
+    await this.loadQuestionnaireAndGenerateQR(token, srcParam);
   }
 
-  async loadQuestionnaireAndGenerateQR(token: string) {
+  async loadQuestionnaireAndGenerateQR(token: string, srcParam: string | null = null) {
     try {
-      // Load questionnaire by token
-      const { data: questionnaire, error: qError } = await this.supabaseService.client
-        .from('questionnaires')
-        .select('id, title, owner_id')
-        .eq('token', token)
-        .single();
+      console.log('[QR] Loading questionnaire with token:', token);
+      console.log('[QR] Environment siteUrl:', environment.siteUrl);
 
-      if (qError || !questionnaire) {
-        console.error('Error loading questionnaire:', qError);
+      const isDistributionToken = token.startsWith('d_');
+      console.log('[QR] Is distribution token:', isDistributionToken);
+
+      let questionnaire: any;
+      let questionnaireOwnerId: string;
+
+      if (isDistributionToken) {
+        // Load distribution first to get questionnaire_id
+        const { data: distribution, error: distError } = await this.supabaseService.client
+          .from('distributions')
+          .select('questionnaire_id, is_active')
+          .eq('token', token)
+          .eq('is_active', true)
+          .single();
+
+        if (distError || !distribution) {
+          console.error('[QR] Distribution not found or inactive:', distError);
+          this.error = true;
+          this.loading = false;
+          return;
+        }
+
+        console.log('[QR] Distribution found:', distribution);
+
+        // Load questionnaire by ID from distribution
+        const { data: qData, error: qError } = await this.supabaseService.client
+          .from('questionnaires')
+          .select('id, title, owner_id, is_active')
+          .eq('id', distribution.questionnaire_id)
+          .single();
+
+        if (qError || !qData) {
+          console.error('[QR] Error loading questionnaire:', qError);
+          this.error = true;
+          this.loading = false;
+          return;
+        }
+
+        questionnaire = qData;
+        questionnaireOwnerId = qData.owner_id;
+      } else {
+        // Load questionnaire by token (regular token)
+        const { data: qData, error: qError } = await this.supabaseService.client
+          .from('questionnaires')
+          .select('id, title, owner_id, is_active')
+          .eq('token', token)
+          .single();
+
+        if (qError || !qData) {
+          console.error('[QR] Error loading questionnaire:', qError);
+          this.error = true;
+          this.loading = false;
+          return;
+        }
+
+        questionnaire = qData;
+        questionnaireOwnerId = qData.owner_id;
+      }
+
+      console.log('[QR] Questionnaire loaded:', questionnaire);
+
+      // Check if questionnaire is active
+      if (!questionnaire.is_active) {
+        console.error('[QR] Questionnaire is not active');
         this.error = true;
         this.loading = false;
         return;
@@ -60,7 +121,7 @@ export class QuestionnaireQrComponent implements OnInit {
       const { data: profile } = await this.supabaseService.client
         .from('profiles')
         .select('brand_primary, logo_url, business_name')
-        .eq('id', questionnaire.owner_id)
+        .eq('id', questionnaireOwnerId)
         .single();
 
       if (profile) {
@@ -69,8 +130,12 @@ export class QuestionnaireQrComponent implements OnInit {
         this.businessName = profile.business_name || '';
       }
 
-      // Generate QR code that points to the form URL
-      const formUrl = `${window.location.origin}/q/${token}`;
+      // Generate QR code that points to the form URL (with src parameter)
+      // Preserve the src parameter from the QR page URL, or default to 'qr'
+      const src = srcParam || 'qr';
+      const formUrl = `${environment.siteUrl}/q/${token}?src=${src}`;
+      console.log('[QR] Generating QR code for URL:', formUrl);
+
       const qrDataUrl = await QRCode.toDataURL(formUrl, {
         width: 500,
         margin: 2,
@@ -82,8 +147,9 @@ export class QuestionnaireQrComponent implements OnInit {
 
       this.qrCodeDataUrl = qrDataUrl;
       this.loading = false;
+      console.log('[QR] QR code generated successfully');
     } catch (error) {
-      console.error('Error generating QR code:', error);
+      console.error('[QR] Error generating QR code:', error);
       this.error = true;
       this.loading = false;
     }

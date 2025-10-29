@@ -194,13 +194,44 @@ export class QuestionnaireLive implements OnInit {
   async loadQuestionnaire(tokenOrId: string) {
     this.isLoading = true;
     try {
+      // Check if this is a distribution token
+      const isDistributionToken = tokenOrId.startsWith('d_');
       // Check if this is a UUID or a token
       const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tokenOrId);
 
-      console.log('Loading questionnaire:', { tokenOrId, isUUID });
+      console.log('Loading questionnaire:', { tokenOrId, isUUID, isDistributionToken });
 
       let data;
-      if (isUUID) {
+
+      if (isDistributionToken) {
+        // Load distribution first to get questionnaire_id using RPC (bypasses RLS)
+        const { data: distributions, error: distError } = await this.supabaseService.client
+          .rpc('get_distribution_by_token', { p_token: tokenOrId });
+
+        if (distError || !distributions || distributions.length === 0) {
+          console.error('Distribution not found or inactive:', distError);
+          // Fallback to direct query in case RPC doesn't exist yet
+          const { data: distribution, error: fallbackError } = await this.supabaseService.client
+            .from('distributions')
+            .select('questionnaire_id, is_active')
+            .eq('token', tokenOrId)
+            .eq('is_active', true)
+            .single();
+
+          if (fallbackError || !distribution) {
+            console.error('Distribution not found (fallback also failed):', fallbackError);
+            throw new Error('Distribution not found or inactive. Please check the URL.');
+          }
+
+          console.log('Distribution found (via fallback):', distribution);
+          data = await this.questionnaireService.fetchQuestionnaireForReview(distribution.questionnaire_id);
+        } else {
+          const distribution = distributions[0];
+          console.log('Distribution found (via RPC):', distribution);
+          // Load questionnaire by ID from distribution
+          data = await this.questionnaireService.fetchQuestionnaireForReview(distribution.questionnaire_id);
+        }
+      } else if (isUUID) {
         // Load by ID (for authenticated/owner view)
         data = await this.questionnaireService.fetchQuestionnaireForReview(tokenOrId);
       } else {
@@ -321,34 +352,51 @@ export class QuestionnaireLive implements OnInit {
         }
       }
 
-      // Prepare lead data with new schema
-      const leadData = {
-        questionnaire_id: this.questionnaire.id,
-        client_name: clientName,
-        partner_id: null, // Will be assigned later by admin/user
-        channel: this.detectedChannel, // Detected from referral source
-        status: 'new',
-        sub_status: null,
-        automations: [], // Empty array, will be configured by admin
-        comments: null,
-        answer_json: responseData,
-        distribution_token: this.distributionToken, // Store distribution token if came from distribution link
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
+      // Extract email, phone, name from responseData (usually first 3 questions)
+      let email = null;
+      let phone = null;
+      let name = clientName;
 
-      // Insert into leads table
-      const { data: insertedLead, error: leadError } = await this.supabaseService.client
-        .from('leads')
-        .insert(leadData)
-        .select()
-        .single();
+      if (this.questions.length >= 2) {
+        const emailAnswer = responseData[this.questions[1]?.id];
+        if (emailAnswer && typeof emailAnswer === 'string') email = emailAnswer;
+      }
+      if (this.questions.length >= 3) {
+        const phoneAnswer = responseData[this.questions[2]?.id];
+        if (phoneAnswer && typeof phoneAnswer === 'string') phone = phoneAnswer;
+      }
+
+      // Use RPC function to insert lead (bypasses RLS)
+      const { data: leadId, error: leadError } = await this.supabaseService.client
+        .rpc('submit_lead', {
+          p_questionnaire_id: this.questionnaire.id,
+          p_client_name: clientName,
+          p_answer_json: responseData,
+          p_email: email,
+          p_phone: phone,
+          p_name: name,
+          p_distribution_token: this.distributionToken,
+          p_channel: this.detectedChannel
+        });
 
       if (leadError) {
         console.error('Error saving lead data:', leadError);
         // Don't throw error - lead saving is optional, response is already saved
         return;
       }
+
+      // Create a minimal lead object for compatibility
+      const insertedLead = {
+        id: leadId,
+        questionnaire_id: this.questionnaire.id,
+        client_name: clientName,
+        answer_json: responseData,
+        email,
+        phone,
+        name,
+        distribution_token: this.distributionToken,
+        channel: this.detectedChannel
+      };
 
       // Trigger automation by calling the Edge Function directly
       if (insertedLead) {
@@ -718,6 +766,16 @@ export class QuestionnaireLive implements OnInit {
     }
   }
 
+  // Check if there are any validation errors
+  hasValidationErrors(): boolean {
+    return Object.keys(this.validationErrors).length > 0;
+  }
+
+  // Get count of validation errors
+  getValidationErrorCount(): number {
+    return Object.keys(this.validationErrors).length;
+  }
+
   async submitResponse(event: Event) {
     event.preventDefault();
 
@@ -877,18 +935,18 @@ export class QuestionnaireLive implements OnInit {
         }
       }
 
-      // Save response to database for guest view
-      const { data: responseInsert, error: responseError } = await this.supabaseService.client
-        .from('responses')
-        .insert({
-          questionnaire_id: this.questionnaire.id,
-          response_data: responseData,
-          submitted_at: new Date().toISOString()
-        })
-        .select()
-        .single();
+      // Save response to database for guest view using RPC function to bypass RLS
+      const { data: responseId, error: responseError } = await this.supabaseService.client
+        .rpc('submit_questionnaire_response', {
+          p_questionnaire_id: this.questionnaire.id,
+          p_response_data: responseData,
+          p_submitted_at: new Date().toISOString()
+        });
 
       if (responseError) throw responseError;
+
+      // Create a minimal response object for compatibility
+      const responseInsert = { id: responseId };
 
       // Extract lead data and save to leads table
       // Automation will be triggered automatically by the database trigger when the lead is created

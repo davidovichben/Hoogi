@@ -5,6 +5,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { LanguageService } from '../../core/services/language.service';
 import { SupabaseService } from '../../core/services/supabase.service';
 import { ToastService } from '../../core/services/toast.service';
+import { environment } from '../../../environments/environment';
 
 interface Questionnaire {
   id: string;
@@ -64,6 +65,7 @@ export class DistributionHubComponent implements OnInit {
   currentUrl = '';
   currentDistribution: Distribution | null = null;
   selectedSocialNetwork: 'whatsapp' | 'facebook' | 'instagram' | 'linkedin' | 'youtube' | 'telegram' | 'email' | 'sms' | 'website' | null = null;
+  showLinksSection = false;
 
   // Social networks configuration - now using getters for translations
   get socialNetworks() {
@@ -263,25 +265,25 @@ export class DistributionHubComponent implements OnInit {
     window.history.back();
   }
 
-  onQuestionnaireChange() {
+  async onQuestionnaireChange() {
     // Hide the generated link when questionnaire selection changes
     this.currentMode = null;
     this.currentUrl = '';
     this.currentDistribution = null;
     this.selectedTemplates = [];
     this.selectedSocialNetwork = null;
+    this.showLinksSection = false;
 
     // Load existing distribution if available
-    this.loadExistingDistribution();
+    await this.loadExistingDistribution();
   }
 
-  onTemplatesChange() {
-    // Hide the generated link when templates change
+  async onTemplatesChange() {
+    // Hide the links section when templates change
     this.currentMode = null;
     this.currentUrl = '';
     this.selectedSocialNetwork = null;
-    // Force new distribution on next link click
-    this.currentDistribution = null;
+    this.showLinksSection = false;
   }
 
   async loadExistingDistribution() {
@@ -299,15 +301,121 @@ export class DistributionHubComponent implements OnInit {
 
       if (existingDistributions && existingDistributions.length > 0) {
         this.currentDistribution = existingDistributions[0] as Distribution;
-        // TODO: Load selected templates from distribution if needed
+
+        // Don't auto-load templates - let user select them manually
+        // This ensures a clean slate when changing questionnaires
       }
     } catch (error) {
       console.error('Error loading existing distribution:', error);
     }
   }
 
+  async handleShowLinks() {
+    if (!this.selectedQuestionnaire) {
+      this.toast.show(
+        this.lang.t('distribution.chooseQuestionnaireFirst'),
+        'error'
+      );
+      return;
+    }
+
+    // Validate that all selected templates have at least one channel (if any templates are selected)
+    if (this.selectedTemplates.length > 0) {
+      const templatesWithoutChannels = this.selectedTemplates.filter(t => t.channels.length === 0);
+      if (templatesWithoutChannels.length > 0) {
+        this.toast.show(
+          this.lang.t('distribution.templatesMissingChannels'),
+          'error'
+        );
+        return;
+      }
+    }
+
+    // Save the distribution first (creates/updates distribution even without templates)
+    const success = await this.saveDistribution();
+
+    // Only show the links section if distribution was saved successfully
+    if (success) {
+      this.showLinksSection = true;
+    } else {
+      console.error('Failed to save distribution - not showing links section');
+    }
+  }
+
+  // Generate a unique distribution token
+  private generateDistributionToken(): string {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let token = 'd_'; // Distribution prefix
+    for (let i = 0; i < 12; i++) {
+      token += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return token;
+  }
+
+  async saveDistribution(): Promise<boolean> {
+    if (!this.selectedQuestionnaire) return false;
+
+    const questionnaire = this.questionnaires.find(q => q.id === this.selectedQuestionnaire);
+    if (!questionnaire) return false;
+
+    // Prepare automation template data - only include templates with at least one channel
+    const automationTemplateIds = this.selectedTemplates
+      .filter(template => template.channels.length > 0)
+      .map(template => ({
+        template_id: template.id,
+        channels: template.channels
+      }));
+
+    // Generate or reuse distribution token
+    const distributionToken = this.currentDistribution?.token || this.generateDistributionToken();
+
+    const distributionData = {
+      questionnaire_id: this.selectedQuestionnaire,
+      automation_template_ids: automationTemplateIds, // Can be empty array if no templates
+      token: distributionToken,
+      is_active: true
+    };
+
+    try {
+      if (this.currentDistribution) {
+        // Update existing distribution
+        const { data, error } = await this.supabaseService.client
+          .from('distributions')
+          .update(distributionData)
+          .eq('id', this.currentDistribution.id)
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        this.currentDistribution = data as Distribution;
+        console.log('Distribution updated:', data);
+      } else {
+        // Create new distribution
+        const { data, error } = await this.supabaseService.client
+          .from('distributions')
+          .insert(distributionData)
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        this.currentDistribution = data as Distribution;
+        console.log('Distribution created:', data);
+      }
+      return true; // Success
+    } catch (error: any) {
+      console.error('Error saving distribution:', error);
+      this.toast.show(
+        this.lang.t('distribution.savingError') + ': ' + (error.message || 'Unknown error'),
+        'error'
+      );
+      return false; // Failure
+    }
+  }
+
   // Template management methods
-  addTemplate() {
+  async addTemplate() {
     if (!this.newTemplateId) return;
 
     if (this.selectedTemplates.length >= 3) {
@@ -338,16 +446,16 @@ export class DistributionHubComponent implements OnInit {
         channels: []
       });
       this.newTemplateId = '';
-      this.onTemplatesChange();
+      await this.onTemplatesChange();
     }
   }
 
-  removeTemplate(index: number) {
+  async removeTemplate(index: number) {
     this.selectedTemplates.splice(index, 1);
-    this.onTemplatesChange();
+    await this.onTemplatesChange();
   }
 
-  toggleChannelForTemplate(templateIndex: number, channel: 'email' | 'whatsapp' | 'sms') {
+  async toggleChannelForTemplate(templateIndex: number, channel: 'email' | 'whatsapp' | 'sms') {
     const template = this.selectedTemplates[templateIndex];
     const channelIndex = template.channels.indexOf(channel);
 
@@ -358,7 +466,7 @@ export class DistributionHubComponent implements OnInit {
       // Add channel
       template.channels.push(channel);
     }
-    this.onTemplatesChange();
+    await this.onTemplatesChange();
   }
 
   isChannelUsedByOtherTemplates(currentTemplateIndex: number, channel: 'email' | 'whatsapp' | 'sms'): boolean {
@@ -404,7 +512,7 @@ export class DistributionHubComponent implements OnInit {
     // Create URL with tracking parameter
     let urlWithTracking: string;
     try {
-      const url = new URL(this.currentUrl, window.location.origin);
+      const url = new URL(this.currentUrl, environment.siteUrl);
       url.searchParams.set('src', network);
       urlWithTracking = url.toString();
     } catch (error) {
@@ -413,69 +521,81 @@ export class DistributionHubComponent implements OnInit {
       urlWithTracking = this.currentUrl + (this.currentUrl.includes('?') ? '&' : '?') + `src=${network}`;
     }
 
+    // Copy URL to clipboard first for all networks
+    const copySuccess = await this.copyToClipboard(urlWithTracking);
+
+    // Show notification based on copy success
+    if (copySuccess) {
+      this.toast.show(
+        `${networkName} - ${this.lang.t('distribution.linkCopiedToClipboard')}`,
+        'success'
+      );
+    } else {
+      this.toast.show(
+        this.lang.currentLanguage === 'he'
+          ? 'שגיאה בהעתקת הקישור'
+          : 'Failed to copy link',
+        'error'
+      );
+      return; // Don't proceed if copy failed
+    }
+
     // Get the share endpoint for the social network
     let shareUrl = '';
+    const shareTitle = this.lang.currentLanguage === 'he' ? 'מלא את השאלון שלנו' : 'Fill out our questionnaire';
+
     switch (network) {
       case 'whatsapp':
-        // WhatsApp share with text
-        const whatsappText = encodeURIComponent(`מלא את השאלון שלנו: ${urlWithTracking}`);
-        shareUrl = `https://wa.me/?text=${whatsappText}`;
+        // WhatsApp Web/App share with pre-filled text and URL
+        const whatsappMessage = this.lang.currentLanguage === 'he'
+          ? `מלא את השאלון שלנו: ${urlWithTracking}`
+          : `Fill out our questionnaire: ${urlWithTracking}`;
+        shareUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(whatsappMessage)}`;
         break;
       case 'facebook':
-        // Using Facebook's share dialog - this pre-fills the URL in the post
-        shareUrl = `https://www.facebook.com/sharer.php?u=${encodeURIComponent(urlWithTracking)}`;
+        // Open Facebook share dialog
+        shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(urlWithTracking)}`;
         break;
       case 'instagram':
-        // Instagram doesn't have a direct share URL, so we'll just copy the link
-        navigator.clipboard.writeText(urlWithTracking);
-        this.toast.show(
-          `${networkName} ${this.lang.t('distribution.linkCopiedToClipboard')}`,
-          'success'
-        );
+        // Instagram doesn't have a web share API, so we only copy the link
         return;
       case 'linkedin':
+        // LinkedIn share with URL (LinkedIn will auto-fetch title and description)
         shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(urlWithTracking)}`;
         break;
       case 'youtube':
-        // YouTube - copy link for video description
-        navigator.clipboard.writeText(urlWithTracking);
-        this.toast.show(
-          `${networkName} ${this.lang.t('distribution.linkCopiedAddToVideo')}`,
-          'success'
-        );
+        // YouTube doesn't have a share endpoint for links
         return;
       case 'telegram':
-        // Telegram share
-        shareUrl = `https://t.me/share/url?url=${encodeURIComponent(urlWithTracking)}`;
+        // Telegram share with URL and text
+        const telegramText = this.lang.currentLanguage === 'he' ? 'מלא את השאלון שלנו' : 'Fill out our questionnaire';
+        shareUrl = `https://t.me/share/url?url=${encodeURIComponent(urlWithTracking)}&text=${encodeURIComponent(telegramText)}`;
         break;
       case 'email':
-        // Email with subject and body
-        const emailSubject = encodeURIComponent('מלא את השאלון שלנו');
-        const emailBody = encodeURIComponent(`היי,\n\nאשמח אם תוכל למלא את השאלון שלנו:\n${urlWithTracking}\n\nתודה!`);
-        shareUrl = `mailto:?subject=${emailSubject}&body=${emailBody}`;
+        // Email with subject and body containing the URL
+        const emailSubject = this.lang.currentLanguage === 'he' ? 'מלא את השאלון שלנו' : 'Fill out our questionnaire';
+        const emailMessage = this.lang.currentLanguage === 'he'
+          ? `היי,\n\nאשמח אם תוכל למלא את השאלון שלנו:\n${urlWithTracking}\n\nתודה!`
+          : `Hi,\n\nI'd appreciate if you could fill out our questionnaire:\n${urlWithTracking}\n\nThank you!`;
+        shareUrl = `mailto:?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailMessage)}`;
         break;
       case 'sms':
-        // SMS with text
-        const smsBody = encodeURIComponent(`מלא את השאלון שלנו: ${urlWithTracking}`);
-        shareUrl = `sms:?body=${smsBody}`;
+        // SMS with pre-filled text and URL
+        const smsMessage = this.lang.currentLanguage === 'he'
+          ? `מלא את השאלון שלנו: ${urlWithTracking}`
+          : `Fill out our questionnaire: ${urlWithTracking}`;
+        shareUrl = `sms:?body=${encodeURIComponent(smsMessage)}`;
         break;
       case 'website':
-        // For website, just copy the link
-        navigator.clipboard.writeText(urlWithTracking);
-        this.toast.show(
-          `${networkName} ${this.lang.t('distribution.linkCopiedToClipboard')}`,
-          'success'
-        );
+        // Generic share - only copy to clipboard
         return;
     }
 
-    // Open the share URL in a new tab or trigger the action
+    // Open the share URL after a short delay to ensure the notification is visible
     if (shareUrl) {
-      window.open(shareUrl, '_blank');
-      this.toast.show(
-        `${networkName} ${this.lang.t('distribution.linkCreatedSuccessfully')}`,
-        'success'
-      );
+      setTimeout(() => {
+        window.open(shareUrl, '_blank');
+      }, 800);
     }
   }
 
@@ -515,14 +635,14 @@ export class DistributionHubComponent implements OnInit {
     url.searchParams.set('src', network);
     const trackedUrl = url.toString();
 
-    try {
-      await navigator.clipboard.writeText(trackedUrl);
+    const success = await this.copyToClipboard(trackedUrl);
+
+    if (success) {
       this.toast.show(
         this.lang.currentLanguage === 'he' ? `קישור עם מעקב ${network} הועתק ללוח` : `${network} tracked link copied to clipboard`,
         'success'
       );
-    } catch (error) {
-      console.error('Copy failed:', error);
+    } else {
       this.toast.show(
         this.lang.currentLanguage === 'he' ? 'שגיאה בהעתקה' : 'Copy failed',
         'error'
@@ -539,34 +659,33 @@ export class DistributionHubComponent implements OnInit {
       return;
     }
 
-    // Get the selected questionnaire to access its token
-    const questionnaire = this.questionnaires.find(q => q.id === this.selectedQuestionnaire);
-    if (!questionnaire || !questionnaire.token) {
+    // Check if distribution exists and has a token
+    if (!this.currentDistribution || !this.currentDistribution.token) {
       this.toast.show(
-        this.lang.t('distribution.questionnaireNotActive'),
+        this.lang.t('distribution.chooseQuestionnaireFirst'),
         'error'
       );
       return;
     }
 
-    const base = window.location.origin;
+    const base = environment.siteUrl;
+    const distributionToken = this.currentDistribution.token;
     let url = '';
 
+    // Build URL with distribution token and add src parameter
     if (type === 'form') {
-      url = `${base}/q/${questionnaire.token}`;
+      url = `${base}/q/${distributionToken}?src=form`;
     } else if (type === 'chat') {
-      url = `${base}/q/${questionnaire.token}/chat`;
+      url = `${base}/q/${distributionToken}/chat?src=chat`;
     } else if (type === 'qr') {
-      url = `${base}/q/${questionnaire.token}/qr`;
+      url = `${base}/q/${distributionToken}/qr?src=qr`;
     }
 
     this.currentMode = type;
     this.currentUrl = url;
 
-    this.toast.show(
-      this.lang.t('distribution.linkCreated'),
-      'success'
-    );
+    // Don't show toast or copy - just mark as selected
+    // User will copy when they select a social network
   }
 
   getTypeName(type: 'form' | 'chat' | 'qr'): string {
@@ -592,5 +711,38 @@ export class DistributionHubComponent implements OnInit {
 
   getFormattedChannels(template: SelectedTemplate): string {
     return template.channels.map(ch => this.getChannelNameInHebrew(ch)).join(', ');
+  }
+
+  // Helper method to copy text to clipboard with fallback for non-HTTPS environments
+  private async copyToClipboard(text: string): Promise<boolean> {
+    // Try modern clipboard API first
+    if (navigator.clipboard && window.isSecureContext) {
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch (err) {
+        console.error('Clipboard API failed:', err);
+      }
+    }
+
+    // Fallback to legacy method for HTTP environments
+    try {
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-999999px';
+      textArea.style.top = '-999999px';
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+
+      const successful = document.execCommand('copy');
+      document.body.removeChild(textArea);
+
+      return successful;
+    } catch (err) {
+      console.error('Legacy copy failed:', err);
+      return false;
+    }
   }
 }

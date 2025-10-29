@@ -32,7 +32,7 @@ interface CountryOption {
   templateUrl: './contact.component.html',
   styleUrls: ['./contact.component.sass']
 })
-export class ContactComponent implements OnInit, OnDestroy {
+export class ContactComponent implements OnDestroy {
   formData: ContactFormData = {
     subject: '',
     name: '',
@@ -60,19 +60,7 @@ export class ContactComponent implements OnInit, OnDestroy {
     private toast: ToastService,
     private supabase: SupabaseService
   ) {}
-
-  ngOnInit() {
-    // Detect user country based on language
-    const browserLang = navigator.language || 'he';
-    if (browserLang.startsWith('he') || browserLang.startsWith('ar')) {
-      this.userCountry = 'ישראל';
-    } else if (browserLang.startsWith('en')) {
-      this.userCountry = 'USA';
-    } else {
-      this.userCountry = 'ישראל';
-    }
-  }
-
+  
   ngOnDestroy() {
     if (this.filePreview) {
       URL.revokeObjectURL(this.filePreview);

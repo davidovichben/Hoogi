@@ -1,714 +1,274 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+// 🔹 גרסת Edge Function יציבה ומלאה
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const cors = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
-const ok = (data: any, status = 200) =>
-  new Response(JSON.stringify(data), { status, headers: { ...cors, "Content-Type": "application/json" }});
-
+// --- הגדרות בסיסיות ---
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-}
-
-interface SuggestQuestionsRequest {
-  businessName: string;
-  occupation: string;
-  suboccupation?: string;
-  other_text?: string;
-  links?: string;
-  language: string;
-  max?: number;
-  prompt_override?: string;
-  __debug?: boolean;
-}
-
-interface Question {
-  id: string;
-  text: string;
-  type: 'text' | 'single_choice' | 'multiple_choice' | 'rating' | 'date' | 'email' | 'phone';
-  options?: string[];
-  isRequired: boolean;
-  hasOther?: boolean; // When true, the last option is "other" and should open a text field
-}
-
-// שאלות מוצעות לפי תחום עסקי
-const QUESTION_TEMPLATES: Record<string, Question[]> = {
-  // עריכת דין
-  "עריכת דין": [
-    {
-      id: "lawyer-1",
-      text: "מה סוג הבעיה המשפטית שלך?",
-      type: "single_choice",
-      options: ["דיני עבודה", "מקרקעין", "דיני משפחה", "מסחרי/חוזים", "אחר"],
-      isRequired: true,
-      hasOther: true
-    },
-    {
-      id: "lawyer-2",
-      text: "מתי התרחשה הבעיה?",
-      type: "date",
-      isRequired: false
-    },
-    {
-      id: "lawyer-3",
-      text: "האם יש לך מסמכים רלוונטיים?",
-      type: "single_choice",
-      options: ["כן", "לא", "חלקית"],
-      isRequired: false
-    }
-  ],
-  
-  // ראיית חשבון
-  "ראיית חשבון / הנהלת חשבונות": [
-    {
-      id: "accountant-1",
-      text: "איזה סוג שירות אתה צריך?",
-      type: "single_choice",
-      options: ["דוחות שנתיים", "חשבות שכר", "פתיחת עוסק", "ייעוץ מס", "אחר"],
-      isRequired: true,
-      hasOther: true
-    },
-    {
-      id: "accountant-2",
-      text: "מה סוג העסק שלך?",
-      type: "single_choice",
-      options: ["עוסק פטור", "עוסק מורשה", "חברה", "עמותה", "אחר"],
-      isRequired: true,
-      hasOther: true
-    },
-    {
-      id: "accountant-3",
-      text: "מה ההכנסה השנתית המשוערת?",
-      type: "single_choice",
-      options: ["עד 100,000 ₪", "100,000-500,000 ₪", "500,000-1,000,000 ₪", "מעל 1,000,000 ₪"],
-      isRequired: false
-    }
-  ],
-
-  // ביטוח
-  "ביטוח": [
-    {
-      id: "insurance-1",
-      text: "איזה סוג ביטוח אתה מחפש?",
-      type: "single_choice",
-      options: ["בריאות וסיעוד", "חיים ופיננסים", "רכב ודירות", "עסקים", "אחר"],
-      isRequired: true,
-      hasOther: true
-    },
-    {
-      id: "insurance-2",
-      text: "מה הגיל שלך?",
-      type: "single_choice",
-      options: ["18-30", "31-45", "46-60", "מעל 60"],
-      isRequired: false
-    },
-    {
-      id: "insurance-3",
-      text: "מה התקציב החודשי שלך לביטוח?",
-      type: "single_choice",
-      options: ["עד 200 ₪", "200-500 ₪", "500-1000 ₪", "מעל 1000 ₪"],
-      isRequired: false
-    }
-  ],
-
-  // נדל"ן
-  "נדל״ן ושיווק פרויקטים": [
-    {
-      id: "realestate-1",
-      text: "איזה סוג נכס אתה מחפש?",
-      type: "single_choice",
-      options: ["דירה", "בית פרטי", "משרד", "מחסן", "אחר"],
-      isRequired: true,
-      hasOther: true
-    },
-    {
-      id: "realestate-2",
-      text: "מה התקציב שלך?",
-      type: "single_choice",
-      options: ["עד 500,000 ₪", "500,000-1,000,000 ₪", "1,000,000-2,000,000 ₪", "מעל 2,000,000 ₪"],
-      isRequired: true
-    },
-    {
-      id: "realestate-3",
-      text: "באיזה אזור אתה מעוניין?",
-      type: "text",
-      isRequired: false
-    }
-  ],
-
-  // בנייה ושיפוצים
-  "בנייה ושיפוצים": [
-    {
-      id: "construction-1",
-      text: "איזה סוג עבודה אתה צריך?",
-      type: "single_choice",
-      options: ["שיפוץ מלא", "שיפוץ חלקי", "עבודות חשמל", "עבודות אינסטלציה", "אחר"],
-      isRequired: true,
-      hasOther: true
-    },
-    {
-      id: "construction-2",
-      text: "מה גודל הפרויקט?",
-      type: "single_choice",
-      options: ["עד 50 מ״ר", "50-100 מ״ר", "100-200 מ״ר", "מעל 200 מ״ר"],
-      isRequired: false
-    },
-    {
-      id: "construction-3",
-      text: "מתי אתה רוצה להתחיל?",
-      type: "single_choice",
-      options: ["מיד", "תוך חודש", "תוך 3 חודשים", "לא דחוף"],
-      isRequired: false
-    }
-  ],
-
-  // רפואה וקליניקות
-  "רפואה וקליניקות": [
-    {
-      id: "medical-1",
-      text: "איזה סוג טיפול אתה מחפש?",
-      type: "single_choice",
-      options: ["פיזיותרפיה", "דנטלי", "רפואה משלימה", "תזונה", "אחר"],
-      isRequired: true,
-      hasOther: true
-    },
-    {
-      id: "medical-2",
-      text: "מה הבעיה הרפואית?",
-      type: "text",
-      isRequired: false
-    },
-    {
-      id: "medical-3",
-      text: "האם יש לך הפניה מרופא?",
-      type: "single_choice",
-      options: ["כן", "לא"],
-      isRequired: false
-    }
-  ],
-
-  // כושר ולייפסטייל
-  "כושר ולייפסטייל": [
-    {
-      id: "fitness-1",
-      text: "איזה סוג אימון אתה מעדיף?",
-      type: "single_choice",
-      options: ["יוגה", "פילאטיס", "אימון אישי", "קבוצות", "אחר"],
-      isRequired: true,
-      hasOther: true
-    },
-    {
-      id: "fitness-2",
-      text: "מה רמת הכושר שלך?",
-      type: "single_choice",
-      options: ["מתחיל", "בינוני", "מתקדם"],
-      isRequired: false
-    },
-    {
-      id: "fitness-3",
-      text: "מה המטרה שלך?",
-      type: "single_choice",
-      options: ["ירידה במשקל", "עלייה במשקל", "חיזוק שרירים", "גמישות", "אחר"],
-      isRequired: false,
-      hasOther: true
-    }
-  ],
-
-  // יופי וקוסמטיקה
-  "יופי וקוסמטיקה": [
-    {
-      id: "beauty-1",
-      text: "איזה סוג טיפול אתה מעוניין בו?",
-      type: "single_choice",
-      options: ["קוסמטיקה רפואית", "עיצוב שיער", "ציפורניים", "איפור", "אחר"],
-      isRequired: true,
-      hasOther: true
-    },
-    {
-      id: "beauty-2",
-      text: "מה התקציב שלך?",
-      type: "single_choice",
-      options: ["עד 200 ₪", "200-500 ₪", "500-1000 ₪", "מעל 1000 ₪"],
-      isRequired: false
-    },
-    {
-      id: "beauty-3",
-      text: "מתי נוח לך?",
-      type: "single_choice",
-      options: ["בוקר", "צהריים", "אחר הצהריים", "ערב"],
-      isRequired: false
-    }
-  ],
-
-  // צילום וקריאייטיב
-  "צילום וקריאייטיב": [
-    {
-      id: "photography-1",
-      text: "איזה סוג צילום אתה צריך?",
-      type: "single_choice",
-      options: ["עסקים/תדמית", "אירועים", "משפחות", "וידאו", "אחר"],
-      isRequired: true,
-      hasOther: true
-    },
-    {
-      id: "photography-2",
-      text: "מתי האירוע?",
-      type: "date",
-      isRequired: false
-    },
-    {
-      id: "photography-3",
-      text: "כמה אנשים יהיו?",
-      type: "single_choice",
-      options: ["1-5", "6-20", "21-50", "מעל 50"],
-      isRequired: false
-    }
-  ],
-
-  // מסעדנות וקייטרינג
-  "מסעדנות וקייטרינג": [
-    {
-      id: "catering-1",
-      text: "איזה סוג שירות אתה צריך?",
-      type: "single_choice",
-      options: ["מסעדה", "קייטרינג אירועים", "מאפים", "שף פרטי", "אחר"],
-      isRequired: true,
-      hasOther: true
-    },
-    {
-      id: "catering-2",
-      text: "כמה אנשים?",
-      type: "single_choice",
-      options: ["עד 10", "10-25", "25-50", "מעל 50"],
-      isRequired: true
-    },
-    {
-      id: "catering-3",
-      text: "מתי האירוע?",
-      type: "date",
-      isRequired: false
-    }
-  ],
-
-  // איקומרס וסחר
-  "איקומרס וסחר": [
-    {
-      id: "ecommerce-1",
-      text: "איזה סוג חנות אתה רוצה?",
-      type: "single_choice",
-      options: ["Shopify", "WooCommerce", "אמזון", "אי-ביי", "אחר"],
-      isRequired: true,
-      hasOther: true
-    },
-    {
-      id: "ecommerce-2",
-      text: "מה סוג המוצרים?",
-      type: "text",
-      isRequired: false
-    },
-    {
-      id: "ecommerce-3",
-      text: "מה התקציב שלך?",
-      type: "single_choice",
-      options: ["עד 5,000 ₪", "5,000-15,000 ₪", "15,000-50,000 ₪", "מעל 50,000 ₪"],
-      isRequired: false
-    }
-  ],
-
-  // שיווק וייעוץ עסקי
-  "שיווק וייעוץ עסקי": [
-    {
-      id: "marketing-1",
-      text: "איזה סוג שירות אתה צריך?",
-      type: "single_choice",
-      options: ["אסטרטגיית שיווק", "קמפיינים ממומנים", "ניהול סושיאל", "אוטומציות", "אחר"],
-      isRequired: true,
-      hasOther: true
-    },
-    {
-      id: "marketing-2",
-      text: "מה התקציב החודשי?",
-      type: "single_choice",
-      options: ["עד 2,000 ₪", "2,000-5,000 ₪", "5,000-15,000 ₪", "מעל 15,000 ₪"],
-      isRequired: false
-    },
-    {
-      id: "marketing-3",
-      text: "מה המטרה שלך?",
-      type: "single_choice",
-      options: ["יותר לידים", "יותר מכירות", "יותר מודעות", "שיפור תדמית", "אחר"],
-      isRequired: false,
-      hasOther: true
-    }
-  ],
-
-  // שירותי תוכנה/IT
-  "שירותי תוכנה/IT": [
-    {
-      id: "software-1",
-      text: "איזה סוג פיתוח אתה צריך?",
-      type: "single_choice",
-      options: ["אתר", "אפליקציה", "DevOps", "תמיכת IT", "אחר"],
-      isRequired: true,
-      hasOther: true
-    },
-    {
-      id: "software-2",
-      text: "מה התקציב?",
-      type: "single_choice",
-      options: ["עד 10,000 ₪", "10,000-50,000 ₪", "50,000-200,000 ₪", "מעל 200,000 ₪"],
-      isRequired: false
-    },
-    {
-      id: "software-3",
-      text: "מתי אתה רוצה להתחיל?",
-      type: "single_choice",
-      options: ["מיד", "תוך חודש", "תוך 3 חודשים", "לא דחוף"],
-      isRequired: false
-    }
-  ],
-
-  // חינוך והכשרות
-  "חינוך והכשרות": [
-    {
-      id: "education-1",
-      text: "איזה סוג הכשרה אתה מחפש?",
-      type: "single_choice",
-      options: ["קורסים עסקיים", "שיעורים פרטיים", "הדרכות דיגיטל", "למידה ארגונית", "אחר"],
-      isRequired: true,
-      hasOther: true
-    },
-    {
-      id: "education-2",
-      text: "מה רמת הידע שלך?",
-      type: "single_choice",
-      options: ["מתחיל", "בינוני", "מתקדם"],
-      isRequired: false
-    },
-    {
-      id: "education-3",
-      text: "כמה זמן יש לך?",
-      type: "single_choice",
-      options: ["עד שעה בשבוע", "2-5 שעות בשבוע", "מעל 5 שעות בשבוע"],
-      isRequired: false
-    }
-  ],
-
-  // רכב ותחבורה
-  "רכב ותחבורה": [
-    {
-      id: "automotive-1",
-      text: "איזה סוג שירות אתה צריך?",
-      type: "single_choice",
-      options: ["מוסך", "דיטיילינג", "טרייד-אין", "השכרת רכבים", "אחר"],
-      isRequired: true,
-      hasOther: true
-    },
-    {
-      id: "automotive-2",
-      text: "מה סוג הרכב?",
-      type: "text",
-      isRequired: false
-    },
-    {
-      id: "automotive-3",
-      text: "מה הבעיה?",
-      type: "text",
-      isRequired: false
-    }
-  ],
-
-  // תיירות ואירוח
-  "תיירות ואירוח": [
-    {
-      id: "tourism-1",
-      text: "איזה סוג שירות אתה מחפש?",
-      type: "single_choice",
-      options: ["צימרים", "סיורים", "סוכנות נסיעות", "ארגון אירועים", "אחר"],
-      isRequired: true,
-      hasOther: true
-    },
-    {
-      id: "tourism-2",
-      text: "כמה אנשים?",
-      type: "single_choice",
-      options: ["1-2", "3-6", "7-15", "מעל 15"],
-      isRequired: false
-    },
-    {
-      id: "tourism-3",
-      text: "מתי?",
-      type: "date",
-      isRequired: false
-    }
-  ],
-
-  // עמותות ומלכ"רים
-  "עמותות ומלכ\"רים": [
-    {
-      id: "nonprofit-1",
-      text: "איזה סוג שירות אתה צריך?",
-      type: "single_choice",
-      options: ["גיוס תרומות", "ניהול מתנדבים", "פרויקטים קהילתיים", "קמפיינים ציבוריים", "אחר"],
-      isRequired: true,
-      hasOther: true
-    },
-    {
-      id: "nonprofit-2",
-      text: "מה גודל הארגון?",
-      type: "single_choice",
-      options: ["עד 10 אנשים", "10-50 אנשים", "50-200 אנשים", "מעל 200 אנשים"],
-      isRequired: false
-    },
-    {
-      id: "nonprofit-3",
-      text: "מה התקציב?",
-      type: "single_choice",
-      options: ["עד 10,000 ₪", "10,000-50,000 ₪", "50,000-200,000 ₪", "מעל 200,000 ₪"],
-      isRequired: false
-    }
-  ]
+  'Access-Control-Allow-Methods': 'POST, OPTIONS'
 };
 
-// פונקציה לבניית פרומט ברירת מחדל
-function buildPrompt(payload: SuggestQuestionsRequest): string {
-  const { businessName, occupation, suboccupation, other_text, links, language = 'he' } = payload;
+// --- חיבור לסופרבייס ---
+const supabase = createClient(Deno.env.get("SUPABASE_URL"), Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"));
 
-  return `אתה יועץ UX וכתיבת שאלונים.
-קלט:
-- שם עסק: ${businessName}
-- תחום תעסוקה: ${occupation}
-- תת תחום/התמחות: ${suboccupation || 'כללי'}
-- מידע נוסף: ${other_text || '—'}
-- קישורים/מקורות: ${links || '—'}
+// --- Gemini API ---
+const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") || "";
+const MODELS_TO_TRY = [
+  'gemini-2.0-flash-exp',
+  'gemini-1.5-flash',
+  'gemini-1.5-pro'
+];
 
-מטרה:
-צור שאלון של 5–7 שאלות מותאם ללקוחות פונים, כך שהשאלות יסייעו לבעל העסק להבין את הצורך והעדפות הלקוח.
-
-דרישות:
-1. לכל שאלה ציין סוג ["בחירה יחידה","בחירה מרובה","שדה טקסט חופשי","כן/לא"] ואם זו בחירה – לפחות 3 אופציות קצרות.
-2. ניסוח ידידותי וברור, מותאם לנייד.
-3. אם חסר מידע – שאלות כלליות אך שימושיות.
-4. עבור שאלות בחירה (יחידה או מרובה), אם רלוונטי, כלול "אחר" כאופציה אחרונה והוסף "hasOther": true לשאלה. זה יאפשר למשתמש להזין טקסט חופשי.
-
-פלט נדרש:
-רשימת שאלות (מחרוזות) בלבד.`;
-}
-
-serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+// --- פונקציה עיקרית ---
+serve(async (req)=>{
+  // טיפול בבקשת OPTIONS (CORS)
+  if (req.method === "OPTIONS") {
+    return new Response('ok', { headers: corsHeaders });
   }
 
   try {
-    const payload = await req.json();
-    const max = Math.min(Math.max(payload.max ?? 5, 2), 6);
-    payload.max = max;
+    const body = await req.json();
+    const {
+      businessName,
+      occupation,
+      suboccupation,
+      other_text,
+      links,
+      language = 'he',
+      max = 7,
+      prompt_override
+    } = body;
 
-    console.log("[AI] prompt_override preview:", (payload as any).prompt_override?.slice(0, 160));
-
-    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") || "";
-    const GEMINI_MODEL   = Deno.env.get("GEMINI_MODEL")   || "gemini-1.5-flash";
-    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY") || "";
-
-    // 👇👇👇 השורה החשובה: אם יש prompt_override – הוא מנצח; אחרת buildPrompt.
-    const prompt: string =
-      (typeof payload.prompt_override === "string" && payload.prompt_override.trim())
-        ? payload.prompt_override.trim()
-        : buildPrompt(payload);
-
-    const prompt_used = prompt;
-
-    console.log("[suggest-questions] using prompt:", prompt_used.slice(0, 200));
-
-    const { businessName, occupation, suboccupation, other_text, links, language = 'he' }: SuggestQuestionsRequest = payload
-
-    if (!businessName || !occupation) {
-      return new Response(
-        JSON.stringify({ error: 'businessName and occupation are required' }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      )
+    // --- אימות שדות חובה ---
+    const topic = suboccupation?.trim() || occupation?.trim() || other_text?.trim();
+    if (!topic) {
+      return new Response(JSON.stringify({
+        error: "חובה לציין occupation, suboccupation או other_text"
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
-    // אם יש prompt_override, נשתמש ב-AI
-    if (typeof payload.prompt_override === "string" && payload.prompt_override.trim()) {
+    // --- יצירת הפרומפט ---
+    const prompt = prompt_override || `
+צור ${max} שאלות ${language === 'he' ? 'בעברית' : 'באנגלית'} לשאלון לידים.
+
+חשוב: אל תכלול שאלות על שם, אימייל או טלפון - הן כבר קיימות בטופס.
+התמקד בשאלות מותאמות לעיסוק ותת-תחום שיעזרו להבין את צרכי הלקוח.
+עבור שאלות בחירה, כלול 3-4 אופציות.
+
+החזר JSON בלבד בפורמט זה:
+{
+  "questions": [
+    { "text": "מה השירות שאתה מחפש?", "type": "single_choice", "options": ["אופציה 1", "אופציה 2", "אופציה 3", "אחר"], "isRequired": false },
+    { "text": "מתי תרצה להתחיל?", "type": "single_choice", "options": ["מיידי", "תוך שבוע", "תוך חודש", "לא בטוח"], "isRequired": false }
+  ]
+}
+
+סוגי שאלות אפשריים: text, single_choice, multiple_choice, yes_no, date, textarea
+
+פרטי העסק:
+שם העסק: ${businessName || 'לא צוין'}
+תחום עיקרי: ${occupation || 'לא צוין'}
+תת-תחום: ${suboccupation || topic}
+${other_text ? `מידע נוסף: ${other_text}` : ''}
+
+${links ? `קישורים/מסמכים: ${links}` : ''}
+`;
+
+    // --- קריאה למודל ---
+    let rawText = "[]";
+
+    for (const model of MODELS_TO_TRY) {
       try {
-        let aiResponse;
-        
-        if (GEMINI_API_KEY) {
-          // Gemini API
-          const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              contents: [{
-                parts: [{
-                  text: prompt
-                }]
-              }],
-              generationConfig: {
-                temperature: 0.2,
-                maxOutputTokens: 2000,
-                responseMimeType: "application/json"
-              }
-            })
-          });
-          
-          const geminiData = await geminiResponse.json();
-          aiResponse = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
-        } else if (OPENAI_API_KEY) {
-          // OpenAI API
-          const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${OPENAI_API_KEY}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              model: 'gpt-3.5-turbo',
-              messages: [{
-                role: 'user',
-                content: prompt
-              }],
-              max_tokens: 1000,
-              temperature: 0.2
-            })
-          });
-          
-          const openaiData = await openaiResponse.json();
-          aiResponse = openaiData.choices?.[0]?.message?.content || "";
-        } else {
-          throw new Error('No AI API key configured');
-        }
+        console.log('[suggest-questions] Trying Gemini model:', model);
 
-        // נסה לחלץ JSON מהתגובה
-        let questions: any[] = [];
-        try {
-          console.log("[AI] Raw response:", aiResponse.substring(0, 500));
-
-          // נסה למצוא JSON בתגובה (אובייקט או מערך)
-          const jsonMatch = aiResponse.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
-          if (jsonMatch) {
-            const parsed = JSON.parse(jsonMatch[0]);
-            console.log("[AI] Parsed JSON:", JSON.stringify(parsed).substring(0, 300));
-
-            // אם זה אובייקט עם מאפיין questions, קח אותו
-            if (parsed.questions && Array.isArray(parsed.questions)) {
-              questions = parsed.questions;
+        const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': GEMINI_API_KEY
+          },
+          body: JSON.stringify({
+            contents: [{
+              parts: [{ text: prompt }]
+            }],
+            generationConfig: {
+              temperature: 0.6,
+              topP: 0.95,
+              topK: 40,
+              maxOutputTokens: 2048,
             }
-            // אם זה מערך ישירות, השתמש בו
-            else if (Array.isArray(parsed)) {
-              questions = parsed;
-            }
-          } else {
-            console.log("[AI] No JSON found in response, trying line split");
-            // אם לא נמצא JSON, נסה לחלק לפי שורות
-            questions = aiResponse.split('\n')
-              .map(line => line.trim())
-              .filter(line => line.length > 0 && !line.startsWith('#') && !line.startsWith('-'))
-              .slice(0, max)
-              .map(text => ({ text, type: 'text', isRequired: false }));
-          }
-        } catch (parseError) {
-          console.error('JSON parse error:', parseError);
-          console.error('AI Response that failed to parse:', aiResponse);
-          // fallback: חלוקה לפי שורות
-          questions = aiResponse.split('\n')
-            .map(line => line.trim())
-            .filter(line => line.length > 0 && !line.startsWith('#') && !line.startsWith('-'))
-            .slice(0, max)
-            .map(text => ({ text, type: 'text', isRequired: false }));
+          })
+        });
+
+        const geminiData = await geminiResponse.json();
+        console.log('[suggest-questions] Response from', model, ':', JSON.stringify(geminiData).substring(0, 300));
+
+        if (geminiData.error) {
+          console.log('[suggest-questions] Model failed:', model, geminiData.error.message);
+          continue; // Try next model
         }
 
-        console.log("[AI] Final questions count:", questions.length);
+        const responseText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
 
-        // If AI returned questions, use them
-        if (questions.length > 0) {
-          if (payload.__debug) return ok({ questions, prompt_used });
-          return ok({ questions });
+        if (responseText) {
+          console.log('[suggest-questions] Successfully used model:', model);
+          rawText = responseText;
+          break; // Success, exit loop
         }
-
-        // If AI failed to generate questions, fall through to template logic below
-        console.log("[AI] No questions generated, falling back to templates");
-      } catch (aiError) {
-        console.error('AI Error:', aiError);
-        // fallback לשאלות מוכנות - fall through to template logic below
+      } catch (e) {
+        console.log('[suggest-questions] Exception with model:', model, e.message);
+        continue; // Try next model
       }
     }
 
-    // שאלות מוכנות (fallback או כשאין prompt_override)
-    let questions: Question[] = [];
-    
-    if (QUESTION_TEMPLATES[occupation]) {
-      questions = QUESTION_TEMPLATES[occupation];
-    } else {
-      // שאלות כלליות אם לא נמצא התחום
+    // --- ניסיון לפענח את ה־JSON ---
+    let questions = [];
+    try {
+      // Try to extract JSON object or array from the response
+      const jsonMatch = rawText.match(/\{[\s\S]*"questions"[\s\S]*\}/) || rawText.match(/\[[\s\S]*\]/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        // Handle both formats: {"questions": [...]} or [...]
+        questions = parsed.questions || parsed;
+      } else {
+        console.warn("[WARN] לא נמצא JSON תקין, משתמש בשאלות ברירת מחדל.");
+        questions = [
+          { text: `מה השירות שאתה מחפש בתחום ${topic}?`, type: "single_choice", options: ["שירות מלא", "ייעוץ בלבד", "עדיין מתלבט", "אחר"], isRequired: false },
+          { text: "מתי תרצה להתחיל?", type: "single_choice", options: ["מיידי", "תוך שבוע", "תוך חודש", "לא בטוח"], isRequired: false },
+          { text: "מה הכי חשוב לך?", type: "single_choice", options: ["מחיר", "איכות", "זמינות", "ניסיון", "אחר"], isRequired: false }
+        ];
+      }
+    } catch (e) {
+      console.error("[ERROR] JSON parse failed:", e);
       questions = [
-        {
-          id: "general-1",
-          text: language === 'he' ? "מה השם שלך?" : "What is your name?",
-          type: "text",
-          isRequired: true
-        },
-        {
-          id: "general-2",
-          text: language === 'he' ? "מה המייל שלך?" : "What is your email?",
-          type: "email",
-          isRequired: true
-        },
-        {
-          id: "general-3",
-          text: language === 'he' ? "מה הטלפון שלך?" : "What is your phone number?",
-          type: "phone",
-          isRequired: false
-        },
-        {
-          id: "general-4",
-          text: language === 'he' ? "איך שמעת עלינו?" : "How did you hear about us?",
-          type: "single_choice",
-          options: language === 'he'
-            ? ["חיפוש בגוגל", "רשתות חברתיות", "המלצה", "פרסום", "אחר"]
-            : ["Google Search", "Social Media", "Recommendation", "Advertisement", "Other"],
-          isRequired: false,
-          hasOther: true
-        }
+        { text: `מה השירות שאתה מחפש בתחום ${topic}?`, type: "single_choice", options: ["שירות מלא", "ייעוץ בלבד", "עדיין מתלבט", "אחר"], isRequired: false },
+        { text: "מתי תרצה להתחיל?", type: "single_choice", options: ["מיידי", "תוך שבוע", "תוך חודש", "לא בטוח"], isRequired: false },
+        { text: "מה הכי חשוב לך?", type: "single_choice", options: ["מחיר", "איכות", "זמינות", "ניסיון", "אחר"], isRequired: false }
       ];
     }
 
-    // הגבל למספר המבוקש
-    const limitedQuestions = questions.slice(0, max);
+    // --- וידוא שכל שאלה תקינה ---
+    // Filter out name, email, phone questions
+    const filteredQuestions = questions.filter((q) => {
+      const text = (q.text || q.question || '').toLowerCase();
+      const type = (q.type || '').toLowerCase();
 
-    // הוסף ID ייחודי לכל שאלה
-    const questionsWithIds = limitedQuestions.map((q, index) => ({
-      ...q,
-      id: `${occupation.toLowerCase().replace(/\s+/g, '-')}-${index + 1}-${Date.now()}`
+      // Skip if type is email or phone
+      if (type === 'email' || type === 'phone') return false;
+
+      // Skip if text contains common name/email/phone patterns
+      const skipPatterns = [
+        'שם', 'name', 'full name', 'שם מלא',
+        'אימייל', 'email', 'אי-מייל', 'מייל',
+        'טלפון', 'phone', 'מספר', 'נייד', 'פלאפון'
+      ];
+
+      for (const pattern of skipPatterns) {
+        if (text.includes(pattern)) return false;
+      }
+
+      return q.text || q.question;
+    });
+
+    const validQuestions = filteredQuestions.map((q, i)=>({
+        id: `${topic.replace(/\s+/g, "-")}-${i + 1}-${Date.now()}`,
+        text: q.text || q.question,
+        type: q.type || "text",
+        options: q.options || undefined,
+        isRequired: q.isRequired !== undefined ? q.isRequired : false
+      })).slice(0, max);
+
+    // --- שמירה לטבלת Supabase ---
+    // 1. Create questionnaire
+    const { data: questionnaire, error: questionnaireError } = await supabase
+      .from("questionnaires")
+      .insert({
+        title: businessName || topic,
+        created_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (questionnaireError) throw questionnaireError;
+
+    // 2. Create questions in the questions table
+    const questionsToInsert = validQuestions.map((q, index) => ({
+      questionnaire_id: questionnaire.id,
+      question_text: q.text,
+      label: q.text,
+      question_type: q.type,
+      is_required: q.isRequired,
+      order_index: index + 1
     }));
 
-    if (payload.__debug) return ok({ questions: questionsWithIds, prompt_used });
-    return ok({ questions: questionsWithIds });
+    const { data: insertedQuestions, error: questionsError } = await supabase
+      .from("questions")
+      .insert(questionsToInsert)
+      .select();
 
-  } catch (error) {
-    console.error('Error in suggest-questions function:', error)
-    
-    return new Response(
-      JSON.stringify({
-        error: 'Internal server error',
-        message: error.message
-      }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    if (questionsError) throw questionsError;
+
+    // 3. Create question options for choice-type questions
+    const optionsToInsert = [];
+    for (let i = 0; i < validQuestions.length; i++) {
+      const question = validQuestions[i];
+      const insertedQuestion = insertedQuestions[i];
+
+      if (question.options && insertedQuestion) {
+        question.options.forEach((option, optionIndex) => {
+          optionsToInsert.push({
+            question_id: insertedQuestion.id,
+            value: option,
+            label: option,
+            order_index: optionIndex + 1
+          });
+        });
       }
-    )
+    }
+
+    if (optionsToInsert.length > 0) {
+      const { error: optionsError } = await supabase
+        .from("question_options")
+        .insert(optionsToInsert);
+
+      if (optionsError) console.error("[WARN] Error inserting options:", optionsError);
+    }
+
+    // --- תשובה סופית ---
+    // Format questions to match frontend expectations
+    const formattedQuestions = insertedQuestions.map((q, index) => {
+      const originalQuestion = validQuestions[index];
+      return {
+        id: q.id,
+        text: q.question_text,
+        type: q.question_type,
+        isRequired: q.is_required,
+        options: originalQuestion.options || undefined
+      };
+    });
+
+    return new Response(JSON.stringify({
+      success: true,
+      questionnaire_id: questionnaire.id,
+      title: questionnaire.title,
+      questions: formattedQuestions
+    }), {
+      status: 200,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+
+  } catch (err) {
+    console.error("[Edge Function Error]:", err);
+    return new Response(JSON.stringify({
+      success: false,
+      error: err.message || "שגיאת שרת פנימית"
+    }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
   }
-})
+});

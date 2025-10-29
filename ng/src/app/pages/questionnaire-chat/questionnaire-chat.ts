@@ -69,6 +69,7 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
 
   // Referral tracking
   private detectedChannel: string = 'direct';
+  private distributionToken: string | null = null;
 
   constructor(
     private questionnaireService: QuestionnaireService,
@@ -103,6 +104,12 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
     const token = this.route.snapshot.paramMap.get('token');
     const id = this.route.snapshot.paramMap.get('id');
     const tokenOrId = token || id;
+
+    // Store distribution token if it's a distribution link
+    if (token && token.startsWith('d_')) {
+      this.distributionToken = token;
+      console.log('Distribution token detected:', this.distributionToken);
+    }
 
     // Check if this is a preview request (by path, not ID)
     if (currentPath.includes('/preview')) {
@@ -439,11 +446,44 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
   async loadQuestionnaire(tokenOrId: string) {
     this.isLoading = true;
     try {
+      // Check if this is a distribution token
+      const isDistributionToken = tokenOrId.startsWith('d_');
       // Check if this is a UUID or a token
       const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tokenOrId);
 
+      console.log('Loading questionnaire:', { tokenOrId, isUUID, isDistributionToken });
+
       let data;
-      if (isUUID) {
+
+      if (isDistributionToken) {
+        // Load distribution first to get questionnaire_id using RPC (bypasses RLS)
+        const { data: distributions, error: distError } = await this.supabaseService.client
+          .rpc('get_distribution_by_token', { p_token: tokenOrId });
+
+        if (distError || !distributions || distributions.length === 0) {
+          console.error('Distribution not found or inactive:', distError);
+          // Fallback to direct query in case RPC doesn't exist yet
+          const { data: distribution, error: fallbackError } = await this.supabaseService.client
+            .from('distributions')
+            .select('questionnaire_id, is_active')
+            .eq('token', tokenOrId)
+            .eq('is_active', true)
+            .single();
+
+          if (fallbackError || !distribution) {
+            console.error('Distribution not found (fallback also failed):', fallbackError);
+            throw new Error('Distribution not found or inactive. Please check the URL.');
+          }
+
+          console.log('Distribution found (via fallback):', distribution);
+          data = await this.questionnaireService.fetchQuestionnaireForReview(distribution.questionnaire_id);
+        } else {
+          const distribution = distributions[0];
+          console.log('Distribution found (via RPC):', distribution);
+          // Load questionnaire by ID from distribution
+          data = await this.questionnaireService.fetchQuestionnaireForReview(distribution.questionnaire_id);
+        }
+      } else if (isUUID) {
         data = await this.questionnaireService.fetchQuestionnaireForReview(tokenOrId);
       } else {
         data = await this.questionnaireService.fetchQuestionnaireByToken(tokenOrId);
@@ -670,8 +710,12 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
       const lowerValue = optionValue.toLowerCase().trim();
       const isOther = lowerValue === 'אחר' || lowerValue === 'other';
 
-      // Only auto-submit if it's NOT "Other" (user needs to fill in text for "Other")
-      if (!isOther) {
+      // Check if this is the last question
+      const isLastQuestion = this.currentQuestionIndex === this.questions.length - 1;
+
+      // Only auto-submit if it's NOT "Other" AND NOT the last question
+      // (last question should show a send button)
+      if (!isOther && !isLastQuestion) {
         this.submitCurrentAnswer(optionValue);
       }
     } else if (this.isMultiChoiceQuestion(question)) {
@@ -757,34 +801,42 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
         return;
       }
 
-      // Validate based on question type
+      // Validate based on question type (only if there's a response OR if required)
       if (question.question_type === 'text' && this.currentQuestionIndex === 0) {
-        // First question: Name validation
-        const nameValidation = this.validateName(response);
-        if (!nameValidation.valid) {
-          this.currentAnswerError = nameValidation.message;
-          return;
+        // First question: Name validation (always validate if required, or if there's input)
+        if (response || question.is_required) {
+          const nameValidation = this.validateName(response);
+          if (!nameValidation.valid) {
+            this.currentAnswerError = nameValidation.message;
+            return;
+          }
         }
       } else if (question.question_type === 'email') {
-        // Email validation for any email field
-        const emailValidation = this.validateEmail(response);
-        if (!emailValidation.valid) {
-          this.currentAnswerError = emailValidation.message;
-          return;
+        // Email validation: only if there's a response (format check)
+        if (response && response.trim()) {
+          const emailValidation = this.validateEmail(response);
+          if (!emailValidation.valid) {
+            this.currentAnswerError = emailValidation.message;
+            return;
+          }
         }
       } else if (question.question_type === 'phone') {
-        // Phone validation for any phone field
-        const phoneValidation = this.validateIsraeliPhone(response);
-        if (!phoneValidation.valid) {
-          this.currentAnswerError = phoneValidation.message;
-          return;
+        // Phone validation: only if there's a response (format check)
+        if (response && response.trim()) {
+          const phoneValidation = this.validateIsraeliPhone(response);
+          if (!phoneValidation.valid) {
+            this.currentAnswerError = phoneValidation.message;
+            return;
+          }
         }
       } else if (question.question_type === 'url') {
-        // URL validation for any URL field
-        const urlValidation = this.validateUrl(response);
-        if (!urlValidation.valid) {
-          this.currentAnswerError = urlValidation.message;
-          return;
+        // URL validation: only if there's a response (format check)
+        if (response && response.trim()) {
+          const urlValidation = this.validateUrl(response);
+          if (!urlValidation.valid) {
+            this.currentAnswerError = urlValidation.message;
+            return;
+          }
         }
       }
     }
@@ -960,33 +1012,85 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
         }
       }
 
-      // Prepare lead data with new schema
-      const leadData = {
-        questionnaire_id: this.questionnaire.id,
-        client_name: clientName,
-        partner_id: null, // Will be assigned later by admin/user
-        channel: this.detectedChannel, // Detected from referral source
-        status: 'new',
-        sub_status: null,
-        automations: [], // Empty array, will be configured by admin
-        comments: null,
-        answer_json: responseData,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
+      // Extract email, phone, name from responseData (usually first 3 questions)
+      let email = null;
+      let phone = null;
+      let name = clientName;
 
-      // Insert into leads table
-      const { error: leadError } = await this.supabaseService.client
-        .from('leads')
-        .insert(leadData);
+      if (this.questions.length >= 2) {
+        const emailAnswer = responseData[this.questions[1]?.id];
+        if (emailAnswer && typeof emailAnswer === 'string') email = emailAnswer;
+      }
+      if (this.questions.length >= 3) {
+        const phoneAnswer = responseData[this.questions[2]?.id];
+        if (phoneAnswer && typeof phoneAnswer === 'string') phone = phoneAnswer;
+      }
+
+      // Use RPC function to insert lead (bypasses RLS)
+      const { data: leadId, error: leadError } = await this.supabaseService.client
+        .rpc('submit_lead', {
+          p_questionnaire_id: this.questionnaire.id,
+          p_client_name: clientName,
+          p_answer_json: responseData,
+          p_email: email,
+          p_phone: phone,
+          p_name: name,
+          p_distribution_token: this.distributionToken,
+          p_channel: this.detectedChannel
+        });
 
       if (leadError) {
         console.error('Error saving lead data:', leadError);
         // Don't throw error - lead saving is optional, response is already saved
+        return;
+      }
+
+      // Create a minimal lead object for compatibility
+      const insertedLead = {
+        id: leadId,
+        questionnaire_id: this.questionnaire.id,
+        client_name: clientName,
+        answer_json: responseData,
+        email,
+        phone,
+        name,
+        distribution_token: this.distributionToken,
+        channel: this.detectedChannel
+      };
+
+      // Trigger automation by calling the Edge Function directly
+      if (insertedLead) {
+        this.triggerAutomation(insertedLead);
       }
     } catch (error) {
       console.error('Error in saveLeadData:', error);
       // Don't throw error - lead saving is optional
+    }
+  }
+
+  private async triggerAutomation(lead: any) {
+    try {
+      console.log('🚀 [CLIENT] Triggering automation for lead:', lead.id);
+      console.log('📦 [CLIENT] Lead data:', lead);
+
+      // Call the on-new-lead Edge Function to trigger automation
+      const { data, error } = await this.supabaseService.client.functions.invoke('on-new-lead', {
+        body: {
+          type: 'INSERT',
+          table: 'leads',
+          record: lead
+        }
+      });
+
+      if (error) {
+        console.error('❌ [CLIENT] Error triggering automation:', error);
+        // Don't throw - automation failure shouldn't affect the submission
+      } else {
+        console.log('✅ [CLIENT] Automation triggered successfully:', data);
+      }
+    } catch (error) {
+      console.error('❌ [CLIENT] Error in triggerAutomation:', error);
+      // Don't throw - automation failure shouldn't affect the submission
     }
   }
 
@@ -1054,6 +1158,27 @@ export class QuestionnaireChat implements OnInit, OnDestroy, AfterViewChecked {
     // Trigger change detection and scroll to show the question again
     this.cdr.detectChanges();
     this.shouldScrollToBottom = true;
+  }
+
+  shouldShowSendButton(): boolean {
+    const question = this.getCurrentQuestion();
+    if (!question || this.isSubmitted || this.currentQuestionIndex !== this.questions.length - 1) {
+      return false;
+    }
+
+    // Show for single-choice (but not when "Other" is selected, as that's handled in bubble)
+    if (this.isSingleChoiceQuestion(question)) {
+      return !!this.responses[question.id] && !this.isOtherSelected(question.id);
+    }
+
+    // Show for multi-choice if at least one option is selected
+    if (this.isMultiChoiceQuestion(question)) {
+      const selections = this.multiResponses[question.id];
+      if (!selections) return false;
+      return Object.values(selections).some(checked => checked);
+    }
+
+    return false;
   }
 
   skipCurrentQuestion() {

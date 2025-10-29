@@ -295,6 +295,7 @@ export class LanguageService {
     'distribution.templates': { en: 'templates', he: 'תבניות' },
     'distribution.maxTemplatesReached': { en: 'You can select up to 3 templates only', he: 'ניתן לבחור עד 3 תבניות בלבד' },
     'distribution.selectChannelForPrevious': { en: 'Please select at least one channel for the previous template before adding another', he: 'יש לבחור לפחות ערוץ אחד לתבנית הקודמת לפני הוספת תבנית נוספת' },
+    'distribution.templatesMissingChannels': { en: 'All templates must have at least one channel selected', he: 'כל התבניות חייבות לכלול לפחות ערוץ אחד' },
 
     // Distribution Hub - Part 3: Create Links
     'distribution.part3Title': { en: 'Part 3: Create Links', he: 'חלק 3: יצירת קישורים' },
@@ -340,12 +341,19 @@ export class LanguageService {
     // Social Network Messages
     'distribution.linkCopiedToClipboard': { en: 'link copied to clipboard!', he: 'הועתק ללוח!' },
     'distribution.linkCopiedAddToVideo': { en: 'link copied to clipboard - add to video description', he: 'הועתק ללוח - הוסף לתיאור הסרטון' },
+    'distribution.linkCopiedPasteInPost': { en: 'link copied - paste it in your post!', he: 'הקישור הועתק - הדבק בפוסט!' },
     'distribution.linkCreatedSuccessfully': { en: 'link created successfully!', he: 'נוצר בהצלחה!' },
     'distribution.chooseQuestionnaireFirst': { en: 'Please select a questionnaire first', he: 'בחר שאלון תחילה' },
     'distribution.questionnaireNotActive': { en: 'Questionnaire is not active or missing token', he: 'השאלון אינו פעיל או חסר token' },
 
     // Preview
     'distribution.previewTitle': { en: 'Preview', he: 'תצוגה מקדימה' },
+
+    // Distribution save/error messages
+    'distribution.distributionSaved': { en: 'Distribution saved', he: 'הפצה נשמרה' },
+    'distribution.savingError': { en: 'Error saving distribution', he: 'שגיאה בשמירת הפצה' },
+    'distribution.showLinks': { en: 'Show Links', he: 'הצג קישורים' },
+    'distribution.generateLinks': { en: 'Generate Distribution Links', he: 'צור קישורי הפצה' },
 
     // Channels
     'distribution.channelEmail': { en: 'Email', he: 'מייל' },
@@ -563,6 +571,8 @@ export class LanguageService {
     'profile.removeImage': { en: 'Remove image', he: 'הסר תמונה' },
     'profile.brandColors': { en: 'Brand Colors', he: 'צבעי המותג' },
     'profile.businessWebsite': { en: 'Business Website', he: 'אתר עסקי' },
+    'profile.whatsappNumber': { en: 'WhatsApp Number', he: 'מספר WhatsApp' },
+    'profile.whatsappPlaceholder': { en: 'Enter WhatsApp number (optional)', he: 'הזן מספר WhatsApp (אופציונלי)' },
     'profile.linkSources': { en: 'Link Sources to Business', he: 'מקורות קישור לעסק' },
     'profile.linkSourcePlaceholder': { en: 'Enter URL of information source (blog, news site, etc.)', he: 'הזן URL של מקור מידע (בלוג, אתר חדשות וכו\')' },
     'profile.noLinkSources': { en: 'No business links added', he: 'לא מקורות קישור לעסק' },

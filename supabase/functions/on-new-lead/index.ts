@@ -74,7 +74,7 @@ async function handleAutomation(lead: LeadRecord) {
     // 1. Query questionnaire
     const { data: questionnaire, error: qError } = await supabase
       .from('questionnaires')
-      .select('id, owner_id, title')
+      .select('id, owner_id, title, link_label')
       .eq('id', lead.questionnaire_id)
       .single();
 
@@ -92,7 +92,7 @@ async function handleAutomation(lead: LeadRecord) {
       console.log("🔍 [AUTOMATION] Looking up distribution by token:", lead.distribution_token);
       const { data, error } = await supabase
         .from('distributions')
-        .select('id, automation_template_ids, link_text')
+        .select('id, automation_template_ids')
         .eq('token', lead.distribution_token)
         .eq('is_active', true)
         .single();
@@ -104,7 +104,7 @@ async function handleAutomation(lead: LeadRecord) {
       console.log("🔍 [AUTOMATION] Looking up distribution by questionnaire_id:", lead.questionnaire_id);
       const { data, error } = await supabase
         .from('distributions')
-        .select('id, automation_template_ids, link_text')
+        .select('id, automation_template_ids')
         .eq('questionnaire_id', lead.questionnaire_id)
         .eq('is_active', true)
         .single();
@@ -122,7 +122,7 @@ async function handleAutomation(lead: LeadRecord) {
 
     console.log("🤖 [AUTOMATION] Starting automation for lead:", lead.id);
     console.log("📋 [AUTOMATION] Distribution found with templates:", distribution.automation_template_ids);
-    console.log("🔗 [AUTOMATION] Link text from distribution:", distribution.link_text || 'לחץ כאן (default)');
+    console.log("🔗 [AUTOMATION] Link text from questionnaire:", questionnaire.link_label || 'לחץ כאן (default)');
 
     // 3. Load questions for this questionnaire
     const { data: questions, error: questionsError } = await supabase
@@ -153,6 +153,9 @@ async function handleAutomation(lead: LeadRecord) {
     }
 
     console.log("✅ [AUTOMATION] Owner profile loaded");
+
+    // Track which channels have been used to prevent duplicates
+    const sentChannels = new Set<string>();
 
     // 6. Process each template with its channels
     console.log("🔄 [AUTOMATION] Processing", distribution.automation_template_ids.length, "template(s)");
@@ -228,7 +231,7 @@ async function handleAutomation(lead: LeadRecord) {
           linkUrl,
           template.image_url,
           ownerProfile.company || 'Our Team',
-          distribution.link_text || 'לחץ כאן'
+          questionnaire.link_label || 'לחץ כאן'
         );
 
         // Send on each configured channel
@@ -237,17 +240,29 @@ async function handleAutomation(lead: LeadRecord) {
         for (const channel of channels) {
           console.log("📬 [AUTOMATION] Processing channel:", channel);
 
+          // Skip if this channel was already used
+          if (sentChannels.has(channel)) {
+            console.log("⏭️ [AUTOMATION] Skipping", channel, "- already sent in previous template");
+            continue;
+          }
+
           if (channel === 'email' && contact.email) {
             console.log("📧 [AUTOMATION] Sending email to:", contact.email);
+            console.log("📧 [AUTOMATION] Email subject:", subject);
             await sendAutomationEmail(contact.email, subject, htmlEmail, messageBody, ownerProfile.email);
+            sentChannels.add('email');
           } else if (channel === 'email' && !contact.email) {
             console.log("⚠️ [AUTOMATION] Email channel selected but no contact email");
           } else if (channel === 'whatsapp' && contact.phone) {
-            console.log("📱 [WHATSAPP] Sending to:", contact.phone);
-            // TODO: Implement WhatsApp sending
+            console.log("📱 [WHATSAPP] Sending WhatsApp to:", contact.phone);
+            await sendAutomationWhatsApp(contact.phone, messageBody, template.image_url || null);
+            sentChannels.add('whatsapp');
+          } else if (channel === 'whatsapp' && !contact.phone) {
+            console.log("⚠️ [AUTOMATION] WhatsApp channel selected but no contact phone");
           } else if (channel === 'sms' && contact.phone) {
             console.log("💬 [SMS] Sending SMS to:", contact.phone);
             await sendAutomationSMS(contact.phone, messageBody);
+            sentChannels.add('sms');
           } else if (channel === 'sms' && !contact.phone) {
             console.log("⚠️ [AUTOMATION] SMS channel selected but no contact phone");
           }
@@ -336,12 +351,26 @@ async function handleAutomation(lead: LeadRecord) {
 
             console.log("📤 [AUTOMATION] Sending AI message (fallback) on", channels.length, "channel(s)");
             for (const channel of channels) {
+              // Skip if this channel was already used
+              if (sentChannels.has(channel)) {
+                console.log("⏭️ [AUTOMATION] Skipping", channel, "- already sent in previous template");
+                continue;
+              }
+
               if (channel === 'email' && contact.email) {
                 console.log("📧 [AUTOMATION] Sending AI email to:", contact.email);
                 await sendAutomationEmail(contact.email, subject, htmlEmail, fallbackMessage, ownerProfile.email);
+                sentChannels.add('email');
+              } else if (channel === 'whatsapp' && contact.phone) {
+                console.log("📱 [WHATSAPP] Sending AI WhatsApp (fallback) to:", contact.phone);
+                await sendAutomationWhatsApp(contact.phone, fallbackMessage, template.image_url || null);
+                sentChannels.add('whatsapp');
+              } else if (channel === 'whatsapp' && !contact.phone) {
+                console.log("⚠️ [AUTOMATION] WhatsApp channel selected but no contact phone");
               } else if (channel === 'sms' && contact.phone) {
                 console.log("💬 [SMS] Sending AI SMS (fallback) to:", contact.phone);
                 await sendAutomationSMS(contact.phone, fallbackMessage);
+                sentChannels.add('sms');
               } else if (channel === 'sms' && !contact.phone) {
                 console.log("⚠️ [AUTOMATION] SMS channel selected but no contact phone");
               }
@@ -373,12 +402,26 @@ async function handleAutomation(lead: LeadRecord) {
 
             console.log("📤 [AUTOMATION] Sending AI message on", channels.length, "channel(s)");
             for (const channel of channels) {
+              // Skip if this channel was already used
+              if (sentChannels.has(channel)) {
+                console.log("⏭️ [AUTOMATION] Skipping", channel, "- already sent in previous template");
+                continue;
+              }
+
               if (channel === 'email' && contact.email) {
                 console.log("📧 [AUTOMATION] Sending AI email to:", contact.email);
                 await sendAutomationEmail(contact.email, subject, htmlEmail, aiMessage, ownerProfile.email);
+                sentChannels.add('email');
+              } else if (channel === 'whatsapp' && contact.phone) {
+                console.log("📱 [WHATSAPP] Sending AI WhatsApp to:", contact.phone);
+                await sendAutomationWhatsApp(contact.phone, aiMessage, template.image_url || null);
+                sentChannels.add('whatsapp');
+              } else if (channel === 'whatsapp' && !contact.phone) {
+                console.log("⚠️ [AUTOMATION] WhatsApp channel selected but no contact phone");
               } else if (channel === 'sms' && contact.phone) {
                 console.log("💬 [SMS] Sending AI SMS to:", contact.phone);
                 await sendAutomationSMS(contact.phone, aiMessage);
+                sentChannels.add('sms');
               } else if (channel === 'sms' && !contact.phone) {
                 console.log("⚠️ [AUTOMATION] SMS channel selected but no contact phone");
               }
@@ -393,6 +436,7 @@ async function handleAutomation(lead: LeadRecord) {
     }
 
     console.log("✅ [AUTOMATION] Automation completed successfully");
+    console.log("📊 [AUTOMATION] Channels used in this automation:", Array.from(sentChannels).join(', '));
   } catch (error) {
     console.error("❌ [AUTOMATION] Error executing automation:", error);
   }
@@ -497,80 +541,54 @@ function buildEmailHTML(
     linkUrl,
     attachmentImageUrl: publicAttachmentImageUrl
   });
+  console.log("📝 [EMAIL] Message body length:", messageBody.length);
+  console.log("📝 [EMAIL] Business name:", businessName);
+  console.log("📝 [EMAIL] Link text:", linkText);
 
+  // Safe email template - Progressive enhancement approach
   return `
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" dir="rtl" lang="he">
+<!DOCTYPE html>
+<html dir="rtl">
 <head>
-  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
 </head>
-<body style="margin: 0; padding: 0; background-color: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f5f5f5;">
-    <tr>
-      <td align="center" style="padding: 20px 0;">
-        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; border-radius: 8px; max-width: 600px;">
-          <!-- Header with logo and profile image -->
-          <tr>
-            <td style="padding: 40px 40px 20px 40px;">
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-                <tr>
-                  ${publicProfileImageUrl ? `
-                  <td width="50%" align="right" valign="middle" style="padding: 10px;">
-                    <img src="${publicProfileImageUrl}" alt="Profile Image" width="100" height="100" border="0" style="border-radius: 50%; display: block; object-fit: cover; max-width: 100px; max-height: 100px;" />
-                  </td>
-                  ` : '<td width="50%"></td>'}
-                  ${publicLogoUrl ? `
-                  <td width="50%" align="left" valign="middle" style="padding: 10px;">
-                    <img src="${publicLogoUrl}" alt="${businessName} Logo" border="0" style="max-width: 200px; height: auto; display: block;" />
-                  </td>
-                  ` : '<td width="50%"></td>'}
-                </tr>
-              </table>
-            </td>
-          </tr>
+<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f5f5f5;">
+  <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="background-color: white; padding: 0;">
 
-          <!-- Message body -->
-          <tr>
-            <td style="padding: 20px 40px; font-size: 18px; line-height: 1.8; color: #333333; text-align: right;">
-              ${formattedBody}
-            </td>
-          </tr>
+      <!-- Green Header -->
+      <div style="background-color: #199f3a; padding: 30px 20px; text-align: center;">
+        ${publicLogoUrl ? `
+        <div style="margin-bottom: 15px;">
+          <img src="${publicLogoUrl}" alt="${businessName}" style="height: 120px;">
+        </div>
+        ` : ''}
+        <p style="color: white; font-size: 28px; margin: 0; font-weight: bold;">${businessName}</p>
+      </div>
 
-          <!-- Attachment image -->
-          ${publicAttachmentImageUrl ? `
-          <tr>
-            <td align="center" style="padding: 0 40px 20px 40px;">
-              <img src="${publicAttachmentImageUrl}" alt="Attachment Image" border="0" style="width: 100%; max-width: 520px; height: auto; border-radius: 8px; display: block;" />
-            </td>
-          </tr>
-          ` : ''}
+      <!-- Content Area -->
+      <div style="padding: 30px 20px; text-align: right;">
 
-          <!-- Link button -->
-          ${linkUrl ? `
-          <tr>
-            <td align="center" style="padding: 20px 40px;">
-              <table role="presentation" cellpadding="0" cellspacing="0" border="0">
-                <tr>
-                  <td align="center" style="background-color: #199f3a; border-radius: 8px;">
-                    <a href="${linkUrl}" target="_blank" rel="noopener noreferrer" style="display: inline-block; color: #ffffff; padding: 15px 40px; text-decoration: none; font-weight: 600; font-size: 16px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">${linkText}</a>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-          ` : ''}
+        ${linkUrl ? `
+        <div style="text-align: center; margin: 20px 0;">
+          <a href="${linkUrl}" style="background-color: #16a34a; color: white; padding: 12px 30px; text-decoration: none; display: inline-block; font-size: 16px;">${linkText}</a>
+        </div>
+        ` : ''}
 
-          <!-- Footer -->
-          <tr>
-            <td style="padding: 20px 40px 40px 40px; text-align: center; font-size: 14px; color: #666666; border-top: 1px solid #e0e0e0;">
-              ${businessName}
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
+        <div style="margin: 20px 0; line-height: 1.6;">
+          ${formattedBody}
+        </div>
+
+        <p style="text-align: center; margin-top: 30px; color: #666;">בברכה,<br>${businessName || 'iHoogi'}</p>
+      </div>
+
+      <!-- Footer -->
+      <div style="background-color: #f5f5f5; padding: 20px; text-align: center; font-size: 12px; color: #999;">
+        <p style="margin: 5px 0; color: #666;">נשלח באופן אוטומטי באמצעות iHoogi – מערכת שאלונים חכמה המחברת עסקים ללקוחותיהם, מבית <a href="https://www.ai-4biz.com" style="color: #666; text-decoration: underline;">AI-4Biz</a>, בשם העסק שמולו פנית.</p>
+      </div>
+
+    </div>
+  </div>
 </body>
 </html>
   `.trim();
@@ -643,14 +661,34 @@ async function sendAutomationEmail(
       }
     });
 
+    // Log the full response first
+    console.log("📬 [EMAIL] Response from send-automation-email:", JSON.stringify({ data, error }));
+
+    // Check for errors - both in error field and data.error
     if (error) {
-      console.error("❌ [EMAIL] Error sending email:", error);
+      console.error("❌ [EMAIL] Invoke error:", error);
       throw error;
     }
 
-    console.log("✅ [EMAIL] Email sent successfully");
+    if (data && data.error) {
+      console.error("❌ [EMAIL] Email service error:", data.error);
+      console.error("📋 [EMAIL] Full response:", JSON.stringify(data));
+      throw new Error(data.error);
+    }
+
+    if (data && data.success) {
+      console.log("✅ [EMAIL] Email sent successfully to:", to);
+      console.log("📧 [EMAIL] Email ID:", data.id);
+    } else {
+      console.error("⚠️ [EMAIL] Unexpected response - data:", JSON.stringify(data));
+      console.error("⚠️ [EMAIL] Unexpected response - error:", JSON.stringify(error));
+      console.error("⚠️ [EMAIL] data.success:", data?.success);
+      console.error("⚠️ [EMAIL] typeof data:", typeof data);
+      throw new Error("Unexpected email response");
+    }
   } catch (error) {
     console.error("❌ [EMAIL] Error in sendAutomationEmail:", error);
+    console.error("📍 [EMAIL] Failed to send to:", to);
     // Don't throw - continue even if email fails
   }
 }
@@ -684,6 +722,47 @@ async function sendAutomationSMS(
   }
 }
 
+async function sendAutomationWhatsApp(
+  recipient: string,
+  message: string,
+  mediaUrl: string | null = null
+): Promise<void> {
+  try {
+    console.log("📱 [WHATSAPP] Sending automation WhatsApp to:", recipient);
+
+    // Create Supabase client to call the send-whatsapp function
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+    const requestBody: { recipient: string; message: string; mediaUrl?: string } = {
+      recipient,
+      message
+    };
+
+    // Add mediaUrl if provided
+    if (mediaUrl) {
+      // Convert to public URL if it's a storage path
+      const publicMediaUrl = getPublicUrl(mediaUrl, 'whatsapp_media');
+      if (publicMediaUrl) {
+        requestBody.mediaUrl = publicMediaUrl;
+      }
+    }
+
+    const { data, error } = await supabase.functions.invoke('send-whatsapp', {
+      body: requestBody
+    });
+
+    if (error) {
+      console.error("❌ [WHATSAPP] Error sending WhatsApp:", error);
+      throw error;
+    }
+
+    console.log("✅ [WHATSAPP] WhatsApp message sent successfully");
+  } catch (error) {
+    console.error("❌ [WHATSAPP] Error in sendAutomationWhatsApp:", error);
+    // Don't throw - continue even if WhatsApp fails
+  }
+}
+
 serve(async (req) => {
   console.log("📥 [WEBHOOK] Received request:", req.method);
 
@@ -713,11 +792,13 @@ serve(async (req) => {
     }
 
     const payload = (await req.json()) as TriggerPayload;
+    console.log("📦 [WEBHOOK] Raw payload:", JSON.stringify(payload));
     console.log("📦 [WEBHOOK] Payload received:", {
       type: payload?.type,
       table: payload?.table,
       recordId: payload?.record?.id
     });
+    console.log("📦 [WEBHOOK] Payload keys:", Object.keys(payload || {}));
 
     if (payload?.type !== "INSERT" || payload?.table !== "leads") {
       console.log("⏭️  [WEBHOOK] Ignored - not a lead INSERT");

@@ -5,6 +5,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { SupabaseService } from '../../core/services/supabase.service';
 import { LanguageService } from '../../core/services/language.service';
 import { Subject } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 interface LeadItem {
   id: string;
@@ -430,7 +431,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       sessionStorage.setItem('preview_questionnaire', JSON.stringify(previewData));
 
       // Open preview in new tab
-      const url = `${window.location.origin}/questionnaires/live/preview`;
+      const url = `${environment.siteUrl}/questionnaires/live/preview`;
       window.open(url, '_blank');
     } catch (error: any) {
       console.error('Error loading questionnaire for preview:', error);

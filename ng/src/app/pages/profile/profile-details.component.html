@@ -237,6 +237,9 @@
               </button>
             }
           </div>
+          <div style="font-size: 12px; color: #6B7280; margin-top: 8px; text-align: center;">
+            {{ lang.currentLanguage === 'he' ? 'מומלץ 256×256 פיקסלים' : 'Recommended 256×256 pixels' }}
+          </div>
         </div>
 
         <!-- Profile Image Upload -->
@@ -282,6 +285,9 @@
                 </svg>
               </button>
             }
+          </div>
+          <div style="font-size: 12px; color: #6B7280; margin-top: 8px; text-align: center;">
+            {{ lang.currentLanguage === 'he' ? 'מומלץ 256×256 פיקסלים' : 'Recommended 256×256 pixels' }}
           </div>
         </div>
       </div>
@@ -482,6 +488,16 @@
           type="url"
           [(ngModel)]="formData.website"
           [placeholder]="lang.t('profile.websitePlaceholder')"
+          class="form-input">
+      </div>
+
+      <!-- WhatsApp -->
+      <div class="info-card">
+        <label class="info-label">{{ lang.t('profile.whatsappNumber') }}</label>
+        <input
+          type="tel"
+          [(ngModel)]="formData.whatsapp"
+          [placeholder]="lang.t('profile.whatsappPlaceholder')"
           class="form-input">
       </div>
 

@@ -86,13 +86,17 @@
       <div #messagesContainer class="p-2 sm:p-4 overflow-y-auto overflow-x-hidden flex-1 min-h-0">
         <!-- Header -->
         <div class="chat-header pb-2 mb-3 sm:mb-4 w-full">
-          <div class="flex flex-col sm:flex-row items-start justify-center gap-2 sm:gap-4 w-full" [style.direction]="lang.currentLanguage === 'he' ? 'rtl' : 'ltr'">
-            <div class="w-16 h-16 sm:w-24 sm:h-24 md:w-32 md:h-32 flex-shrink-0 order-2 sm:order-1">
-              @if (logoUrl && showLogo) {
-                <img [src]="logoUrl" alt="Logo" class="w-full h-full object-contain" />
+          <!-- Single Row: Profile (Left) | Title (Center) | Logo (Right) -->
+          <div class="flex flex-row items-start justify-between gap-2 sm:gap-4 w-full" [style.direction]="lang.currentLanguage === 'he' ? 'rtl' : 'ltr'">
+            <!-- Profile Photo (Left in LTR, Right in RTL) -->
+            <div class="w-16 h-16 sm:w-24 sm:h-24 md:w-32 md:h-32 flex-shrink-0 order-1">
+              @if (imageUrl && showProfileImage) {
+                <img [src]="imageUrl" alt="Profile" class="w-full h-full object-cover rounded-full sm:rounded-none" />
               }
             </div>
-            <div class="flex-1 text-center order-1 sm:order-2 w-full">
+
+            <!-- Title & Description (Center) -->
+            <div class="flex-1 text-center order-2">
               <div class="h-0.5 sm:h-1 mb-1 rounded-full" [style.background]="'linear-gradient(to right, ' + primaryColor + ', ' + secondaryColor + ')'"></div>
               @if (businessName) {
                 <h2 class="text-lg sm:text-xl md:text-2xl font-bold mb-1 sm:mb-2" [style.color]="primaryColor">{{ businessName }}</h2>
@@ -120,9 +124,11 @@
                 </div>
               }
             </div>
+
+            <!-- Logo (Right in LTR, Left in RTL) -->
             <div class="w-16 h-16 sm:w-24 sm:h-24 md:w-32 md:h-32 flex-shrink-0 order-3">
-              @if (imageUrl && showProfileImage) {
-                <img [src]="imageUrl" alt="Profile" class="w-full h-full object-cover rounded-full sm:rounded-none" />
+              @if (logoUrl && showLogo) {
+                <img [src]="logoUrl" alt="Logo" class="w-full h-full object-contain" />
               }
             </div>
           </div>
@@ -135,25 +141,41 @@
           @if (message.questionIndex === undefined || message.questionIndex <= highestQuestionReached) {
           @if (message.type === 'bot') {
             <!-- Bot Message -->
-            <div class="flex items-start gap-2 sm:gap-3 justify-start">
-              <div class="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full flex-shrink-0 flex items-center justify-center text-lg sm:text-xl md:text-2xl" [style.background-color]="secondaryColor">
-                {{ (logoUrl && showLogo) ? '' : '🤖' }}
-                @if (logoUrl && showLogo) {
-                  <img [src]="logoUrl" alt="Bot" class="w-full h-full rounded-full object-cover" />
-                }
-              </div>
-              <div class="rounded-2xl px-3 sm:px-4 md:px-5 py-2 sm:py-3 shadow-md max-w-[85%] sm:max-w-md break-words"
+            <div class="flex flex-col gap-1">
+              <!-- Current Question Indicator -->
+              @if (message.questionIndex === currentQuestionIndex && !message.isSuccess) {
+                <div class="flex items-center gap-2 px-2 py-1 rounded-lg animate-pulse" [style.background-color]="primaryColor + '20'">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: black;">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                  </svg>
+                  <span class="text-xs sm:text-sm font-semibold" style="color: black;">
+                    {{ lang.currentLanguage === 'he' ? 'שאלה נוכחית' : 'Current Question' }}
+                  </span>
+                </div>
+              }
+              <div class="flex items-start gap-2 sm:gap-3 justify-start">
+                <div class="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full flex-shrink-0 flex items-center justify-center text-lg sm:text-xl md:text-2xl" [style.background-color]="secondaryColor">
+                  {{ (logoUrl && showLogo) ? '' : '🤖' }}
+                  @if (logoUrl && showLogo) {
+                    <img [src]="logoUrl" alt="Bot" class="w-full h-full rounded-full object-cover" />
+                  }
+                </div>
+              <div class="rounded-2xl px-3 sm:px-4 md:px-5 py-2 sm:py-3 shadow-md max-w-[85%] sm:max-w-md break-words transition-all duration-300"
                    [class.rounded-tl-sm]="lang.currentLanguage === 'he'"
                    [class.rounded-tr-sm]="lang.currentLanguage !== 'he'"
-                   [class.bg-white]="message.questionIndex === undefined && !message.isSuccess"
-                   [style.background-color]="message.questionIndex !== undefined ? secondaryColor : (message.isSuccess ? primaryColor : 'white')">
+                   [class.bg-white]="!message.isSuccess"
+                   [class.ring-4]="message.questionIndex === currentQuestionIndex && !message.isSuccess"
+                   [class.scale-105]="message.questionIndex === currentQuestionIndex && !message.isSuccess"
+                   [style.background-color]="message.isSuccess ? primaryColor : 'white'"
+                   [style.ring-color]="message.questionIndex === currentQuestionIndex ? primaryColor + '40' : 'transparent'">
                 @if (message.isSuccess) {
                   <div class="flex items-center gap-2 sm:gap-3">
                     <div class="text-2xl sm:text-3xl">✓</div>
                     <p class="text-white font-semibold text-sm sm:text-base break-words">{{ message.text }}</p>
                   </div>
                 } @else {
-                  <p class="text-sm sm:text-base break-words" [style.color]="message.questionIndex !== undefined ? 'white' : primaryColor">{{ message.text }}</p>
+                  <p class="text-sm sm:text-base break-words" [style.color]="primaryColor">{{ message.text }}</p>
                 }
 
                 <!-- Show options inside the bubble for choice questions -->
@@ -163,13 +185,14 @@
                       @for (option of getQuestionOptions(questions[message.questionIndex].id); track option.value) {
                         <div
                           (click)="message.questionIndex === currentQuestionIndex && !isScrolling ? onOptionClick(questions[message.questionIndex], option.value) : null"
-                          class="py-1.5 sm:py-2 px-2 sm:px-3 rounded-lg transition-all text-sm sm:text-base break-words text-white"
+                          class="py-1.5 sm:py-2 px-2 sm:px-3 rounded-lg transition-all text-sm sm:text-base break-words"
                           [class.cursor-pointer]="message.questionIndex === currentQuestionIndex && !isScrolling"
                           [class.cursor-not-allowed]="message.questionIndex !== currentQuestionIndex || isScrolling"
                           [class.opacity-50]="message.questionIndex !== currentQuestionIndex || isScrolling"
                           [class.font-semibold]="isOptionSelected(questions[message.questionIndex], option.value)"
-                          [style.border]="isOptionSelected(questions[message.questionIndex], option.value) ? '2px solid white' : '2px solid rgba(255, 255, 255, 0.3)'"
-                          [style.background-color]="isOptionSelected(questions[message.questionIndex], option.value) ? 'rgba(255, 255, 255, 0.2)' : 'transparent'"
+                          [style.border]="'2px solid ' + primaryColor"
+                          [style.background-color]="isOptionSelected(questions[message.questionIndex], option.value) ? primaryColor : 'transparent'"
+                          [style.color]="isOptionSelected(questions[message.questionIndex], option.value) ? 'white' : primaryColor"
                           [style.pointer-events]="isScrolling ? 'none' : 'auto'">
                           {{ option.label }}
                         </div>
@@ -185,11 +208,130 @@
                             type="text"
                             [(ngModel)]="otherTextResponses[questions[message.questionIndex].id]"
                             [placeholder]="lang.currentLanguage === 'he' ? 'אנא פרט...' : 'Please specify...'"
-                            class="w-full p-2 sm:p-2.5 text-sm sm:text-base rounded-lg border-2 border-white border-opacity-30 bg-white bg-opacity-10 text-white placeholder-white placeholder-opacity-60 focus:outline-none focus:border-opacity-60 transition-all"
+                            class="w-full p-2 sm:p-2.5 text-sm sm:text-base rounded-lg border-2 bg-white focus:outline-none transition-all"
+                            [style.border-color]="primaryColor"
+                            [style.color]="primaryColor"
                             (click)="$event.stopPropagation()"
                           />
                         </div>
                       }
+                    }
+
+                    <!-- Submit/Skip buttons for multi-choice questions (inside bubble) - hide for last question -->
+                    @if (message.questionIndex === currentQuestionIndex && isMultiChoiceQuestion(questions[message.questionIndex]) && currentQuestionIndex !== questions.length - 1) {
+                      <div class="flex justify-start gap-2 mt-3 sm:mt-4">
+                        <button
+                          (click)="submitCurrentAnswer(); $event.stopPropagation()"
+                          [disabled]="isScrolling"
+                          class="px-4 sm:px-6 md:px-8 py-2 sm:py-2.5 md:py-3 text-xs sm:text-sm rounded-xl text-white shadow-md hover:shadow-lg transition-all"
+                          [class.opacity-50]="isScrolling"
+                          [class.cursor-not-allowed]="isScrolling"
+                          [style.background-color]="primaryColor"
+                          [style.pointer-events]="isScrolling ? 'none' : 'auto'">
+                          המשך
+                        </button>
+                        @if (currentQuestionIndex > 0) {
+                          <button
+                            (click)="goBackOneQuestion(); $event.stopPropagation()"
+                            [disabled]="isScrolling"
+                            class="px-4 sm:px-6 md:px-8 py-2 sm:py-2.5 md:py-3 text-xs sm:text-sm rounded-xl shadow-md hover:shadow-lg transition-all bg-gray-100 text-gray-700 hover:bg-gray-200"
+                            [class.opacity-50]="isScrolling"
+                            [class.cursor-not-allowed]="isScrolling"
+                            [style.pointer-events]="isScrolling ? 'none' : 'auto'">
+                            {{ lang.currentLanguage === 'he' ? 'חזור' : 'Back' }}
+                          </button>
+                        }
+                        @if (!questions[message.questionIndex].is_required) {
+                          <button
+                            (click)="skipCurrentQuestion(); $event.stopPropagation()"
+                            [disabled]="isScrolling"
+                            class="px-4 sm:px-6 md:px-8 py-2 sm:py-2.5 md:py-3 text-xs sm:text-sm rounded-xl shadow-md hover:shadow-lg transition-all bg-gray-100 text-gray-700 hover:bg-gray-200"
+                            [class.opacity-50]="isScrolling"
+                            [class.cursor-not-allowed]="isScrolling"
+                            [style.pointer-events]="isScrolling ? 'none' : 'auto'">
+                            {{ lang.currentLanguage === 'he' ? 'דלג' : 'Skip' }}
+                          </button>
+                        }
+                      </div>
+                    }
+
+                    <!-- Submit button for single choice questions when "Other" is selected (inside bubble) -->
+                    @if (message.questionIndex === currentQuestionIndex && isSingleChoiceQuestion(questions[message.questionIndex]) && isOtherSelected(questions[message.questionIndex].id)) {
+                      <div class="flex justify-start gap-2 mt-3 sm:mt-4">
+                        <button
+                          (click)="submitCurrentAnswer(); $event.stopPropagation()"
+                          [disabled]="isScrolling"
+                          class="px-4 sm:px-6 md:px-8 py-2 sm:py-2.5 md:py-3 text-xs sm:text-sm rounded-xl text-white shadow-md hover:shadow-lg transition-all"
+                          [class.opacity-50]="isScrolling"
+                          [class.cursor-not-allowed]="isScrolling"
+                          [style.background-color]="primaryColor"
+                          [style.pointer-events]="isScrolling ? 'none' : 'auto'">
+                          {{ currentQuestionIndex === questions.length - 1 ? 'שלח' : lang.t('questionnaireLive.continue') }}
+                        </button>
+                        @if (currentQuestionIndex > 0) {
+                          <button
+                            (click)="goBackOneQuestion(); $event.stopPropagation()"
+                            [disabled]="isScrolling"
+                            class="px-4 sm:px-6 md:px-8 py-2 sm:py-2.5 md:py-3 text-xs sm:text-sm rounded-xl shadow-md hover:shadow-lg transition-all bg-gray-100 text-gray-700 hover:bg-gray-200"
+                            [class.opacity-50]="isScrolling"
+                            [class.cursor-not-allowed]="isScrolling"
+                            [style.pointer-events]="isScrolling ? 'none' : 'auto'">
+                            {{ lang.currentLanguage === 'he' ? 'חזור' : 'Back' }}
+                          </button>
+                        }
+                        @if (!questions[message.questionIndex].is_required) {
+                          <button
+                            (click)="skipCurrentQuestion(); $event.stopPropagation()"
+                            [disabled]="isScrolling"
+                            class="px-4 sm:px-6 md:px-8 py-2 sm:py-2.5 md:py-3 text-xs sm:text-sm rounded-xl shadow-md hover:shadow-lg transition-all bg-gray-100 text-gray-700 hover:bg-gray-200"
+                            [class.opacity-50]="isScrolling"
+                            [class.cursor-not-allowed]="isScrolling"
+                            [style.pointer-events]="isScrolling ? 'none' : 'auto'">
+                            {{ lang.currentLanguage === 'he' ? 'דלג' : 'Skip' }}
+                          </button>
+                        }
+                      </div>
+                    }
+
+                    <!-- Buttons for single choice questions (not "Other", any required status) - hide for last question -->
+                    @if (message.questionIndex === currentQuestionIndex && isSingleChoiceQuestion(questions[message.questionIndex]) && !isOtherSelected(questions[message.questionIndex].id) && currentQuestionIndex !== questions.length - 1) {
+                      <div class="flex justify-start gap-2 mt-3 sm:mt-4">
+                        <!-- Continue button if question was already answered (user went back) -->
+                        @if (responses[questions[message.questionIndex].id]) {
+                          <button
+                            (click)="submitCurrentAnswer(); $event.stopPropagation()"
+                            [disabled]="isScrolling"
+                            class="px-4 sm:px-6 md:px-8 py-2 sm:py-2.5 md:py-3 text-xs sm:text-sm rounded-xl text-white shadow-md hover:shadow-lg transition-all"
+                            [class.opacity-50]="isScrolling"
+                            [class.cursor-not-allowed]="isScrolling"
+                            [style.background-color]="primaryColor"
+                            [style.pointer-events]="isScrolling ? 'none' : 'auto'">
+                            המשך
+                          </button>
+                        }
+                        @if (currentQuestionIndex > 0) {
+                          <button
+                            (click)="goBackOneQuestion(); $event.stopPropagation()"
+                            [disabled]="isScrolling"
+                            class="px-4 sm:px-6 md:px-8 py-2 sm:py-2.5 md:py-3 text-xs sm:text-sm rounded-xl shadow-md hover:shadow-lg transition-all bg-gray-100 text-gray-700 hover:bg-gray-200"
+                            [class.opacity-50]="isScrolling"
+                            [class.cursor-not-allowed]="isScrolling"
+                            [style.pointer-events]="isScrolling ? 'none' : 'auto'">
+                            {{ lang.currentLanguage === 'he' ? 'חזור' : 'Back' }}
+                          </button>
+                        }
+                        @if (!questions[message.questionIndex].is_required) {
+                          <button
+                            (click)="skipCurrentQuestion(); $event.stopPropagation()"
+                            [disabled]="isScrolling"
+                            class="px-4 sm:px-6 md:px-8 py-2 sm:py-2.5 md:py-3 text-xs sm:text-sm rounded-xl shadow-md hover:shadow-lg transition-all bg-gray-100 text-gray-700 hover:bg-gray-200"
+                            [class.opacity-50]="isScrolling"
+                            [class.cursor-not-allowed]="isScrolling"
+                            [style.pointer-events]="isScrolling ? 'none' : 'auto'">
+                            {{ lang.currentLanguage === 'he' ? 'דלג' : 'Skip' }}
+                          </button>
+                        }
+                      </div>
                     }
                   }
 
@@ -205,9 +347,9 @@
                           [class.cursor-not-allowed]="message.questionIndex !== currentQuestionIndex || isScrolling"
                           [class.opacity-50]="message.questionIndex !== currentQuestionIndex || isScrolling"
                           [disabled]="isScrolling"
-                          [style.border-color]="isOptionSelected(questions[message.questionIndex], rating.toString()) ? 'white' : 'rgba(255, 255, 255, 0.5)'"
-                          [style.color]="'white'"
-                          [style.background-color]="isOptionSelected(questions[message.questionIndex], rating.toString()) ? 'rgba(255, 255, 255, 0.2)' : 'transparent'"
+                          [style.border-color]="primaryColor"
+                          [style.color]="isOptionSelected(questions[message.questionIndex], rating.toString()) ? 'white' : primaryColor"
+                          [style.background-color]="isOptionSelected(questions[message.questionIndex], rating.toString()) ? primaryColor : 'transparent'"
                           [style.pointer-events]="isScrolling ? 'none' : 'auto'">
                           {{ rating }}
                         </button>
@@ -218,7 +360,7 @@
                   <!-- Show recording prompt for audio questions -->
                   @if (questions[message.questionIndex].question_type === 'audio' && message.questionIndex === currentQuestionIndex) {
                     <div class="mt-2 sm:mt-3 text-center">
-                      <p class="text-xs sm:text-sm text-white opacity-90">
+                      <p class="text-xs sm:text-sm opacity-90" [style.color]="primaryColor">
                         {{ lang.currentLanguage === 'he' ? '🎤 השתמש בכפתור למטה כדי להקליט תשובה' : '🎤 Use the button below to record your answer' }}
                       </p>
                     </div>
@@ -227,119 +369,29 @@
                   <!-- Show file upload prompt for file questions -->
                   @if (questions[message.questionIndex].question_type === 'file' && message.questionIndex === currentQuestionIndex) {
                     <div class="mt-2 sm:mt-3 text-center">
-                      <p class="text-xs sm:text-sm text-white opacity-90">
+                      <p class="text-xs sm:text-sm opacity-90" [style.color]="primaryColor">
                         {{ lang.currentLanguage === 'he' ? '📎 השתמש בכפתור למטה כדי להעלות קובץ' : '📎 Use the button below to upload a file' }}
                       </p>
                     </div>
                   }
                 }
               </div>
-            </div>
-          } @else {
-            <!-- User Message (only show if there's text) -->
-            @if (message.text) {
-            <div class="flex justify-end">
-              <div class="rounded-2xl px-3 sm:px-4 md:px-5 py-2 sm:py-3 shadow-md max-w-[85%] sm:max-w-md break-words"
-                   [class.rounded-tr-sm]="lang.currentLanguage === 'he'"
-                   [class.rounded-tl-sm]="lang.currentLanguage !== 'he'"
-                   [style.background-color]="primaryColor">
-                <p class="text-sm sm:text-base text-white break-words">{{ message.text }}</p>
               </div>
             </div>
+          } @else {
+            <!-- User Message -->
+            @if (message.text) {
+              <div class="flex justify-end">
+                <div class="rounded-2xl px-3 sm:px-4 md:px-5 py-2 sm:py-3 shadow-md max-w-[85%] sm:max-w-md break-words bg-white"
+                     [class.rounded-tr-sm]="lang.currentLanguage === 'he'"
+                     [class.rounded-tl-sm]="lang.currentLanguage !== 'he'"
+                     style="background-color: white;">
+                  <p class="text-sm sm:text-base break-words" [style.color]="primaryColor">{{ message.text }}</p>
+                </div>
+              </div>
             }
           }
           }
-        }
-
-        <!-- Submit/Skip buttons for multi-choice questions -->
-        @if (!isSubmitted && getCurrentQuestion() && showOptions && isMultiChoiceQuestion(getCurrentQuestion()!)) {
-          <div class="flex justify-start gap-2 mt-3 sm:mt-4">
-            <button
-              (click)="submitCurrentAnswer()"
-              [disabled]="isScrolling"
-              class="px-4 sm:px-6 md:px-8 py-2 sm:py-2.5 md:py-3 text-xs sm:text-sm rounded-xl text-white shadow-md hover:shadow-lg transition-all"
-              [class.opacity-50]="isScrolling"
-              [class.cursor-not-allowed]="isScrolling"
-              [style.background-color]="primaryColor"
-              [style.pointer-events]="isScrolling ? 'none' : 'auto'">
-              {{ lang.t('questionnaireLive.continue') }}
-            </button>
-            @if (currentQuestionIndex > 0) {
-              <button
-                (click)="goBackOneQuestion()"
-                [disabled]="isScrolling"
-                class="px-4 sm:px-6 md:px-8 py-2 sm:py-2.5 md:py-3 text-xs sm:text-sm rounded-xl shadow-md hover:shadow-lg transition-all bg-gray-100 text-gray-700 hover:bg-gray-200"
-                [class.opacity-50]="isScrolling"
-                [class.cursor-not-allowed]="isScrolling"
-                [style.pointer-events]="isScrolling ? 'none' : 'auto'">
-                {{ lang.currentLanguage === 'he' ? 'חזור' : 'Back' }}
-              </button>
-            }
-            @if (!getCurrentQuestion()!.is_required) {
-              <button
-                (click)="skipCurrentQuestion()"
-                [disabled]="isScrolling"
-                class="px-4 sm:px-6 md:px-8 py-2 sm:py-2.5 md:py-3 text-xs sm:text-sm rounded-xl shadow-md hover:shadow-lg transition-all bg-gray-100 text-gray-700 hover:bg-gray-200"
-                [class.opacity-50]="isScrolling"
-                [class.cursor-not-allowed]="isScrolling"
-                [style.pointer-events]="isScrolling ? 'none' : 'auto'">
-                {{ lang.t('questionnaireLive.skip') }}
-              </button>
-            }
-          </div>
-        }
-
-        <!-- Submit button for single choice questions when "Other" is selected -->
-        @if (!isSubmitted && getCurrentQuestion() && showOptions && isSingleChoiceQuestion(getCurrentQuestion()!) && isOtherSelected(getCurrentQuestion()!.id)) {
-          <div class="flex justify-start gap-2 mt-3 sm:mt-4">
-            <button
-              (click)="submitCurrentAnswer()"
-              [disabled]="isScrolling"
-              class="px-4 sm:px-6 md:px-8 py-2 sm:py-2.5 md:py-3 text-xs sm:text-sm rounded-xl text-white shadow-md hover:shadow-lg transition-all"
-              [class.opacity-50]="isScrolling"
-              [class.cursor-not-allowed]="isScrolling"
-              [style.background-color]="primaryColor"
-              [style.pointer-events]="isScrolling ? 'none' : 'auto'">
-              {{ lang.t('questionnaireLive.continue') }}
-            </button>
-            @if (currentQuestionIndex > 0) {
-              <button
-                (click)="goBackOneQuestion()"
-                [disabled]="isScrolling"
-                class="px-4 sm:px-6 md:px-8 py-2 sm:py-2.5 md:py-3 text-xs sm:text-sm rounded-xl shadow-md hover:shadow-lg transition-all bg-gray-100 text-gray-700 hover:bg-gray-200"
-                [class.opacity-50]="isScrolling"
-                [class.cursor-not-allowed]="isScrolling"
-                [style.pointer-events]="isScrolling ? 'none' : 'auto'">
-                {{ lang.currentLanguage === 'he' ? 'חזור' : 'Back' }}
-              </button>
-            }
-          </div>
-        }
-
-        <!-- Skip button for single choice non-required questions -->
-        @if (!isSubmitted && getCurrentQuestion() && showOptions && isSingleChoiceQuestion(getCurrentQuestion()!) && !getCurrentQuestion()!.is_required) {
-          <div class="flex justify-start gap-2 mt-3 sm:mt-4">
-            @if (currentQuestionIndex > 0) {
-              <button
-                (click)="goBackOneQuestion()"
-                [disabled]="isScrolling"
-                class="px-4 sm:px-6 md:px-8 py-2 sm:py-2.5 md:py-3 text-xs sm:text-sm rounded-xl shadow-md hover:shadow-lg transition-all bg-gray-100 text-gray-700 hover:bg-gray-200"
-                [class.opacity-50]="isScrolling"
-                [class.cursor-not-allowed]="isScrolling"
-                [style.pointer-events]="isScrolling ? 'none' : 'auto'">
-                {{ lang.currentLanguage === 'he' ? 'חזור' : 'Back' }}
-              </button>
-            }
-            <button
-              (click)="skipCurrentQuestion()"
-              [disabled]="isScrolling"
-              class="px-4 sm:px-6 md:px-8 py-2 sm:py-2.5 md:py-3 text-xs sm:text-sm rounded-xl shadow-md hover:shadow-lg transition-all bg-gray-100 text-gray-700 hover:bg-gray-200"
-              [class.opacity-50]="isScrolling"
-              [class.cursor-not-allowed]="isScrolling"
-              [style.pointer-events]="isScrolling ? 'none' : 'auto'">
-              {{ lang.t('questionnaireLive.skip') }}
-            </button>
-          </div>
         }
       </div>
     </div>
@@ -372,18 +424,41 @@
                 </div>
               </button>
             </div>
-            <button
-              (click)="submitCurrentAnswer()"
-              [disabled]="!uploadedFileName || isScrolling"
-              class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-lg flex items-center justify-center text-white shadow-md hover:shadow-lg transition flex-shrink-0"
-              [class.opacity-50]="!uploadedFileName || isScrolling"
-              [style.background-color]="primaryColor"
-              [style.pointer-events]="isScrolling ? 'none' : 'auto'">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" class="sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="22" y1="2" x2="11" y2="13"></line>
-                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-              </svg>
-            </button>
+            <!-- Submit button for file: show text for last question, icon for others -->
+            @if (currentQuestionIndex === questions.length - 1) {
+              <button
+                (click)="submitCurrentAnswer()"
+                [disabled]="!uploadedFileName || isScrolling"
+                class="px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg flex items-center justify-center text-white shadow-md hover:shadow-lg transition"
+                [class.opacity-50]="!uploadedFileName || isScrolling"
+                [style.background-color]="primaryColor"
+                [style.pointer-events]="isScrolling ? 'none' : 'auto'">
+                שלח
+              </button>
+            } @else {
+              <button
+                (click)="submitCurrentAnswer()"
+                [disabled]="!uploadedFileName || isScrolling"
+                class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-lg flex items-center justify-center text-white shadow-md hover:shadow-lg transition flex-shrink-0"
+                [class.opacity-50]="!uploadedFileName || isScrolling"
+                [style.background-color]="primaryColor"
+                [style.pointer-events]="isScrolling ? 'none' : 'auto'">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" class="sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="22" y1="2" x2="11" y2="13"></line>
+                  <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
+              </button>
+            }
+            @if (!getCurrentQuestion()!.is_required) {
+              <button
+                (click)="skipCurrentQuestion()"
+                [disabled]="isScrolling"
+                class="px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg flex items-center justify-center bg-gray-100 text-gray-700 shadow-md hover:shadow-lg hover:bg-gray-200 transition"
+                [class.opacity-50]="isScrolling"
+                [style.pointer-events]="isScrolling ? 'none' : 'auto'">
+                {{ lang.currentLanguage === 'he' ? 'דלג' : 'Skip' }}
+              </button>
+            }
           } @else if (getCurrentQuestion() && getCurrentQuestion()!.question_type === 'audio') {
             <!-- Audio Recording -->
             <div class="flex-1">
@@ -416,18 +491,41 @@
                 </div>
               </button>
             </div>
-            <button
-              (click)="submitCurrentAnswer()"
-              [disabled]="!audioFileName || isScrolling"
-              class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-lg flex items-center justify-center text-white shadow-md hover:shadow-lg transition flex-shrink-0"
-              [class.opacity-50]="!audioFileName || isScrolling"
-              [style.background-color]="primaryColor"
-              [style.pointer-events]="isScrolling ? 'none' : 'auto'">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" class="sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="22" y1="2" x2="11" y2="13"></line>
-                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-              </svg>
-            </button>
+            <!-- Submit button for audio: show text for last question, icon for others -->
+            @if (currentQuestionIndex === questions.length - 1) {
+              <button
+                (click)="submitCurrentAnswer()"
+                [disabled]="!audioFileName || isScrolling"
+                class="px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg flex items-center justify-center text-white shadow-md hover:shadow-lg transition"
+                [class.opacity-50]="!audioFileName || isScrolling"
+                [style.background-color]="primaryColor"
+                [style.pointer-events]="isScrolling ? 'none' : 'auto'">
+                שלח
+              </button>
+            } @else {
+              <button
+                (click)="submitCurrentAnswer()"
+                [disabled]="!audioFileName || isScrolling"
+                class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-lg flex items-center justify-center text-white shadow-md hover:shadow-lg transition flex-shrink-0"
+                [class.opacity-50]="!audioFileName || isScrolling"
+                [style.background-color]="primaryColor"
+                [style.pointer-events]="isScrolling ? 'none' : 'auto'">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" class="sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="22" y1="2" x2="11" y2="13"></line>
+                  <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
+              </button>
+            }
+            @if (!getCurrentQuestion()!.is_required) {
+              <button
+                (click)="skipCurrentQuestion()"
+                [disabled]="isScrolling"
+                class="px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg flex items-center justify-center bg-gray-100 text-gray-700 shadow-md hover:shadow-lg hover:bg-gray-200 transition"
+                [class.opacity-50]="isScrolling"
+                [style.pointer-events]="isScrolling ? 'none' : 'auto'">
+                {{ lang.currentLanguage === 'he' ? 'דלג' : 'Skip' }}
+              </button>
+            }
           } @else if (getCurrentQuestion() && getCurrentQuestion()!.question_type === 'textarea') {
             <textarea
               [(ngModel)]="currentAnswer"
@@ -497,29 +595,50 @@
           }
 
           @if (getCurrentQuestion() && getCurrentQuestion()!.question_type !== 'file' && getCurrentQuestion()!.question_type !== 'audio') {
-            <button
-              (click)="submitCurrentAnswer()"
-              [disabled]="isScrolling"
-              class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-lg flex items-center justify-center text-white shadow-md hover:shadow-lg transition flex-shrink-0"
-              [class.opacity-50]="isScrolling"
-              [style.background-color]="primaryColor"
-              [style.pointer-events]="isScrolling ? 'none' : 'auto'">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" class="sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="22" y1="2" x2="11" y2="13"></line>
-                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-              </svg>
-            </button>
+            <!-- Submit button: show text for last question, icon for others -->
+            @if (currentQuestionIndex === questions.length - 1) {
+              <button
+                (click)="submitCurrentAnswer()"
+                [disabled]="isScrolling"
+                class="px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg flex items-center justify-center text-white shadow-md hover:shadow-lg transition"
+                [class.opacity-50]="isScrolling"
+                [style.background-color]="primaryColor"
+                [style.pointer-events]="isScrolling ? 'none' : 'auto'">
+                שלח
+              </button>
+            } @else {
+              <button
+                (click)="submitCurrentAnswer()"
+                [disabled]="isScrolling"
+                class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-lg flex items-center justify-center text-white shadow-md hover:shadow-lg transition flex-shrink-0"
+                [class.opacity-50]="isScrolling"
+                [style.background-color]="primaryColor"
+                [style.pointer-events]="isScrolling ? 'none' : 'auto'">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" class="sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="22" y1="2" x2="11" y2="13"></line>
+                  <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
+              </button>
+            }
             @if (currentQuestionIndex > 0) {
+              <!-- Back button: always show text -->
               <button
                 (click)="goBackOneQuestion()"
                 [disabled]="isScrolling"
-                class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-lg flex items-center justify-center bg-gray-100 text-gray-700 shadow-md hover:shadow-lg hover:bg-gray-200 transition flex-shrink-0"
+                class="px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg flex items-center justify-center bg-gray-100 text-gray-700 shadow-md hover:shadow-lg hover:bg-gray-200 transition"
                 [class.opacity-50]="isScrolling"
-                [title]="lang.currentLanguage === 'he' ? 'חזור לשאלה הקודמת' : 'Go back to previous question'"
                 [style.pointer-events]="isScrolling ? 'none' : 'auto'">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" class="sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="m15 18-6-6 6-6"/>
-                </svg>
+                {{ lang.currentLanguage === 'he' ? 'חזור' : 'Back' }}
+              </button>
+            }
+            @if (!getCurrentQuestion()!.is_required) {
+              <button
+                (click)="skipCurrentQuestion()"
+                [disabled]="isScrolling"
+                class="px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg flex items-center justify-center bg-gray-100 text-gray-700 shadow-md hover:shadow-lg hover:bg-gray-200 transition"
+                [class.opacity-50]="isScrolling"
+                [style.pointer-events]="isScrolling ? 'none' : 'auto'">
+                {{ lang.currentLanguage === 'he' ? 'דלג' : 'Skip' }}
               </button>
             }
           }
@@ -556,30 +675,39 @@
                 </div>
               </button>
             </div>
-            <button
-              (click)="submitCurrentAnswer()"
-              [disabled]="!uploadedFileName || isScrolling"
-              class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-lg flex items-center justify-center text-white shadow-md hover:shadow-lg transition flex-shrink-0"
-              [class.opacity-50]="!uploadedFileName || isScrolling"
-              [style.background-color]="primaryColor"
-              [style.pointer-events]="isScrolling ? 'none' : 'auto'">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" class="sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="22" y1="2" x2="11" y2="13"></line>
-                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-              </svg>
-            </button>
+            <!-- Submit button for file: show text for last question, icon for others -->
+            @if (currentQuestionIndex === questions.length - 1) {
+              <button
+                (click)="submitCurrentAnswer()"
+                [disabled]="!uploadedFileName || isScrolling"
+                class="px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg flex items-center justify-center text-white shadow-md hover:shadow-lg transition"
+                [class.opacity-50]="!uploadedFileName || isScrolling"
+                [style.background-color]="primaryColor"
+                [style.pointer-events]="isScrolling ? 'none' : 'auto'">
+                שלח
+              </button>
+            } @else {
+              <button
+                (click)="submitCurrentAnswer()"
+                [disabled]="!uploadedFileName || isScrolling"
+                class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-lg flex items-center justify-center text-white shadow-md hover:shadow-lg transition flex-shrink-0"
+                [class.opacity-50]="!uploadedFileName || isScrolling"
+                [style.background-color]="primaryColor"
+                [style.pointer-events]="isScrolling ? 'none' : 'auto'">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" class="sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="22" y1="2" x2="11" y2="13"></line>
+                  <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
+              </button>
+            }
             @if (!getCurrentQuestion()!.is_required) {
               <button
                 (click)="skipCurrentQuestion()"
                 [disabled]="isScrolling"
-                class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-lg flex items-center justify-center bg-gray-100 text-gray-700 shadow-md hover:shadow-lg hover:bg-gray-200 transition flex-shrink-0"
+                class="px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg flex items-center justify-center bg-gray-100 text-gray-700 shadow-md hover:shadow-lg hover:bg-gray-200 transition"
                 [class.opacity-50]="isScrolling"
-                [title]="lang.t('questionnaireLive.skip')"
                 [style.pointer-events]="isScrolling ? 'none' : 'auto'">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" class="sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="m9 18 6-6-6-6"/>
-                  <path d="M9 18V6"/>
-                </svg>
+                {{ lang.currentLanguage === 'he' ? 'דלג' : 'Skip' }}
               </button>
             }
           } @else if (getCurrentQuestion() && getCurrentQuestion()!.question_type === 'audio') {
@@ -614,30 +742,39 @@
                 </div>
               </button>
             </div>
-            <button
-              (click)="submitCurrentAnswer()"
-              [disabled]="!audioFileName || isScrolling"
-              class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-lg flex items-center justify-center text-white shadow-md hover:shadow-lg transition flex-shrink-0"
-              [class.opacity-50]="!audioFileName || isScrolling"
-              [style.background-color]="primaryColor"
-              [style.pointer-events]="isScrolling ? 'none' : 'auto'">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" class="sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="22" y1="2" x2="11" y2="13"></line>
-                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-              </svg>
-            </button>
+            <!-- Submit button for audio: show text for last question, icon for others -->
+            @if (currentQuestionIndex === questions.length - 1) {
+              <button
+                (click)="submitCurrentAnswer()"
+                [disabled]="!audioFileName || isScrolling"
+                class="px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg flex items-center justify-center text-white shadow-md hover:shadow-lg transition"
+                [class.opacity-50]="!audioFileName || isScrolling"
+                [style.background-color]="primaryColor"
+                [style.pointer-events]="isScrolling ? 'none' : 'auto'">
+                שלח
+              </button>
+            } @else {
+              <button
+                (click)="submitCurrentAnswer()"
+                [disabled]="!audioFileName || isScrolling"
+                class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-lg flex items-center justify-center text-white shadow-md hover:shadow-lg transition flex-shrink-0"
+                [class.opacity-50]="!audioFileName || isScrolling"
+                [style.background-color]="primaryColor"
+                [style.pointer-events]="isScrolling ? 'none' : 'auto'">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" class="sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="22" y1="2" x2="11" y2="13"></line>
+                  <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
+              </button>
+            }
             @if (!getCurrentQuestion()!.is_required) {
               <button
                 (click)="skipCurrentQuestion()"
                 [disabled]="isScrolling"
-                class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-lg flex items-center justify-center bg-gray-100 text-gray-700 shadow-md hover:shadow-lg hover:bg-gray-200 transition flex-shrink-0"
+                class="px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg flex items-center justify-center bg-gray-100 text-gray-700 shadow-md hover:shadow-lg hover:bg-gray-200 transition"
                 [class.opacity-50]="isScrolling"
-                [title]="lang.t('questionnaireLive.skip')"
                 [style.pointer-events]="isScrolling ? 'none' : 'auto'">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" class="sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="m9 18 6-6-6-6"/>
-                  <path d="M9 18V6"/>
-                </svg>
+                {{ lang.currentLanguage === 'he' ? 'דלג' : 'Skip' }}
               </button>
             }
           } @else if (getCurrentQuestion() && getCurrentQuestion()!.question_type === 'textarea') {
@@ -709,43 +846,50 @@
           }
 
           @if (getCurrentQuestion() && getCurrentQuestion()!.question_type !== 'file' && getCurrentQuestion()!.question_type !== 'audio') {
-            <button
-              (click)="submitCurrentAnswer()"
-              [disabled]="isScrolling"
-              class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-lg flex items-center justify-center text-white shadow-md hover:shadow-lg transition flex-shrink-0"
-              [class.opacity-50]="isScrolling"
-              [style.background-color]="primaryColor"
-              [style.pointer-events]="isScrolling ? 'none' : 'auto'">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" class="sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="22" y1="2" x2="11" y2="13"></line>
-                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-              </svg>
-            </button>
+            <!-- Submit button: show text for last question, icon for others -->
+            @if (currentQuestionIndex === questions.length - 1) {
+              <button
+                (click)="submitCurrentAnswer()"
+                [disabled]="isScrolling"
+                class="px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg flex items-center justify-center text-white shadow-md hover:shadow-lg transition"
+                [class.opacity-50]="isScrolling"
+                [style.background-color]="primaryColor"
+                [style.pointer-events]="isScrolling ? 'none' : 'auto'">
+                שלח
+              </button>
+            } @else {
+              <button
+                (click)="submitCurrentAnswer()"
+                [disabled]="isScrolling"
+                class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-lg flex items-center justify-center text-white shadow-md hover:shadow-lg transition flex-shrink-0"
+                [class.opacity-50]="isScrolling"
+                [style.background-color]="primaryColor"
+                [style.pointer-events]="isScrolling ? 'none' : 'auto'">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" class="sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="22" y1="2" x2="11" y2="13"></line>
+                  <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
+              </button>
+            }
             @if (currentQuestionIndex > 0) {
+              <!-- Back button: always show text -->
               <button
                 (click)="goBackOneQuestion()"
                 [disabled]="isScrolling"
-                class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-lg flex items-center justify-center bg-gray-100 text-gray-700 shadow-md hover:shadow-lg hover:bg-gray-200 transition flex-shrink-0"
+                class="px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg flex items-center justify-center bg-gray-100 text-gray-700 shadow-md hover:shadow-lg hover:bg-gray-200 transition"
                 [class.opacity-50]="isScrolling"
-                [title]="lang.currentLanguage === 'he' ? 'חזור לשאלה הקודמת' : 'Go back to previous question'"
                 [style.pointer-events]="isScrolling ? 'none' : 'auto'">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" class="sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="m15 18-6-6 6-6"/>
-                </svg>
+                {{ lang.currentLanguage === 'he' ? 'חזור' : 'Back' }}
               </button>
             }
             @if (!getCurrentQuestion()!.is_required) {
               <button
                 (click)="skipCurrentQuestion()"
                 [disabled]="isScrolling"
-                class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-lg flex items-center justify-center bg-gray-100 text-gray-700 shadow-md hover:shadow-lg hover:bg-gray-200 transition flex-shrink-0"
+                class="px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg flex items-center justify-center bg-gray-100 text-gray-700 shadow-md hover:shadow-lg hover:bg-gray-200 transition"
                 [class.opacity-50]="isScrolling"
-                [title]="lang.t('questionnaireLive.skip')"
                 [style.pointer-events]="isScrolling ? 'none' : 'auto'">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" class="sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="m9 18 6-6-6-6"/>
-                  <path d="M9 18V6"/>
-                </svg>
+                {{ lang.currentLanguage === 'he' ? 'דלג' : 'Skip' }}
               </button>
             }
           }
@@ -753,6 +897,33 @@
         @if (currentAnswerError) {
           <p class="text-red-500 text-xs sm:text-sm px-2" [style.direction]="lang.currentLanguage === 'he' ? 'rtl' : 'ltr'">{{ currentAnswerError }}</p>
         }
+        </div>
+      </div>
+    }
+
+    <!-- Send button for last question when it's single/multi choice and answered (but not "Other" since that's handled in bubble) -->
+    @if (shouldShowSendButton()) {
+      <div class="bg-white border-t border-gray-200 p-2 sm:p-3 md:p-4 shadow-lg flex-shrink-0">
+        <div class="flex justify-center gap-3">
+          @if (currentQuestionIndex > 0) {
+            <button
+              (click)="goBackOneQuestion()"
+              [disabled]="isScrolling"
+              class="px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg rounded-lg flex items-center justify-center bg-gray-100 text-gray-700 shadow-md hover:shadow-lg hover:bg-gray-200 transition font-semibold"
+              [class.opacity-50]="isScrolling"
+              [style.pointer-events]="isScrolling ? 'none' : 'auto'">
+              חזור
+            </button>
+          }
+          <button
+            (click)="submitCurrentAnswer()"
+            [disabled]="isScrolling"
+            class="px-8 sm:px-12 py-3 sm:py-4 text-base sm:text-lg rounded-lg flex items-center justify-center text-white shadow-md hover:shadow-lg transition font-semibold"
+            [class.opacity-50]="isScrolling"
+            [style.background-color]="primaryColor"
+            [style.pointer-events]="isScrolling ? 'none' : 'auto'">
+            שלח
+          </button>
         </div>
       </div>
     }

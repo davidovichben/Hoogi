@@ -64,6 +64,9 @@
                 <div class="template-header-row">
                   <div class="flex items-center gap-2">
                     <span class="template-name">{{ template.name }}</span>
+                    @if (template.channels.length === 0) {
+                      <span class="warning-badge">⚠️</span>
+                    }
                   </div>
                   <button
                     class="btn-remove"
@@ -74,7 +77,11 @@
 
                 <!-- Channel Selection -->
                 <div class="channels-section">
-                  <label class="channels-label">{{ lang.t('distribution.sendingChannels') }}</label>
+                  <label class="channels-label">{{ lang.t('distribution.sendingChannels') }}
+                    @if (template.channels.length === 0) {
+                      <span class="required-indicator">*</span>
+                    }
+                  </label>
                   <div class="channels-grid">
                     <!-- Email -->
                     <div
@@ -189,16 +196,43 @@
           </div>
         </div>
       }
+
+      <!-- Show Links Button -->
+      @if (!showLinksSection) {
+        <div class="show-links-section">
+          <button
+            class="btn-show-links"
+            [disabled]="!selectedQuestionnaire"
+            (click)="handleShowLinks()">
+            <span class="link-icon">🔗</span>
+            {{ lang.t('distribution.generateLinks') }}
+          </button>
+        </div>
+      }
     </div>
 
     <!-- Quick Links Section -->
-    @if (selectedQuestionnaire) {
+    @if (selectedQuestionnaire && showLinksSection) {
       <div class="quick-links-section">
         <h3 class="section-subtitle mb-4">{{ lang.t('distribution.createLink') }}</h3>
+
+        <!-- Warning: No Automation -->
+        @if (selectedTemplates.length === 0) {
+          <div class="warning-message mb-4" style="background-color: #fef3c7; border: 1px solid #fbbf24; border-radius: 8px; padding: 12px 16px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 20px;">⚠️</span>
+              <p style="margin: 0; color: #92400e; font-weight: 500; text-align: right;">
+                שים לב: לא נבחרו תבניות אוטומציה. הקישורים יעבדו, אך לא יישלחו הודעות אוטומטיות ללקוחות.
+              </p>
+            </div>
+          </div>
+        }
+
         <div class="quick-links-grid">
           <!-- Form Link -->
           <button
             class="quick-link-btn form-btn"
+            [class.selected]="currentMode === 'form'"
             (click)="handleBuildLink('form')">
             <span class="quick-link-icon">📋</span>
             <span class="quick-link-label">{{ lang.t('distribution.form') }}</span>
@@ -207,6 +241,7 @@
           <!-- Chat Link -->
           <button
             class="quick-link-btn chat-btn"
+            [class.selected]="currentMode === 'chat'"
             (click)="handleBuildLink('chat')">
             <span class="quick-link-icon">💬</span>
             <span class="quick-link-label">{{ lang.t('distribution.chat') }}</span>
@@ -215,6 +250,7 @@
           <!-- QR Link -->
           <button
             class="quick-link-btn qr-btn"
+            [class.selected]="currentMode === 'qr'"
             (click)="handleBuildLink('qr')">
             <span class="quick-link-icon">QR</span>
             <span class="quick-link-label">{{ lang.t('distribution.qr') }}</span>
@@ -224,7 +260,7 @@
     }
 
     <!-- Social Network Selection -->
-    @if (selectedQuestionnaire) {
+    @if (selectedQuestionnaire && showLinksSection && currentMode) {
       <div class="social-network-section">
         <div class="section-header">
           <h3 class="section-subtitle mb-2">

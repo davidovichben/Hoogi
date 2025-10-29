@@ -8,6 +8,7 @@ import { ToastService } from '../../core/services/toast.service';
 import { ProfileValidatorService } from '../../core/services/profile-validator.service';
 import { ConfirmationDialogComponent } from '../../shared/components/confirmation-dialog/confirmation-dialog.component';
 import * as QRCode from 'qrcode';
+import { environment } from '../../../environments/environment';
 
 interface Questionnaire {
   id: string;
@@ -180,7 +181,7 @@ export class QuestionnairesComponent implements OnInit {
           .from('distributions')
           .insert([{
             questionnaire_id: q.id,
-            response_template_ids: [],
+            automation_template_ids: [],
             is_active: true
           }])
           .select('token')
@@ -194,9 +195,14 @@ export class QuestionnairesComponent implements OnInit {
         throw new Error('No token generated');
       }
 
-      const url = `${window.location.origin}/q/${token}`;
-      await navigator.clipboard.writeText(url);
-      this.toast.show(this.lang.t('questionnaires.linkCopiedDesc'), 'success');
+      const url = `${environment.siteUrl}/q/${token}`;
+      const success = await this.copyToClipboard(url);
+
+      if (success) {
+        this.toast.show(this.lang.t('questionnaires.linkCopiedDesc'), 'success');
+      } else {
+        throw new Error('Copy failed');
+      }
     } catch (error) {
       console.error('Error sharing questionnaire:', error);
       this.toast.show(this.lang.t('questionnaires.copyErrorDesc'), 'error');
@@ -295,7 +301,7 @@ export class QuestionnairesComponent implements OnInit {
       sessionStorage.setItem('preview_questionnaire', JSON.stringify(previewData));
 
       // Open preview in new tab with absolute URL (form view by default)
-      const url = `${window.location.origin}/questionnaires/live/preview`;
+      const url = `${environment.siteUrl}/questionnaires/live/preview`;
       window.open(url, '_blank');
     } catch (error: any) {
       console.error('Error loading questionnaire for preview:', error);
@@ -480,14 +486,19 @@ export class QuestionnairesComponent implements OnInit {
     }
 
     // Generate the external URL
-    const url = `${window.location.origin}/q/${q.token}`;
+    const url = `${environment.siteUrl}/q/${q.token}`;
 
     try {
-      await navigator.clipboard.writeText(url);
-      this.toast.show(
-        this.lang.currentLanguage === 'he' ? 'הקישור הועתק ללוח' : 'Link copied to clipboard',
-        'success'
-      );
+      const success = await this.copyToClipboard(url);
+
+      if (success) {
+        this.toast.show(
+          this.lang.currentLanguage === 'he' ? 'הקישור הועתק ללוח' : 'Link copied to clipboard',
+          'success'
+        );
+      } else {
+        throw new Error('Copy failed');
+      }
     } catch (error) {
       this.toast.show(
         this.lang.currentLanguage === 'he' ? 'שגיאה בהעתקת הקישור' : 'Error copying link',
@@ -651,7 +662,7 @@ export class QuestionnairesComponent implements OnInit {
       sessionStorage.setItem('preview_questionnaire', JSON.stringify(previewData));
 
       // Open preview in new tab with absolute URL (form view by default)
-      const url = `${window.location.origin}/questionnaires/live/preview`;
+      const url = `${environment.siteUrl}/questionnaires/live/preview`;
       window.open(url, '_blank');
     } catch (error: any) {
       console.error('Error loading questionnaire for preview:', error);
@@ -764,5 +775,38 @@ export class QuestionnairesComponent implements OnInit {
         tab: 'leads'
       }
     });
+  }
+
+  // Helper method to copy text to clipboard with fallback for non-HTTPS environments
+  private async copyToClipboard(text: string): Promise<boolean> {
+    // Try modern clipboard API first
+    if (navigator.clipboard && window.isSecureContext) {
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch (err) {
+        console.error('Clipboard API failed:', err);
+      }
+    }
+
+    // Fallback to legacy method for HTTP environments
+    try {
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-999999px';
+      textArea.style.top = '-999999px';
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+
+      const successful = document.execCommand('copy');
+      document.body.removeChild(textArea);
+
+      return successful;
+    } catch (err) {
+      console.error('Legacy copy failed:', err);
+      return false;
+    }
   }
 }

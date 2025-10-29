@@ -25,6 +25,7 @@ interface ProfileFormData {
   mobile?: string;
   email?: string;
   website?: string;
+  whatsapp?: string;
   language: string;
   primaryColor?: string;
   secondaryColor?: string;
@@ -52,6 +53,7 @@ export class ProfileDetailsComponent implements OnInit {
     mobile: '',
     email: '',
     website: '',
+    whatsapp: '',
     language: 'he',
     primaryColor: '#199f3a',
     secondaryColor: '#9cbb54',
@@ -173,6 +175,7 @@ export class ProfileDetailsComponent implements OnInit {
         this.formData.mobile = data.phone || '';
         this.formData.email = data.email || '';
         this.formData.website = data.website || '';
+        this.formData.whatsapp = data.whatsapp || '';
         this.formData.language = data.locale || 'he';
         this.formData.primaryColor = data.brand_primary || '#199f3a';
         this.formData.secondaryColor = data.brand_secondary || '#9cbb54';
@@ -846,6 +849,7 @@ export class ProfileDetailsComponent implements OnInit {
         phone: cleanedPhone,
         email: this.formData.email,
         website: this.formData.website,
+        whatsapp: this.formData.whatsapp,
         locale: this.formData.language,
         brand_primary: this.formData.primaryColor,
         brand_secondary: this.formData.secondaryColor,
